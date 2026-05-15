@@ -109,7 +109,7 @@ async function startServer() {
 
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
-      const { date, aaronWords, electraWords, note } = req.body;
+      const { date, aaronWords, electraWords } = req.body;
       const aaronCount = Math.max(0, parseInt(aaronWords) || 0);
       const electraCount = Math.max(0, parseInt(electraWords) || 0);
 
@@ -124,7 +124,6 @@ async function startServer() {
         date,
         aaronWords: aaronCount,
         electraWords: electraCount,
-        note: note || "",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -147,13 +146,12 @@ async function startServer() {
   app.patch("/api/entries/:id", authenticate, async (req, res) => {
     try {
       const { id } = req.params as { id: string };
-      const { aaronWords, electraWords, note } = req.body;
+      const { aaronWords, electraWords } = req.body;
       const updateData: any = {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
       if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
-      if (note !== undefined) updateData.note = note;
 
       await db.collection("entries").doc(id).update(updateData);
       res.json({ id, ...updateData });
@@ -186,9 +184,10 @@ async function startServer() {
           teamColor: "#2b1720",
           goalsEnabled: true,
           individualGoalsEnabled: false,
-          teamWeeklyGoal: 7000,
-          personAWeeklyGoal: 3500,
-          personBWeeklyGoal: 3500,
+          projectGoal: 50000,
+          personAGoal: 25000,
+          personBGoal: 25000,
+          deadline: "2026-12-31",
           activityThresholds: [250, 750, 1500],
           defaultChartView: "daily",
           defaultGridView: "team",

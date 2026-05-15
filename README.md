@@ -1,4 +1,4 @@
-# Clean Writer
+# Smeemo
 
 A private two-person writing tracker for logging words, seeing progress, and staying gently motivated.
 

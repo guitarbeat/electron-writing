@@ -8,8 +8,6 @@
         "date": { "type": "string", "format": "date", "description": "ISO date string (YYYY-MM-DD)" },
         "aaronWords": { "type": "integer", "description": "Words written by Aaron" },
         "electraWords": { "type": "integer", "description": "Words written by Electra" },
-        "note": { "type": "string", "description": "Optional note about the day" },
-        "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["date", "aaronWords", "electraWords"]
@@ -26,10 +24,11 @@
         "teamColor": { "type": "string" },
         "goalsEnabled": { "type": "boolean" },
         "individualGoalsEnabled": { "type": "boolean" },
-        "teamWeeklyGoal": { "type": "integer" },
-        "personAWeeklyGoal": { "type": "integer" },
-        "personBWeeklyGoal": { "type": "integer" },
-        "activityThresholds": { "type": "object" },
+        "projectGoal": { "type": "integer" },
+        "personAGoal": { "type": "integer" },
+        "personBGoal": { "type": "integer" },
+        "deadline": { "type": "string", "format": "date" },
+        "activityThresholds": { "type": "array" },
         "defaultChartView": { "type": "string", "enum": ["daily", "weekly", "cumulative"] },
         "defaultGridView": { "type": "string", "enum": ["team", "aaron", "electra"] },
         "updatedAt": { "type": "string", "format": "date-time" }

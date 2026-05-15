@@ -35,7 +35,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
         </div>
 
         <div className="text-center">
-          <h1 className="text-display text-4xl mb-2">Clean Writer</h1>
+          <h1 className="text-display text-4xl mb-2">Smeemo</h1>
           <p className="text-ink-muted font-bold italic">Aaron & Electra's private space.</p>
         </div>
 
@@ -69,10 +69,6 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
             )}
           </button>
         </form>
-
-        <p className="text-[10px] text-ink-muted font-black uppercase tracking-widest">
-          Private Shared Workspace • 2026
-        </p>
       </motion.div>
     </div>
   );
