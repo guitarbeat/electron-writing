@@ -32,6 +32,8 @@ import { format, parseISO, eachDayOfInterval, subDays, startOfMonth, endOfMonth,
 import { Entry, Settings } from '../../types';
 import { AuthorAvatar } from '../../components/ui/AuthorAvatar';
 import { cn } from '../../lib/utils';
+import { Knob } from '../../components/ui/Knob';
+import { CalendarPicker } from '../../components/ui/CalendarPicker';
 
 export function Dashboard() {
   const { 
@@ -469,12 +471,11 @@ function QuickLogCard({
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-black uppercase tracking-[0.15em] pl-1 opacity-50 text-ink">Date</label>
-          <input 
-            type="date" 
+          <CalendarPicker 
+            label="Date"
             value={date} 
-            onChange={e => setDate(e.target.value)}
-            className="input-playful py-2 px-3 text-sm"
+            onChange={setDate}
+            color={settings?.teamColor || "#ff4d8d"}
           />
         </div>
 
@@ -759,39 +760,38 @@ function SetupWizard({
                 ))}
               </div>
               
-              <div className="flex flex-col gap-6">
-                <div className="bg-white p-6 border-4 border-ink rounded-2xl flex flex-col gap-3 shadow-sticker">
-                   <div className="flex justify-between items-center">
-                      <label className="text-label text-[10px]">Project Target ({formData.metric})</label>
+              <div className="flex flex-col gap-10">
+                <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden group">
+                   <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
+                   <Knob 
+                      label={`Project Target (${formData.metric})`}
+                      value={formData.projectGoal}
+                      min={1000}
+                      max={200000}
+                      step={1000}
+                      onChange={val => setFormData({...formData, projectGoal: val})}
+                      unit={formData.metric}
+                      color="#facc15"
+                   />
+                   <div className="flex flex-col items-center gap-1">
                       <input 
                         type="number"
                         value={formData.projectGoal}
                         onChange={e => setFormData({...formData, projectGoal: parseInt(e.target.value) || 0})}
-                        className="w-24 bg-transparent text-right text-[10px] font-black uppercase text-accent border-b-2 border-accent/20 focus:border-accent outline-none"
+                        className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
                       />
+                      <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">Spin to set absolute target</p>
                    </div>
-                   <input 
-                    type="range" 
-                    min="0" 
-                    max="200000" 
-                    step="1000"
-                    value={formData.projectGoal} 
-                    onChange={e => setFormData({...formData, projectGoal: parseInt(e.target.value)})} 
-                    className="accent-accent h-2"
-                  />
                 </div>
 
-                <div className="bg-white p-6 border-4 border-ink rounded-2xl flex flex-col gap-3 shadow-sticker">
-                   <div className="flex justify-between items-center">
-                      <label className="text-label text-[10px]">Project Deadline</label>
-                   </div>
-                   <input 
-                    type="date" 
+                <div className="flex flex-col gap-4">
+                  <CalendarPicker 
+                    label="Project Deadline"
                     value={formData.deadline}
-                    onChange={e => setFormData({...formData, deadline: e.target.value})} 
-                    className="input-playful w-full py-2 text-sm"
+                    onChange={date => setFormData({...formData, deadline: date})}
+                    color="#5eead4"
                   />
-                  <p className="text-[9px] font-bold italic text-ink/40">The heatmap and race will end on this date.</p>
+                  <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">The heatmap and race will end on this date.</p>
                 </div>
 
                 <div className="flex flex-col gap-4">
@@ -805,33 +805,46 @@ function SetupWizard({
                     </div>
                   </div>
 
-                  <div className="bg-white p-6 border-4 border-ink rounded-2xl flex flex-col gap-6 shadow-sticker relative overflow-hidden">
-                    {/* Visual split indicator */}
-                    <div className="absolute top-0 left-0 bottom-0 right-0 pointer-events-none flex">
-                      <div className="h-full bg-primary/5 transition-all" style={{ width: `${allocationRatio}%` }} />
-                      <div className="h-full bg-secondary/5 transition-all flex-1" />
+                  <div className="bg-white p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-8 shadow-sticker relative overflow-hidden">
+                    <div className="absolute top-0 left-0 bottom-0 right-0 pointer-events-none flex opacity-10">
+                      <div className="h-full bg-primary transition-all" style={{ width: `${allocationRatio}%` }} />
+                      <div className="h-full bg-secondary transition-all flex-1" />
                     </div>
 
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      step="5"
-                      value={allocationRatio} 
-                      onChange={e => setAllocationRatio(parseInt(e.target.value))} 
-                      className="accent-primary h-2 relative z-10"
-                    />
+                    <div className="flex items-center gap-8 relative z-10">
+                       <div className="flex flex-col items-center gap-2">
+                          <AuthorAvatar name={formData.personAName} color={formData.personAColor} size="md" />
+                          <span className="text-[10px] font-black uppercase" style={{ color: formData.personAColor }}>{allocationRatio}%</span>
+                       </div>
+                       
+                       <div className="relative">
+                          <Knob 
+                            value={allocationRatio}
+                            min={0}
+                            max={100}
+                            step={5}
+                            onChange={setAllocationRatio}
+                            color="#2b1720"
+                          />
+                          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase opacity-20 tracking-widest">Balance</div>
+                       </div>
 
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase" style={{ color: formData.personAColor }}>{formData.personAName}</label>
-                        <div className="text-xl font-black font-mono">
+                       <div className="flex flex-col items-center gap-2">
+                          <AuthorAvatar name={formData.personBName} color={formData.personBColor} size="md" />
+                          <span className="text-[10px] font-black uppercase" style={{ color: formData.personBColor }}>{100 - allocationRatio}%</span>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 w-full border-t-2 border-ink/5 pt-6 relative z-10">
+                      <div className="flex flex-col gap-1 items-center">
+                        <label className="text-[9px] font-black uppercase opacity-40">Target</label>
+                        <div className="text-2xl font-black font-mono tracking-tighter" style={{ color: formData.personAColor }}>
                           {formData.personAGoal.toLocaleString()}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1 text-right">
-                        <label className="text-[9px] font-black uppercase" style={{ color: formData.personBColor }}>{formData.personBName}</label>
-                        <div className="text-xl font-black font-mono">
+                      <div className="flex flex-col gap-1 items-center">
+                        <label className="text-[9px] font-black uppercase opacity-40">Target</label>
+                        <div className="text-2xl font-black font-mono tracking-tighter" style={{ color: formData.personBColor }}>
                           {formData.personBGoal.toLocaleString()}
                         </div>
                       </div>
