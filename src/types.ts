@@ -25,6 +25,7 @@ export interface Settings {
   metric: 'words' | 'pages';
   projectGoal: number;
   deadline: string;
+  setupUpdateCount: number;
   updatedAt: any;
   lastModifiedBy?: string;
 }

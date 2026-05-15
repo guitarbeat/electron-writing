@@ -178,6 +178,7 @@ async function startServer() {
           metric: "words" as const,
           projectGoal: 50000,
           deadline: "2026-12-31",
+          setupUpdateCount: 0,
           updatedAt: new Date(),
         };
         await db.insert(settings).values(defaults);
@@ -191,11 +192,17 @@ async function startServer() {
 
   app.patch("/api/settings", authenticate, async (req, res) => {
     try {
+      const currentSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+      
       const updateData = {
         ...req.body,
         updatedAt: new Date(),
       };
-      // Metric and chart view enums
+      
+      if (req.body.lastModifiedBy !== "System") {
+        updateData.setupUpdateCount = (currentSettings[0]?.setupUpdateCount || 0) + 1;
+      }
+
       await db.update(settings).set(updateData).where(eq(settings.id, "global"));
       res.json(updateData);
     } catch (err: any) {
@@ -245,6 +252,7 @@ async function startServer() {
           if (!entry.date) continue;
           await db.insert(entries).values({
             id: entry.date,
+            date: entry.date,
             aaronWords: parseInt(entry.aaronWords) || 0,
             electraWords: parseInt(entry.electraWords) || 0,
             note: entry.note || "",

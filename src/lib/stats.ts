@@ -1,5 +1,5 @@
 import { Entry, Settings } from '../types';
-import { isSameDay, isSameWeek, parseISO, startOfWeek, format } from 'date-fns';
+import { isSameDay, isSameWeek, parseISO, startOfWeek, format, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 
 export interface TrackerStats {
   todayAaron: number;
@@ -101,10 +101,43 @@ export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumul
   }));
 }
 
-export function getActivityLevel(words: number, thresholds = [250, 750, 1500]) {
-  if (words <= 0) return 0;
-  if (words < thresholds[0]) return 1;
-  if (words < thresholds[1]) return 2;
-  if (words < thresholds[2]) return 3;
-  return 4;
+export function getHeatmapStats(entries: Entry[], settings: Settings | null, gridView: 'team' | 'personA' | 'personB') {
+  if (entries.length === 0) return { rows: [], dynamicBaseline: 0 };
+  
+  const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const start = parseISO(sortedEntries[0].date);
+  const end = new Date();
+  const interval = eachDayOfInterval({ start: startOfMonth(start), end: endOfMonth(end) });
+
+  const rows = interval.map(day => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const entry = entries.find(e => e.date === dateStr);
+    let words = 0;
+    let target = 0;
+
+    if (gridView === 'team') {
+      words = entry ? entry.aaronWords + entry.electraWords : 0;
+      target = (settings?.projectGoal || 50000) / 100; // placeholder divided daily goal
+    } else if (gridView === 'personA') {
+      words = entry ? entry.aaronWords : 0;
+      target = (settings?.personAWeeklyGoal || 3500) / 7;
+    } else {
+      words = entry ? entry.electraWords : 0;
+      target = (settings?.personBWeeklyGoal || 3500) / 7;
+    }
+
+    return {
+      dateStr,
+      dateObj: day,
+      wordsWritten: words,
+      target: target || 500,
+      status: entry ? 'Logged' : 'Pending',
+      note: entry?.note
+    };
+  });
+
+  return { 
+    rows, 
+    dynamicBaseline: (settings?.projectGoal || 50000) / 100
+  };
 }

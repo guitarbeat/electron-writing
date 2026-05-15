@@ -46,6 +46,7 @@ export function useTracker() {
         setEntries(data);
       }
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('fetch')) return;
       console.error('Failed to fetch entries', err);
     }
   }, [isAuthorized]);
@@ -59,6 +60,7 @@ export function useTracker() {
         setSettings(data);
       }
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('fetch')) return;
       console.error('Failed to fetch settings', err);
     }
   }, [isAuthorized]);

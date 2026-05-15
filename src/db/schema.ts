@@ -28,6 +28,7 @@ export const settings = pgTable("settings", {
   metric: text("metric").notNull().default("words"),
   projectGoal: integer("project_goal").notNull().default(50000),
   deadline: text("deadline").notNull().default("2026-12-31"),
+  setupUpdateCount: integer("setup_update_count").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastModifiedBy: text("last_modified_by").notNull().default("System"),
 });

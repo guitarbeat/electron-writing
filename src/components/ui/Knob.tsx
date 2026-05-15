@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useMotionValue, useTransform } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface KnobProps {
   value: number;
@@ -15,10 +15,16 @@ interface KnobProps {
 export function Knob({ value, min, max, step = 1, onChange, label, unit, color = '#ff4d8d' }: KnobProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const lastAngleRef = useRef<number | null>(null);
   
-  // Angle: -150 to 150 degrees
-  const angle = ((value - min) / (max - min)) * 300 - 150;
-
+  // Create 20 full rotations for the full range (7200 degrees total) for more precision
+  const totalRotations = 20;
+  const totalDegrees = 360 * totalRotations;
+  
+  // Display angle based on value
+  const fraction = max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const angle = fraction * totalDegrees;
+  
   const handleMouseMove = (e: MouseEvent | TouchEvent) => {
     if (!isDragging || !containerRef.current) return;
 
@@ -38,11 +44,20 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
     // Normalize deg to -180 to 180
     if (deg > 180) deg -= 360;
     
-    // Clamp to our range: -150 to 150
-    const clampedDeg = Math.max(-150, Math.min(150, deg));
+    if (lastAngleRef.current === null) {
+      lastAngleRef.current = deg;
+      return;
+    }
+
+    let delta = deg - lastAngleRef.current;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
     
-    // Map back to value
-    const newValue = ((clampedDeg + 150) / 300) * (max - min) + min;
+    lastAngleRef.current = deg;
+    
+    const valuePerDegree = (max - min) / totalDegrees;
+    
+    const newValue = value + delta * valuePerDegree;
     const steppedValue = Math.round(newValue / step) * step;
     
     if (steppedValue !== value) {
@@ -51,7 +66,10 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
   };
 
   useEffect(() => {
-    const up = () => setIsDragging(false);
+    const up = () => {
+      setIsDragging(false);
+      lastAngleRef.current = null;
+    };
     
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -66,7 +84,9 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
       window.removeEventListener('touchmove', handleMouseMove);
       window.removeEventListener('touchend', up);
     };
-  }, [isDragging]);
+  }, [isDragging, value, min, max, step]); // Add dependencies so closure has fresh values
+
+  const strokeDashoffsetValue = isNaN(fraction) ? 188.5 : 188.5 - fraction * (188.5 - 62.8);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -75,8 +95,13 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
       <div 
         ref={containerRef}
         className="relative w-32 h-32 cursor-pointer select-none group"
-        onMouseDown={() => setIsDragging(true)}
-        onTouchStart={() => setIsDragging(true)}
+        onMouseDown={(e) => {
+          setIsDragging(true);
+        }}
+        onTouchStart={(e) => {
+          setIsDragging(true);
+          // Don't prevent default here as it breaks touch
+        }}
       >
         {/* Outer ring */}
         <div className="absolute inset-0 rounded-full border-4 border-ink bg-white shadow-sticker group-hover:scale-105 transition-transform" />
@@ -98,7 +123,8 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
               stroke={color} 
               strokeWidth="8" 
               strokeDasharray="188.5"
-              animate={{ strokeDashoffset: 188.5 - ((value - min) / (max - min)) * (188.5 - 62.8) }}
+              initial={{ strokeDashoffset: strokeDashoffsetValue }}
+              animate={{ strokeDashoffset: strokeDashoffsetValue }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               strokeLinecap="round"
            />
@@ -114,9 +140,9 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
            <div className="absolute top-2 w-2 h-4 bg-ink rounded-full" />
            
            {/* Value display */}
-           <div className="flex flex-col items-center rotate-[-angle] animate-[counter-rotate] pointer-events-none" style={{ transform: `rotate(${-angle}deg)` }}>
-              <span className="text-xl font-black font-mono leading-none">
-                 {value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
+           <div className="flex flex-col items-center pointer-events-none" style={{ transform: `rotate(${-angle}deg)` }}>
+              <span className="text-xl font-black font-mono leading-none flex tracking-tighter">
+                 {value >= 1000 ? (value % 1000 === 0 ? `${value/1000}k` : `${(value/1000).toFixed(1)}k`) : value}
               </span>
               {unit && <span className="text-[8px] font-black uppercase opacity-30">{unit}</span>}
            </div>
