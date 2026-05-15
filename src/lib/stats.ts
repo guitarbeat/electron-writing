@@ -5,13 +5,9 @@ export interface TrackerStats {
   todayAaron: number;
   todayElectra: number;
   todayTeam: number;
-  weekAaron: number;
-  weekElectra: number;
   weekTeam: number;
   activeDays: number;
-  aaronTotal: number;
-  electraTotal: number;
-  teamTotal: number;
+  totalTeam: number;
 }
 
 export function calculateTrackerStats(entries: Entry[], settings: Settings | null): TrackerStats {
@@ -19,46 +15,41 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
   
   let todayAaron = 0;
   let todayElectra = 0;
-  let weekAaron = 0;
-  let weekElectra = 0;
+  let todayTeam = 0;
+  let weekTeam = 0;
   let activeDays = 0;
-  let aaronTotal = 0;
-  let electraTotal = 0;
+  let totalTeam = 0;
 
   entries.forEach(entry => {
     const entryDate = parseISO(entry.date);
     const aaron = entry.aaronWords || 0;
     const electra = entry.electraWords || 0;
+    const team = aaron + electra;
 
-    aaronTotal += aaron;
-    electraTotal += electra;
+    totalTeam += team;
 
-    if (aaron > 0 || electra > 0) {
+    if (team > 0) {
       activeDays++;
     }
 
     if (isSameDay(entryDate, today)) {
       todayAaron += aaron;
       todayElectra += electra;
+      todayTeam += team;
     }
 
     if (isSameWeek(entryDate, today, { weekStartsOn: 1 })) { // Monday start
-      weekAaron += aaron;
-      weekElectra += electra;
+      weekTeam += team;
     }
   });
 
   return {
     todayAaron,
     todayElectra,
-    todayTeam: todayAaron + todayElectra,
-    weekAaron,
-    weekElectra,
-    weekTeam: weekAaron + weekElectra,
+    todayTeam,
+    weekTeam,
     activeDays,
-    aaronTotal,
-    electraTotal,
-    teamTotal: aaronTotal + electraTotal,
+    totalTeam,
   };
 }
 
@@ -66,44 +57,47 @@ export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumul
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   
   if (view === 'cumulative') {
-    let aSum = 0;
-    let eSum = 0;
+    let sumAaron = 0;
+    let sumElectra = 0;
+    let sumTeam = 0;
     return sorted.map(e => {
-      aSum += e.aaronWords;
-      eSum += e.electraWords;
+      sumAaron += e.aaronWords || 0;
+      sumElectra += e.electraWords || 0;
+      sumTeam += (e.aaronWords || 0) + (e.electraWords || 0);
       return {
         date: e.date,
-        Aaron: aSum,
-        Electra: eSum,
-        Team: aSum + eSum
+        Aaron: sumAaron,
+        Electra: sumElectra,
+        Team: sumTeam,
       };
     });
   }
 
   if (view === 'weekly') {
-    const weeks: Record<string, { a: number, e: number }> = {};
+    const weeks: Record<string, { aaron: number, electra: number, team: number }> = {};
     sorted.forEach(e => {
       const weekDate = startOfWeek(parseISO(e.date), { weekStartsOn: 1 });
       const weekStr = format(weekDate, 'yyyy-MM-dd');
-      if (!weeks[weekStr]) weeks[weekStr] = { a: 0, e: 0 };
-      weeks[weekStr].a += e.aaronWords;
-      weeks[weekStr].e += e.electraWords;
+      if (!weeks[weekStr]) weeks[weekStr] = { aaron: 0, electra: 0, team: 0 };
+      weeks[weekStr].aaron += e.aaronWords || 0;
+      weeks[weekStr].electra += e.electraWords || 0;
+      weeks[weekStr].team += (e.aaronWords || 0) + (e.electraWords || 0);
     });
 
     return Object.entries(weeks).map(([date, counts]) => ({
       date,
-      Aaron: counts.a,
-      Electra: counts.e,
-      Team: counts.a + counts.e
+      Aaron: counts.aaron,
+      Electra: counts.electra,
+      Team: counts.team,
     })).sort((a, b) => a.date.localeCompare(b.date));
   }
 
   // Daily is default
   return sorted.map(e => ({
     date: e.date,
-    Aaron: e.aaronWords,
-    Electra: e.electraWords,
-    Team: e.aaronWords + e.electraWords
+    Aaron: e.aaronWords || 0,
+    Electra: e.electraWords || 0,
+    Team: (e.aaronWords || 0) + (e.electraWords || 0),
   }));
 }
 

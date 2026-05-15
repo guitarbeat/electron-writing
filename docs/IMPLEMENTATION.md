@@ -4,13 +4,13 @@
 
 Because the app is already being built in Google AI Studio, use:
 
-- Frontend from the existing AI Studio app
-- Server-side API routes/functions
-- Firestore or another hosted database
-- Shared passcode gate
-- Charting library for line chart
-- CSS grid/flex for layout
-- Calendar heatmap component or custom grid
+- Frontend: React + Vite + Tailwind CSS
+- Server: Express (server.ts)
+- Database: PostgreSQL (Neon)
+- ORM: Drizzle ORM
+- Auth: Shared passcode gate with JWT session cookies
+- Charting: Recharts
+- Animation: Motion (framer-motion)
 
 ## Recommended Architecture
 
@@ -62,7 +62,8 @@ Add:
 ### Phase 4: Database
 
 Connect:
-- Firestore collection/table
+- PostgreSQL (Neon) setup
+- Drizzle schema and migrations
 - entries persistence
 - settings persistence
 

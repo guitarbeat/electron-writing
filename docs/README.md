@@ -44,7 +44,7 @@ Clean Writer is not:
 ## MVP
 
 - Shared passcode screen
-- Hosted database
+- Hosted database (PostgreSQL via Neon)
 - Quick Log form
 - Three-line chart: Aaron / Electra / Team
 - Daily / Weekly / Cumulative views

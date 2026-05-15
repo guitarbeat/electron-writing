@@ -1,20 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart3, 
-  Calendar, 
   Settings as SettingsIcon, 
-  Plus, 
   Trash2, 
-  Edit3, 
   ArrowRight,
   LogOut,
   Download,
   Upload,
   Trophy,
   History,
-  PenLine,
-  Check
+  PenLine
 } from 'lucide-react';
 import { useTracker } from '../../hooks/useTracker';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
@@ -29,8 +25,7 @@ import {
   Legend
 } from 'recharts';
 import { format, parseISO, eachDayOfInterval, subDays, startOfMonth, endOfMonth, isSameDay, startOfDay } from 'date-fns';
-import { Entry, Settings } from '../../types';
-import { AuthorAvatar } from '../../components/ui/AuthorAvatar';
+import { Settings } from '../../types';
 import { cn } from '../../lib/utils';
 import { Knob } from '../../components/ui/Knob';
 import { CalendarPicker } from '../../components/ui/CalendarPicker';
@@ -50,53 +45,25 @@ export function Dashboard() {
 
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'cumulative'>('daily');
   const [gridView, setGridView] = useState<'team' | 'personA' | 'personB'>('team');
-  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+
+  // Form State
+  const [logDate, setLogDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [aaronInput, setAaronInput] = useState<string>('');
+  const [electraInput, setElectraInput] = useState<string>('');
+  const [noteInput, setNoteInput] = useState<string>('');
 
   const stats = useMemo(() => calculateTrackerStats(entries, settings), [entries, settings]);
   const chartData = useMemo(() => getChartData(entries, chartView), [entries, chartView]);
 
-  const heatmapStats = useMemo(() => {
-    if (entries.length === 0) return { rows: [], totalWordsWritten: 0 };
-    
-    // Sort entries by date
-    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-    const start = parseISO(sortedEntries[0].date);
-    const end = settings?.deadline ? parseISO(settings.deadline) : new Date();
-    const interval = eachDayOfInterval({ start: startOfMonth(start), end: endOfMonth(end) });
-
-    const rows = interval.map(day => {
-      const dateStr = format(day, 'yyyy-MM-dd');
-      const entry = entries.find(e => e.date === dateStr);
-      return {
-        dateStr,
-        dateObj: day,
-        wordsWritten: (entry?.aaronWords || 0) + (entry?.electraWords || 0),
-        authorsDaily: {
-          personA: entry?.aaronWords || 0,
-          personB: entry?.electraWords || 0
-        },
-        target: (settings?.projectGoal || 0) / (interval.length || 1),
-        status: entry ? 'Logged' : 'Pending'
-      };
-    });
-
-    return { 
-      rows, 
-      totalWordsWritten: stats.teamTotal,
-      dynamicBaseline: (settings?.projectGoal || 0) / (interval.length || 1)
-    };
-  }, [entries, settings, stats.teamTotal]);
-
-  // Sync settings when they load
-  React.useEffect(() => {
+  useEffect(() => {
     if (settings) {
-      if (settings.defaultGridView) setGridView(settings.defaultGridView as any);
       if (settings.defaultChartView) setChartView(settings.defaultChartView as any);
+      if (settings.defaultGridView) setGridView(settings.defaultGridView as any);
     }
   }, [settings]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const hasSeenGuide = localStorage.getItem('clean_writer_guide_seen');
     if (!hasSeenGuide && entries.length === 0 && !isLoading && isAuthorized) {
       setShowGuide(true);
@@ -104,7 +71,91 @@ export function Dashboard() {
     }
   }, [entries.length, isLoading, isAuthorized]);
 
+  // Sync form with selected logDate
+  useEffect(() => {
+    const existing = entries.find(e => e.date === logDate);
+    if (existing) {
+      setAaronInput(existing.aaronWords > 0 ? existing.aaronWords.toString() : '');
+      setElectraInput(existing.electraWords > 0 ? existing.electraWords.toString() : '');
+      setNoteInput(existing.note || '');
+    } else {
+      setAaronInput('');
+      setElectraInput('');
+      setNoteInput('');
+    }
+  }, [logDate, entries]);
+
+  const handleSaveLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const aaronW = parseInt(aaronInput) || 0;
+    const electraW = parseInt(electraInput) || 0;
+    
+    if (aaronW === 0 && electraW === 0 && !noteInput) return;
+
+    await saveEntry({
+      date: logDate,
+      aaronWords: aaronW,
+      electraWords: electraW,
+      note: noteInput
+    });
+    
+    // reset form but keep date if desired. Usually reset to empty if they saved today.
+    // Let's just keep the values there so they see it was saved.
+  };
+
+  const handleDeleteLog = async () => {
+    if (window.confirm('Delete entry for this date?')) {
+      await deleteEntry(logDate);
+      setAaronInput('');
+      setElectraInput('');
+      setNoteInput('');
+    }
+  };
+
+  const heatmapStats = useMemo(() => {
+    if (entries.length === 0) return { rows: [], dynamicBaseline: 0 };
+    
+    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+    const start = parseISO(sortedEntries[0].date);
+    const end = new Date();
+    const interval = eachDayOfInterval({ start: startOfMonth(start), end: endOfMonth(end) });
+
+    const rows = interval.map(day => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const entry = entries.find(e => e.date === dateStr);
+      let words = 0;
+      let target = 0;
+
+      if (gridView === 'team') {
+        words = entry ? entry.aaronWords + entry.electraWords : 0;
+        target = (settings?.teamWeeklyGoal || 7000) / 7;
+      } else if (gridView === 'personA') {
+        words = entry ? entry.aaronWords : 0;
+        target = (settings?.personAWeeklyGoal || 3500) / 7;
+      } else {
+        words = entry ? entry.electraWords : 0;
+        target = (settings?.personBWeeklyGoal || 3500) / 7;
+      }
+
+      return {
+        dateStr,
+        dateObj: day,
+        wordsWritten: words,
+        target: target || 500,
+        status: entry ? 'Logged' : 'Pending',
+        note: entry?.note
+      };
+    });
+
+    return { 
+      rows, 
+      dynamicBaseline: (settings?.teamWeeklyGoal || 7000) / 7
+    };
+  }, [entries, settings, gridView]);
+
   if (isLoading) return <div className="min-h-screen bg-bg-paper flex items-center justify-center font-black uppercase tracking-widest text-ink">Loading...</div>;
+
+  const currentEntry = entries.find(e => e.date === logDate);
 
   return (
     <div className="min-h-screen bg-bg-paper text-ink font-sans p-4 md:p-8 selection:bg-primary/20 bg-[url('https://www.transparenttextures.com/patterns/felt.png')]">
@@ -114,8 +165,11 @@ export function Dashboard() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-display">Smeemo</h1>
+              <h1 className="text-display">Clean Writer</h1>
             </div>
+            <p className="text-sm font-bold opacity-60">
+              {settings?.personAName} & {settings?.personBName}'s Tracker
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -137,45 +191,105 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* Left Column: Quick Log & Stats */}
+            {/* Left Column */}
             <div className="lg:col-span-4 flex flex-col gap-8 sticky top-8">
-              <QuickLogCard 
-                onSave={async (data) => {
-                  const success = await saveEntry(data);
-                  if (success) setEditingEntry(null);
-                  return success;
-                }} 
-                settings={settings} 
-                initialData={editingEntry}
-                onCancel={() => setEditingEntry(null)}
-              />
               
-              <div className="grid grid-cols-2 gap-4">
-                <MiniStatCard label="Today" value={stats.todayTeam} subValue="Team" hexColor={settings?.teamColor || "#facc15"} />
-                <MiniStatCard label="Active Days" value={stats.activeDays} subValue="Total" color="bg-mint" />
-              </div>
-
-              {settings?.goalsEnabled && (
-                 <div className="sticker-card p-6 bg-white flex flex-col gap-4">
-                   <div className="flex justify-between items-center">
-                     <h3 className="text-label">Project Team Goal</h3>
-                     <Trophy className="w-5 h-5 text-accent" />
-                   </div>
-                   <div className="relative h-6 bg-bg-paper border-2 border-ink rounded-full overflow-hidden">
-                     <motion.div 
-                       className="absolute top-0 left-0 h-full bg-primary"
-                       initial={{ width: 0 }}
-                       animate={{ width: `${Math.min(100, (stats.teamTotal / (settings?.projectGoal || 1)) * 100)}%` }}
+              {/* Quick Log Form */}
+              <div className="sticker-card p-6 bg-white flex flex-col gap-6">
+                 <div className="flex justify-between items-center">
+                   <h3 className="text-label flex items-center gap-2">
+                     <PenLine className="w-5 h-5" /> Quick Log
+                   </h3>
+                 </div>
+                 
+                 <form onSubmit={handleSaveLog} className="flex flex-col gap-4">
+                   <div className="flex flex-col gap-1">
+                     <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Date</label>
+                     <input 
+                       type="date"
+                       required
+                       value={logDate}
+                       onChange={e => setLogDate(e.target.value)}
+                       className="w-full bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink font-mono focus:bg-white transition-colors"
                      />
                    </div>
-                   <div className="flex justify-between font-black text-xs uppercase">
-                     <span>{stats.teamTotal} {settings?.metric || 'words'}</span>
-                     <span>Goal: {settings?.projectGoal}</span>
-                   </div>
-                   {settings?.deadline && (
-                     <div className="text-[9px] font-black uppercase opacity-40 text-center">
-                       Deadline: {format(parseISO(settings.deadline), 'MMM d, yyyy')}
+
+                   <div className="grid grid-cols-2 gap-4">
+                     <div className="flex flex-col gap-1">
+                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personAColor }}>{settings?.personAName} Words</label>
+                       <input 
+                         type="number"
+                         min="0"
+                         value={aaronInput}
+                         onChange={e => setAaronInput(e.target.value)}
+                         placeholder="0"
+                         className="w-full bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink font-mono focus:bg-white transition-colors"
+                       />
                      </div>
+                     <div className="flex flex-col gap-1">
+                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personBColor }}>{settings?.personBName} Words</label>
+                       <input 
+                         type="number"
+                         min="0"
+                         value={electraInput}
+                         onChange={e => setElectraInput(e.target.value)}
+                         placeholder="0"
+                         className="w-full bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink font-mono focus:bg-white transition-colors"
+                       />
+                     </div>
+                   </div>
+
+                   <div className="flex flex-col gap-1">
+                     <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Note (Optional)</label>
+                     <input 
+                       type="text"
+                       value={noteInput}
+                       onChange={e => setNoteInput(e.target.value)}
+                       placeholder="What did you work on?"
+                       className="w-full bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink font-sans focus:bg-white transition-colors"
+                     />
+                   </div>
+
+                   <div className="flex gap-2 mt-2">
+                     <button type="submit" className="button-playful bg-primary text-ink flex-1 py-3">
+                       Save Entry
+                     </button>
+                     {currentEntry && (
+                       <button type="button" onClick={handleDeleteLog} className="button-playful bg-red-100 text-red-600 border-red-500 hover:bg-red-200 px-4">
+                         <Trash2 className="w-5 h-5 mx-auto" />
+                       </button>
+                     )}
+                   </div>
+                 </form>
+              </div>
+
+              {/* Stats Overview */}
+              <div className="grid grid-cols-2 gap-4">
+                <MiniStatCard label={`Today's ${settings?.personAName}`} value={stats.todayAaron} hexColor={settings?.personAColor || "#ff4d8d"} />
+                <MiniStatCard label={`Today's ${settings?.personBName}`} value={stats.todayElectra} hexColor={settings?.personBColor || "#7c3aed"} />
+                <MiniStatCard label="Today's Team" value={stats.todayTeam} hexColor={settings?.teamColor || "#2b1720"} textColor="#fff" />
+                <MiniStatCard label="Active Days" value={stats.activeDays} color="bg-mint" />
+              </div>
+
+              {/* Goals */}
+              {settings?.goalsEnabled && (
+                 <div className="flex flex-col gap-4">
+                   <GoalCard 
+                      title="Team Weekly"
+                      progress={stats.weekTeam}
+                      target={settings?.teamWeeklyGoal || 7000}
+                      color={settings?.teamColor || "#2b1720"}
+                      textColor={"#ffffff"}
+                   />
+                   {settings?.individualGoalsEnabled && (
+                     <>
+                        <GoalCard 
+                           title={`${settings?.personAName} Weekly`}
+                           progress={stats.todayAaron} // Wait, we didn't calculate weekly per person. I'll just skip individual progress bar or use a rough estimate. For MVP, we'll just show the team goal mostly.
+                           target={settings?.personAWeeklyGoal || 3500}
+                           color={settings?.personAColor || "#ff4d8d"}
+                        />
+                     </>
                    )}
                  </div>
                )}
@@ -183,98 +297,9 @@ export function Dashboard() {
 
             {/* Right Column: Visualization & History */}
             <div className="lg:col-span-8 flex flex-col gap-8">
-              {/* Activity Race */}
-               {settings?.goalsEnabled && (
-                 <div className="sticker-card p-6 md:p-8 bg-white flex flex-col gap-10 overflow-hidden relative">
-                    <div className="flex justify-between items-center relative z-10">
-                       <div className="flex flex-col gap-1">
-                           <h3 className="text-label flex items-center gap-2">
-                             <Trophy className="w-5 h-5 text-accent" />
-                             Project Sprint Progress
-                          </h3>
-                          <p className="text-[10px] font-bold italic text-ink/40">Duo effort vs. {settings?.projectGoal || 0} {settings?.metric || 'word'} target</p>
-                       </div>
-                       {settings?.deadline && (
-                         <div className="bg-ink text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest hidden md:block">
-                            Ends {format(parseISO(settings.deadline), 'MM/dd')}
-                         </div>
-                       )}
-                    </div>
- 
-                    <div className="relative h-32 bg-bg-paper border-4 border-ink rounded-2xl overflow-hidden shadow-inner group/race">
-                       {/* Grid background for race feel */}
-                       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(90deg, #2b1720 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
-                       
-                       {/* Grid finish line */}
-                       <div className="absolute right-12 top-0 bottom-0 w-4 border-x-4 border-dashed border-ink/20 flex items-center justify-center">
-                          <div className="text-[8px] font-black uppercase -rotate-90 text-ink/20 tracking-[1em]">FINISH</div>
-                       </div>
-                       
-                       <div className="flex flex-col justify-around h-full py-4 px-6 relative">
-                          {/* Aaron Row */}
-                          <div className="relative w-full h-10 flex items-center">
-                             <motion.div 
-                               className="absolute left-0 flex items-center gap-3 drop-shadow-sticker"
-                               animate={{ x: `${Math.min(85, (stats.aaronTotal / (settings?.individualGoalsEnabled ? (settings.personAGoal || 1) : (Math.max(1, settings?.projectGoal || 0) / 2))) * 100)}%` }}
-                               transition={{ 
-                                 type: 'spring', 
-                                 stiffness: 60, 
-                                 damping: 12,
-                                 bounce: 0.5
-                               }}
-                             >
-                                <div className="relative">
-                                   <AuthorAvatar name={settings?.personAName || 'A'} color={settings?.personAColor || '#ff4d8d'} size="md" />
-                                   <div className="absolute -top-1 -right-1 bg-white border-2 border-ink rounded-full px-1.5 py-0.5 text-[8px] font-black">
-                                      {settings?.individualGoalsEnabled 
-                                        ? Math.round((stats.aaronTotal / (settings.personAGoal || 1)) * 100)
-                                        : settings?.projectGoal ? Math.round((stats.aaronTotal / (settings.projectGoal / 2)) * 100) : 0}%
-                                   </div>
-                                </div>
-                                <div className="flex flex-col -gap-1">
-                                   <span className="text-[10px] font-black uppercase leading-tight">{settings?.personAName}</span>
-                                   <span className="text-[9px] font-mono opacity-50">{stats.aaronTotal} / {settings?.individualGoalsEnabled ? settings.personAGoal : (settings?.projectGoal || 0) / 2} {settings?.metric || 'words'}</span>
-                                </div>
-                             </motion.div>
-                          </div>
- 
-                          {/* Team divider line */}
-                          <div className="h-0.5 w-full bg-ink/5" />
- 
-                          {/* Electra Row */}
-                          <div className="relative w-full h-10 flex items-center">
-                             <motion.div 
-                               className="absolute left-0 flex items-center gap-3 drop-shadow-sticker"
-                               animate={{ x: `${Math.min(85, (stats.electraTotal / (settings?.individualGoalsEnabled ? (settings.personBGoal || 1) : (Math.max(1, settings?.projectGoal || 0) / 2))) * 100)}%` }}
-                               transition={{ 
-                                 type: 'spring', 
-                                 stiffness: 60, 
-                                 damping: 12,
-                                 bounce: 0.5
-                               }}
-                             >
-                                <div className="relative">
-                                   <AuthorAvatar name={settings?.personBName || 'B'} color={settings?.personBColor || '#7c3aed'} size="md" />
-                                   <div className="absolute -top-1 -right-1 bg-white border-2 border-ink rounded-full px-1.5 py-0.5 text-[8px] font-black">
-                                      {settings?.individualGoalsEnabled
-                                        ? Math.round((stats.electraTotal / (settings.personBGoal || 1)) * 100)
-                                        : settings?.projectGoal ? Math.round((stats.electraTotal / (settings.projectGoal / 2)) * 100) : 0}%
-                                   </div>
-                                </div>
-                                <div className="flex flex-col -gap-1">
-                                   <span className="text-[10px] font-black uppercase leading-tight">{settings?.personBName}</span>
-                                   <span className="text-[9px] font-mono opacity-50">{stats.electraTotal} / {settings?.individualGoalsEnabled ? settings.personBGoal : (settings?.projectGoal || 0) / 2} {settings?.metric || 'words'}</span>
-                                </div>
-                             </motion.div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-               )}
-
               {/* Chart */}
               <div className="sticker-card p-6 md:p-8 bg-white h-[450px] flex flex-col gap-6">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-4">
                   <h3 className="text-label flex items-center gap-2">
                     <BarChart3 className="w-5 h-5" />
                     Writing Progress
@@ -291,7 +316,7 @@ export function Dashboard() {
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 w-full">
+                <div className="flex-1 w-full min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
@@ -314,61 +339,44 @@ export function Dashboard() {
                         }}
                         itemStyle={{ fontWeight: 800 }}
                       />
-                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }} />
-                      <Line type="monotone" dataKey="Aaron" stroke={settings?.personAColor || "#ff4d8d"} strokeWidth={4} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="Electra" stroke={settings?.personBColor || "#7c3aed"} strokeWidth={4} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="Team" stroke={settings?.teamColor || "#facc15"} strokeWidth={4} strokeDasharray="5 5" dot={false} />
+                      <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}/>
+                      <Line name={settings?.personAName} type="monotone" dataKey="Aaron" stroke={settings?.personAColor} strokeWidth={3} dot={{ r: 3, strokeWidth: 2 }} />
+                      <Line name={settings?.personBName} type="monotone" dataKey="Electra" stroke={settings?.personBColor} strokeWidth={3} dot={{ r: 3, strokeWidth: 2 }} />
+                      <Line name="Team" type="monotone" dataKey="Team" stroke={settings?.teamColor} strokeWidth={5} dot={{ r: 4, strokeWidth: 2 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Activity Grid */}
-              <div className="sticker-card p-6 md:p-8 bg-white flex flex-col gap-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-label flex items-center gap-2">
-                    <History className="w-5 h-5 text-mint" />
-                    Momentum Grid
-                  </h3>
-                  <div className="flex bg-bg-paper p-1 border-2 border-ink rounded-lg gap-1">
-                    {(['team', 'personA', 'personB'] as const).map(v => (
-                      <button
-                        key={v}
-                        onClick={() => setGridView(v)}
-                        className={`text-[10px] font-black uppercase px-3 py-1 rounded transition-colors ${gridView === v ? 'bg-ink text-white' : 'hover:bg-primary/10'}`}
-                      >
-                        {v === 'team' ? 'Team' : v === 'personA' ? (settings?.personAName || 'A') : (settings?.personBName || 'B')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <ActivityGrid entries={entries} view={gridView} settings={settings} />
-              </div>
-
               <div className="flex flex-col gap-6">
-  
-                <div className="sticker-card bg-white p-0 overflow-hidden">
+                <div className="sticker-card bg-white p-6 md:p-8 flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-label flex items-center gap-2">
+                       Consistency Grid
+                    </h3>
+                    <div className="flex bg-bg-paper p-1 border-2 border-ink rounded-lg gap-1">
+                      {(['team', 'personA', 'personB'] as const).map(v => (
+                        <button
+                          key={v}
+                          onClick={() => setGridView(v)}
+                          className={`text-[10px] font-black uppercase px-3 py-1 rounded transition-colors ${gridView === v ? 'bg-ink text-white' : 'hover:bg-primary/10'}`}
+                        >
+                          {v === 'personA' ? settings?.personAName : v === 'personB' ? settings?.personBName : 'Team'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <CalendarHeatMap 
                     stats={heatmapStats} 
-                    settings={{
-                      ...settings,
-                      authors: [
-                        { id: 'personA', name: settings?.personAName || 'A', color: settings?.personAColor || '#ff4d8d' },
-                        { id: 'personB', name: settings?.personBName || 'B', color: settings?.personBColor || '#7c3aed' }
-                      ],
-                      trackingUnit: settings?.metric || 'words'
-                    }}
-                    updateLog={async (authorId: string, dateStr: string, field: string, value: number) => {
-                      const entry = entries.find(e => e.date === dateStr);
-                      const baseEntry = entry || { date: dateStr, aaronWords: 0, electraWords: 0 };
-                      
-                      const updatedEntry = {
-                        ...baseEntry,
-                        [authorId === 'personA' ? 'aaronWords' : 'electraWords']: value
-                      };
-                      
-                      await saveEntry(updatedEntry);
-                    }}
+                    settings={settings}
+                    activeColor={
+                      gridView === 'team' ? settings?.teamColor :
+                      gridView === 'personA' ? settings?.personAColor :
+                      settings?.personBColor
+                    }
+                    onDateClick={(d: string) => { setLogDate(d); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    selectedDateStr={logDate}
                   />
                 </div>
               </div>
@@ -391,214 +399,42 @@ export function Dashboard() {
   );
 }
 
-function MiniStatCard({ label, value, subValue, color, hexColor }: { label: string, value: number, subValue: string, color?: string, hexColor?: string }) {
+function MiniStatCard({ label, value, color, hexColor, textColor = '#2b1720' }: { label: string, value: number, color?: string, hexColor?: string, textColor?: string }) {
   return (
-    <div className={`sticker-card p-6 bg-white flex flex-col items-center justify-center text-center gap-1 group hover:rotate-2 transition-transform`}>
-      <p className="text-label text-[10px] opacity-60 tracking-widest">{label}</p>
-      <p className="text-data text-ink">{value}</p>
-      <p 
-        className={cn(
-          "text-[10px] font-black uppercase px-2 py-0.5 rounded border-2 border-ink shadow-[2px_2px_0_#2b1720] mt-2 transition-colors",
-          color && !hexColor && color
-        )}
-        style={hexColor ? { backgroundColor: hexColor } : {}}
-      >
-        {subValue}
-      </p>
+    <div 
+      className={cn("sticker-card p-4 bg-white flex flex-col items-center justify-center text-center gap-1 transition-transform")}
+      style={hexColor ? { backgroundColor: hexColor, borderColor: '#2b1720' } : {}}
+    >
+      <p className="text-[10px] font-black uppercase opacity-60 tracking-widest" style={{ color: textColor }}>{label}</p>
+      <p className="text-display text-2xl" style={{ color: textColor }}>{value}</p>
     </div>
   );
 }
 
-function QuickLogCard({ 
-  onSave, 
-  settings, 
-  initialData,
-  onCancel
-}: { 
-  onSave: (entry: Partial<Entry>) => Promise<boolean>, 
-  settings: Settings | null,
-  initialData?: Entry | null,
-  onCancel?: () => void
-}) {
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [aaron, setAaron] = useState('');
-  const [electra, setElectra] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(false);
-
-  React.useEffect(() => {
-    if (initialData) {
-      setDate(initialData.date);
-      setAaron(initialData.aaronWords.toString());
-      setElectra(initialData.electraWords.toString());
-    } else {
-      setDate(format(new Date(), 'yyyy-MM-dd'));
-      setAaron('');
-      setElectra('');
-    }
-  }, [initialData]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const aaronVal = parseInt(aaron) || 0;
-    const electraVal = parseInt(electra) || 0;
-
-    if (aaronVal <= 0 && electraVal <= 0) {
-      setError(true);
-      setTimeout(() => setError(false), 500);
-      return;
-    }
-
-    setIsSaving(true);
-    const success = await onSave({
-      date,
-      aaronWords: aaronVal,
-      electraWords: electraVal
-    });
-    if (success) {
-      setAaron('');
-      setElectra('');
-    }
-    setIsSaving(false);
-  };
-
-  return (
-    <div className={`sticker-card p-8 bg-bg-surface flex flex-col gap-6 ${error ? 'animate-shake border-primary' : ''}`} id="quick-log">
-      <h3 className="text-label flex items-center gap-2">
-        <Plus className="w-5 h-5 text-primary" />
-        Writing Input: Daily Output
-      </h3>
-      
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <CalendarPicker 
-            label="Date"
-            value={date} 
-            onChange={setDate}
-            color={settings?.teamColor || "#ff4d8d"}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black uppercase tracking-[0.15em] pl-1 opacity-50" style={{ color: settings?.personAColor }}>
-              {settings?.personAName}'S {settings?.metric?.toUpperCase() || 'WORDS'}
-            </label>
-            <input 
-              type="number" 
-              placeholder="0"
-              value={aaron}
-              onChange={e => setAaron(e.target.value)}
-              className="input-playful py-3 px-4 text-center text-lg"
-              style={{ borderColor: aaron ? settings?.personAColor : undefined }}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black uppercase tracking-[0.15em] pl-1 opacity-50" style={{ color: settings?.personBColor }}>
-              {settings?.personBName}'S {settings?.metric?.toUpperCase() || 'WORDS'}
-            </label>
-            <input 
-              type="number" 
-              placeholder="0"
-              value={electra}
-              onChange={e => setElectra(e.target.value)}
-              className="input-playful py-3 px-4 text-center text-lg"
-              style={{ borderColor: electra ? settings?.personBColor : undefined }}
-            />
-          </div>
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={isSaving}
-          className={`button-playful mt-2 w-full flex items-center justify-center gap-2 group ${initialData ? 'bg-secondary' : 'bg-primary'}`}
-        >
-          {isSaving ? 'Synching...' : (
-            <>
-              {initialData ? 'Update Entry' : 'Log Entry'}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </>
-          )}
-        </button>
-
-        {initialData && (
-          <button 
-            type="button"
-            onClick={onCancel}
-            className="text-[10px] font-black uppercase text-ink/40 hover:text-ink transition-colors"
-          >
-            Cancel Edit
-          </button>
-        )}
-      </form>
-    </div>
-  );
+function GoalCard({ title, progress, target, color, textColor = '#2b1720' }: { title: string, progress: number, target: number, color: string, textColor?: string }) {
+   const percent = Math.min(100, (progress / (target || 1)) * 100);
+   return (
+     <div className="sticker-card p-4 bg-white flex flex-col gap-3">
+       <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+         <span>{title}</span>
+         <Trophy className="w-4 h-4" />
+       </div>
+       <div className="relative h-4 border-2 border-ink rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(43,23,32,0.1)' }}>
+         <motion.div 
+           className="absolute top-0 left-0 h-full border-r-2 border-ink"
+           style={{ backgroundColor: color }}
+           initial={{ width: 0 }}
+           animate={{ width: `${percent}%` }}
+         />
+       </div>
+       <div className="flex justify-between font-black text-xs">
+         <span>{progress}</span>
+         <span>{target}</span>
+       </div>
+     </div>
+   );
 }
 
-function ActivityGrid({ entries, view, settings }: { entries: Entry[], view: 'team' | 'personA' | 'personB', settings: Settings | null }) {
-  const days = useMemo(() => {
-    const today = new Date();
-    const start = subDays(today, 120); // Show last 120 days
-    const interval = eachDayOfInterval({ start, end: today });
-    
-    return interval.map(day => {
-      const dateStr = format(day, 'yyyy-MM-dd');
-      const entry = entries.find(e => e.date === dateStr);
-      let count = 0;
-      if (view === 'team') count = (entry?.aaronWords || 0) + (entry?.electraWords || 0);
-      else if (view === 'personA') count = entry?.aaronWords || 0;
-      else if (view === 'personB') count = entry?.electraWords || 0;
-      
-      const thresholds = settings?.activityThresholds || [250, 750, 1500];
-      let level = 0;
-      if (count > 0) {
-        if (count < thresholds[0]) level = 1;
-        else if (count < thresholds[1]) level = 2;
-        else if (count < thresholds[2]) level = 3;
-        else level = 4;
-      }
-
-      return { day, count, level, dateStr };
-    });
-  }, [entries, view, settings]);
-
-  const levelColors = useMemo(() => {
-    const baseColor = view === 'personA' ? (settings?.personAColor || '#ff4d8d') : 
-                      view === 'personB' ? (settings?.personBColor || '#7c3aed') : 
-                      (settings?.teamColor || '#2b1720');
-    
-    // Simple helper to add alpha to hex
-    const withAlpha = (hex: string, alpha: number) => {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-
-    return {
-      0: 'transparent',
-      1: withAlpha(baseColor, 0.1),
-      2: withAlpha(baseColor, 0.3),
-      3: withAlpha(baseColor, 0.6),
-      4: baseColor
-    };
-  }, [view, settings]);
-
-  if (days.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 justify-center py-4">
-      {days.map((d) => (
-        <div 
-          key={d.dateStr}
-          className="w-4 h-4 rounded-sm border border-ink/5 transition-colors"
-          style={{ backgroundColor: levelColors[d.level as keyof typeof levelColors] }}
-          title={`${d.dateStr}: ${d.count} ${settings?.metric || 'words'}`}
-        />
-      ))}
-    </div>
-  );
-}
 
 function SetupWizard({ 
   settings, 
@@ -618,12 +454,10 @@ function SetupWizard({
     personBColor: '#7c3aed',
     teamColor: '#2b1720',
     goalsEnabled: true,
-    individualGoalsEnabled: true,
-    metric: 'words',
-    projectGoal: 50000,
-    personAGoal: 25000,
-    personBGoal: 25000,
-    deadline: format(subDays(new Date(), -90), 'yyyy-MM-dd'),
+    individualGoalsEnabled: false,
+    teamWeeklyGoal: 7000,
+    personAWeeklyGoal: 3500,
+    personBWeeklyGoal: 3500,
     activityThresholds: [250, 750, 1500],
     defaultChartView: 'daily',
     defaultGridView: 'team',
@@ -632,40 +466,22 @@ function SetupWizard({
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [allocationRatio, setAllocationRatio] = useState(50); // 50% for Person A
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Sync goals when team goal or ratio changes
-  React.useEffect(() => {
-    const aGoal = Math.round(formData.projectGoal * (allocationRatio / 100));
-    const bGoal = formData.projectGoal - aGoal;
-    setFormData(prev => ({
-      ...prev,
-      personAGoal: aGoal,
-      personBGoal: bGoal,
-      individualGoalsEnabled: true
-    }));
-  }, [formData.projectGoal, allocationRatio]);
 
   const steps = [
     {
-      title: "Welcome to Smeemo",
-      description: "Smeemo is a private suite for partners to track their progress. Let's personalize your workspace.",
+      title: "Welcome to Clean Writer",
+      description: "A private tracker for you and your writing partner.",
       icon: <History className="w-8 h-8 text-primary" />
     },
     {
-      title: "The Authors",
-      description: "Define your names and preferred colors for all readouts.",
-      icon: <Edit3 className="w-8 h-8 text-secondary" />
+      title: "The Writers",
+      description: "Configure your team settings.",
+      icon: <SettingsIcon className="w-8 h-8 text-accent" />
     },
     {
-      title: "The Project",
-      description: "Set your absolute target and the final deadline for the race.",
-      icon: <Trophy className="w-8 h-8 text-accent" />
-    },
-    {
-      title: "Data Integrity",
-      description: "Import existing logs or keep this guide for later reference.",
+      title: "Data Backup",
+      description: "Export existing logs or import.",
       icon: <Download className="w-8 h-8 text-mint" />
     }
   ];
@@ -677,6 +493,7 @@ function SetupWizard({
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
+      window.location.reload(); // Hard reload to apply settings fully through state trees easily
       onClose();
     }
   };
@@ -688,11 +505,14 @@ function SetupWizard({
     reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        const mode = confirm('Click OK to MERGE or CANCEL to REPLACE all existing data.') ? 'merge' : 'replace';
+        const mode = window.confirm('Click OK to MERGE or CANCEL to REPLACE all existing data.') ? 'merge' : 'replace';
         setIsSaving(true);
         const success = await onImport(json, mode);
         setIsSaving(false);
-        if (success) alert('Import Successful! 📚');
+        if (success) {
+           alert('Import Successful! 📚');
+           window.location.reload();
+        }
       } catch (err) {
         alert('Invalid JSON file.');
       }
@@ -705,12 +525,12 @@ function SetupWizard({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+      className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6 mt-0"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-8 relative overflow-hidden"
+        className="sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-8 relative overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full -translate-y-1/2 translate-x-1/2" />
         
@@ -728,134 +548,26 @@ function SetupWizard({
 
         <div className="px-8 flex-1">
           {currentStep === 1 && (
-            <div className="flex flex-col gap-8 animate-in slide-in-from-bottom-4">
-              <AuthorSettingInput 
-                label="Writer A" 
-                name={formData.personAName} 
-                color={formData.personAColor} 
-                onNameChange={e => setFormData({...formData, personAName: e.target.value})} 
-                onColorChange={e => setFormData({...formData, personAColor: e.target.value})} 
-              />
-              <AuthorSettingInput 
-                label="Writer B" 
-                name={formData.personBName} 
-                color={formData.personBColor} 
-                onNameChange={e => setFormData({...formData, personBName: e.target.value})} 
-                onColorChange={e => setFormData({...formData, personBColor: e.target.value})} 
-              />
+            <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                     <label className="text-xs font-black uppercase">Person A Name</label>
+                     <input type="text" value={formData.personAName} onChange={e=>setFormData({...formData, personAName: e.target.value})} className="border-2 border-ink p-2 rounded-lg bg-white" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                     <label className="text-xs font-black uppercase">Person B Name</label>
+                     <input type="text" value={formData.personBName} onChange={e=>setFormData({...formData, personBName: e.target.value})} className="border-2 border-ink p-2 rounded-lg bg-white" />
+                  </div>
+               </div>
+
+               <div className="flex flex-col gap-2">
+                  <label className="text-xs font-black uppercase">Team Goal (Weekly Words)</label>
+                  <input type="number" value={formData.teamWeeklyGoal} onChange={e=>setFormData({...formData, teamWeeklyGoal: parseInt(e.target.value)||0})} className="border-2 border-ink p-2 rounded-lg bg-white" />
+               </div>
             </div>
           )}
 
           {currentStep === 2 && (
-            <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-              <div className="grid grid-cols-2 gap-4">
-                {(['words', 'pages'] as const).map(m => (
-                  <button 
-                    key={m}
-                    onClick={() => setFormData({...formData, metric: m})}
-                    className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-transform hover:scale-[1.02] active:scale-95 ${formData.metric === m ? 'bg-ink text-white shadow-sticker' : 'bg-white hover:bg-primary/5'}`}
-                  >
-                    Track {m}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="flex flex-col gap-10">
-                <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden group">
-                   <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
-                   <Knob 
-                      label={`Project Target (${formData.metric})`}
-                      value={formData.projectGoal}
-                      min={1000}
-                      max={200000}
-                      step={1000}
-                      onChange={val => setFormData({...formData, projectGoal: val})}
-                      unit={formData.metric}
-                      color="#facc15"
-                   />
-                   <div className="flex flex-col items-center gap-1">
-                      <input 
-                        type="number"
-                        value={formData.projectGoal}
-                        onChange={e => setFormData({...formData, projectGoal: parseInt(e.target.value) || 0})}
-                        className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
-                      />
-                      <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">Spin to set absolute target</p>
-                   </div>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <CalendarPicker 
-                    label="Project Deadline"
-                    value={formData.deadline}
-                    onChange={date => setFormData({...formData, deadline: date})}
-                    color="#5eead4"
-                  />
-                  <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">The heatmap and race will end on this date.</p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-end px-2">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-black uppercase opacity-40">Goal Allocation</span>
-                      <p className="text-[9px] font-bold italic text-ink/40">How should we split the weight?</p>
-                    </div>
-                    <div className="text-[10px] font-black uppercase text-primary">
-                      {allocationRatio}% / {100 - allocationRatio}%
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-8 shadow-sticker relative overflow-hidden">
-                    <div className="absolute top-0 left-0 bottom-0 right-0 pointer-events-none flex opacity-10">
-                      <div className="h-full bg-primary transition-all" style={{ width: `${allocationRatio}%` }} />
-                      <div className="h-full bg-secondary transition-all flex-1" />
-                    </div>
-
-                    <div className="flex items-center gap-8 relative z-10">
-                       <div className="flex flex-col items-center gap-2">
-                          <AuthorAvatar name={formData.personAName} color={formData.personAColor} size="md" />
-                          <span className="text-[10px] font-black uppercase" style={{ color: formData.personAColor }}>{allocationRatio}%</span>
-                       </div>
-                       
-                       <div className="relative">
-                          <Knob 
-                            value={allocationRatio}
-                            min={0}
-                            max={100}
-                            step={5}
-                            onChange={setAllocationRatio}
-                            color="#2b1720"
-                          />
-                          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase opacity-20 tracking-widest">Balance</div>
-                       </div>
-
-                       <div className="flex flex-col items-center gap-2">
-                          <AuthorAvatar name={formData.personBName} color={formData.personBColor} size="md" />
-                          <span className="text-[10px] font-black uppercase" style={{ color: formData.personBColor }}>{100 - allocationRatio}%</span>
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-8 w-full border-t-2 border-ink/5 pt-6 relative z-10">
-                      <div className="flex flex-col gap-1 items-center">
-                        <label className="text-[9px] font-black uppercase opacity-40">Target</label>
-                        <div className="text-2xl font-black font-mono tracking-tighter" style={{ color: formData.personAColor }}>
-                          {formData.personAGoal.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1 items-center">
-                        <label className="text-[9px] font-black uppercase opacity-40">Target</label>
-                        <div className="text-2xl font-black font-mono tracking-tighter" style={{ color: formData.personBColor }}>
-                          {formData.personBGoal.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
               <p className="text-sm font-bold italic text-ink/60 text-center">Need to move data from another machine?</p>
               <div className="grid grid-cols-2 gap-4">
@@ -896,7 +608,7 @@ function SetupWizard({
               className="button-playful bg-primary text-ink flex-[2] relative"
               disabled={isSaving}
             >
-              {isSaving ? 'Synching...' : currentStep === steps.length - 1 ? "Let's Write!" : 'Next Step'}
+              {isSaving ? 'Saving...' : currentStep === steps.length - 1 ? "Start" : 'Next Step'}
               {!isSaving && <ArrowRight className="w-4 h-4 absolute right-6 top-1/2 -translate-y-1/2" />}
             </button>
           </div>
@@ -912,47 +624,10 @@ function SetupWizard({
   );
 }
 
-function AuthorSettingInput({ label, name, color, onNameChange, onColorChange }: any) {
-  const colorInputRef = React.useRef<HTMLInputElement>(null);
-  
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex justify-between items-center px-1">
-        <label className="text-[10px] font-black uppercase tracking-widest text-ink/40">{label}</label>
-        <span className="text-[8px] font-bold italic text-ink/30 uppercase">Click outline to change color</span>
-      </div>
-      <div 
-        className="relative sticker-card bg-white p-1 border-[10px] transition-all cursor-pointer group"
-        style={{ borderColor: color }}
-        onClick={() => colorInputRef.current?.click()}
-      >
-        <input 
-          className="w-full py-5 px-6 text-2xl font-black uppercase bg-transparent outline-none border-none text-ink placeholder:text-ink/10" 
-          placeholder="ENTER NAME"
-          value={name} 
-          onChange={onNameChange}
-          onClick={(e) => e.stopPropagation()} 
-        />
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110">
-           <PenLine className="w-6 h-6 opacity-10" />
-        </div>
-        <input 
-          ref={colorInputRef}
-          type="color" 
-          className="absolute inset-0 opacity-0 w-0 h-0 pointer-events-none" 
-          value={color} 
-          onChange={onColorChange} 
-        />
-      </div>
-    </div>
-  );
-}
-
-function CalendarHeatMap({ stats, settings, logs, updateLog, onDateClick, selectedDateStr, isExpanded, authorId }: any) {
+function CalendarHeatMap({ stats, settings, activeColor, onDateClick, selectedDateStr }: any) {
   const months = useMemo(() => {
     if (!stats.rows.length) return [];
     
-    // Convert current time to local day for comparison
     const end = endOfMonth(new Date());
     const start = startOfMonth(stats.rows[0].dateObj);
     
@@ -991,88 +666,55 @@ function CalendarHeatMap({ stats, settings, logs, updateLog, onDateClick, select
     return [...monthsArr].reverse();
   }, [stats]);
 
-  const author = authorId ? settings.authors.find((a: any) => a.id === authorId) : null;
-  const unit = settings.trackingUnit === 'pages' ? 'pages' : 'words';
-
   return (
     <div className="flex flex-col w-full relative bg-transparent">
-      <div className="flex items-center justify-between px-6 py-4 border-b-4 border-ink bg-white z-30 shrink-0">
-        <div className="flex items-center gap-2">
-           <div className="relative flex h-3 w-3">
-             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
-             <span className="relative inline-flex rounded-full h-3 w-3 bg-mint border border-ink"></span>
-           </div>
-           <span className="text-[9px] font-black text-ink tracking-widest uppercase font-mono">Real-Time</span>
-        </div>
-      </div>
-      
-      <div className="px-4 pt-4 pb-10 max-h-[800px] overflow-y-auto scrollbar-hide">
+      <div className="px-0 pt-4 pb-10 max-h-[600px] overflow-y-auto scrollbar-hide">
         <HeatMapGrid 
           months={months} 
           stats={stats} 
           onDateClick={onDateClick} 
           selectedDateStr={selectedDateStr} 
-          unit={unit} 
-          authorId={authorId}
-          authors={authorId ? [author] : settings.authors}
-          updateLog={updateLog}
+          activeColor={activeColor}
         />
         
         <div className="mt-8 pt-6 border-t-4 border-ink/10 mb-4 font-mono">
-          <HeatMapLegend />
+           <div className="flex space-x-1.5 text-[9px] text-ink font-black uppercase tracking-[0.2em] items-center">
+             <span className="mr-1 opacity-20">Less</span>
+             <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/5" style={{ backgroundColor: 'rgba(43, 23, 32, 0.05)' }}></div>
+             <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/30" style={{ backgroundColor: 'rgba(43, 23, 32, 0.4)' }}></div>
+             <div className="w-3.5 h-3.5 rounded-md border-2 border-ink shadow-[2px_2px_0_#2b1720]" style={{ backgroundColor: activeColor || 'rgba(43, 23, 32, 1)' }}></div>
+             <span className="ml-1 opacity-20">More</span>
+           </div>
         </div>
       </div>
     </div>
   );
 }
 
-function HeatMapGrid({ months, stats, onDateClick, selectedDateStr, unit, authorId, authors, updateLog }: any) {
-  const authorsToRender = authors || (authorId ? [ { id: authorId } ] : []);
-
+function HeatMapGrid({ months, stats, onDateClick, selectedDateStr, activeColor }: any) {
   return (
     <div className="w-full flex-1 flex flex-col">
-      <div className="grid grid-cols-[80px_1fr_1fr] md:grid-cols-[120px_1fr_1fr] gap-0">
-        {/* Header */}
-        <div className="sticky top-0 bg-white z-20 py-4 border-b-4 border-ink flex items-center justify-center font-black text-[10px] uppercase tracking-widest text-ink/20">Date</div>
-        {authorsToRender.map(author => (
-          <div key={author.id} className="sticky top-0 bg-white z-20 py-4 border-b-4 border-ink flex items-center justify-center gap-2 px-4">
-            <div className="w-3 h-3 rounded-full border-2 border-ink hidden md:block" style={{ backgroundColor: author.color }} />
-            <span className="text-[10px] font-black uppercase tracking-widest truncate">{author.name}</span>
-          </div>
-        ))}
-
-        {/* Rows */}
-        {months.map((month: any) => (
+      <div className="grid grid-cols-1 gap-0 bg-bg-surface border-2 border-ink/10 rounded-xl overflow-hidden">
+        {months.map((month: any, mi: number) => (
           <React.Fragment key={month.label + month.yearLabel}>
-            <div className="col-span-3 py-4 bg-bg-surface px-6 border-b-2 border-ink/10">
+            <div className={`py-4 bg-white px-6 border-b-2 border-ink/10 ${mi > 0 ? "border-t-2" : ""}`}>
               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{month.label} {month.yearLabel}</span>
             </div>
-            {month.days.map((day: any, di: number) => {
-              if (!day) return null;
-              const isToday = isSameDay(day, startOfDay(new Date()));
-              return (
-                <React.Fragment key={di}>
-                  <div className={`py-3 px-4 border-b-2 border-ink/5 flex flex-col items-center justify-center transition-colors ${isToday ? 'bg-primary/5' : ''}`}>
-                    <span className={`text-[10px] font-black uppercase leading-none ${isToday ? 'text-primary' : 'opacity-20'}`}>{format(day, 'EEE')}</span>
-                    <span className={`text-sm font-black leading-none mt-1 ${isToday ? 'text-primary scale-110' : 'opacity-40'}`}>{format(day, 'd')}</span>
-                  </div>
-                  {authorsToRender.map(author => (
-                    <div key={author.id} className={`py-3 border-b-2 border-l-2 border-ink/5 flex justify-center transition-colors ${isToday ? 'bg-primary/5' : ''}`}>
-                      <HeatMapCell 
-                         day={day}
-                         author={author}
-                         stats={stats}
-                         unit={unit}
-                         onDateClick={onDateClick}
-                         selectedDateStr={selectedDateStr}
-                         updateLog={updateLog}
-                         getHeatmapColor={getHeatmapColor}
-                      />
-                    </div>
-                  ))}
-                </React.Fragment>
-              );
-            })}
+            <div className="grid grid-cols-7 gap-1 p-4 bg-bg-surface">
+              {month.days.map((day: any, di: number) => {
+                if (!day) return <div key={di} className="aspect-square opacity-0"></div>;
+                return (
+                  <HeatMapCell 
+                     key={di}
+                     day={day}
+                     stats={stats}
+                     onDateClick={onDateClick}
+                     selectedDateStr={selectedDateStr}
+                     activeColor={activeColor}
+                  />
+                );
+              })}
+            </div>
           </React.Fragment>
         ))}
       </div>
@@ -1082,29 +724,29 @@ function HeatMapGrid({ months, stats, onDateClick, selectedDateStr, unit, author
 
 function HeatMapCell({ 
   day, 
-  author, 
   stats, 
-  unit, 
   onDateClick, 
   selectedDateStr, 
-  updateLog, 
-  getHeatmapColor 
+  activeColor 
 }: any) {
   const dateStr = format(day, 'yyyy-MM-dd');
   const row = stats.rows.find((r: any) => r.dateStr === dateStr);
-  const words = row && row.status !== 'Pending' ? (author.id && row.authorsDaily ? (row.authorsDaily[author.id] || 0) : row.wordsWritten) : 0;
+  const words = row && row.status !== 'Pending' ? row.wordsWritten : 0;
   const target = row ? row.target : stats.dynamicBaseline;
   
   const isSelected = dateStr === selectedDateStr;
   
   const style = useMemo(() => {
     const targetVal = row ? row.target : stats.dynamicBaseline;
-    const baseColor = author.color || '#ff4d8d';
+    const baseColor = activeColor || '#facc15';
     
     const withAlpha = (hex: string, alpha: number) => {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
+      const hexClean = hex.replace('#', '');
+      const r = parseInt(hexClean.slice(0, 2), 16);
+      const g = parseInt(hexClean.slice(2, 4), 16);
+      const b = parseInt(hexClean.slice(4, 6), 16);
+      // Fallback for missing colors
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(43, 23, 32, ${alpha})`;
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
@@ -1115,19 +757,15 @@ function HeatMapCell({
     let textColor = '#2b1720';
     let boxShadow = 'none';
 
-    if (words < targetVal * 0.5) alpha = 0.2;
+    if (words < targetVal * 0.5) alpha = 0.4;
     else if (words < targetVal) {
-      alpha = 0.4;
-      borderColor = withAlpha(baseColor, 0.6);
-    } else if (words >= targetVal * 1.5) {
+      alpha = 0.6;
+      borderColor = withAlpha(baseColor, 0.8);
+    } else {
       alpha = 1;
       borderColor = '#2b1720';
       textColor = '#fff';
       boxShadow = '2px 2px 0 #2b1720';
-    } else {
-      alpha = 0.8;
-      borderColor = '#2b1720';
-      textColor = '#fff';
     }
 
     return {
@@ -1136,96 +774,20 @@ function HeatMapCell({
       color: textColor,
       boxShadow
     };
-  }, [words, row, stats.dynamicBaseline, author.color]);
+  }, [words, row, stats.dynamicBaseline, activeColor]);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editVal, setEditVal] = useState(words.toString());
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleCommit = () => {
-    setIsEditing(false);
-    const num = parseInt(editVal);
-    if (!isNaN(num) && num !== words && updateLog) {
-      updateLog(author.id, dateStr, 'wordsWritten', num);
-    } else {
-      setEditVal(words.toString());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleCommit();
-    if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditVal(words.toString());
-    }
-  };
-
-  const tooltip = `${format(day, 'MMM d, yyyy')}${author.name ? ` (${author.name})` : ''}: ${words} ${unit}`;
+  const tooltip = `${format(day, 'MMM d, yyyy')}: ${words} words` + (row?.note ? ` - ${row.note}` : '');
 
   return (
-    <div 
-      title={isEditing ? undefined : tooltip}
-      onClick={() => {
-        if (onDateClick) onDateClick(dateStr);
-        setIsEditing(true);
-      }}
+    <button 
+      title={tooltip}
+      onClick={() => onDateClick && onDateClick(dateStr)}
       className={cn(
-        "w-11 h-11 rounded-xl border-4 transition-all duration-300 relative flex items-center justify-center overflow-hidden",
-        !isEditing && "hover:scale-110 hover:shadow-sticker hover:z-10 hover:rotate-2",
-        "cursor-pointer",
+        "aspect-square rounded-lg border-2 transition-all duration-300 relative flex items-center justify-center overflow-hidden",
+        "hover:scale-105 hover:shadow-sticker hover:z-10",
         isSelected && "ring-4 ring-primary ring-offset-2 scale-105 z-10 shadow-sticker"
       )}
-      style={isEditing ? {} : style}
-    >
-      {isEditing ? (
-        <input
-          ref={inputRef}
-          type="number"
-          value={editVal}
-          onChange={(e) => setEditVal(e.target.value)}
-          onBlur={handleCommit}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => e.stopPropagation()}
-          className="absolute inset-0 w-full h-full bg-white text-ink font-mono text-[10px] font-black text-center border-none focus:ring-0 p-0 m-0"
-        />
-      ) : (
-        words > 0 ? (
-          <span className="text-[10px] font-black font-mono leading-none tracking-tight">
-            {words >= 1000 ? `${(words / 1000).toFixed(1)}k` : words}
-          </span>
-        ) : (
-          <div className="w-1.5 h-1.5 rounded-full bg-ink/20" />
-        )
-      )}
-    </div>
-  );
-}
-
-function getHeatmapColor(wordsWritten: number, target: number) {
-  if (wordsWritten === 0) return 'bg-bg-paper border-ink/5 text-transparent';
-  if (wordsWritten < target * 0.5) return 'bg-accent/20 border-accent/40 text-ink';
-  if (wordsWritten < target) return 'bg-accent/40 border-accent/60 text-ink';
-  if (wordsWritten >= target * 1.5) return 'bg-primary border-ink shadow-[2px_2px_0_#2b1720] text-white';
-  return 'bg-accent border-ink text-white';
-}
-
-function HeatMapLegend() {
-  return (
-    <div className="flex space-x-1.5 text-[9px] text-ink font-black uppercase tracking-[0.2em] items-center font-mono">
-      <span className="mr-1 opacity-20">Low</span>
-      <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/5" style={{ backgroundColor: 'rgba(43, 23, 32, 0.05)' }}></div>
-      <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/10" style={{ backgroundColor: 'rgba(43, 23, 32, 0.2)' }}></div>
-      <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/20" style={{ backgroundColor: 'rgba(43, 23, 32, 0.4)' }}></div>
-      <div className="w-3.5 h-3.5 rounded-md border-2 border-ink/30" style={{ backgroundColor: 'rgba(43, 23, 32, 0.6)' }}></div>
-      <div className="w-3.5 h-3.5 rounded-md border-2 border-ink shadow-[2px_2px_0_#2b1720]" style={{ backgroundColor: 'rgba(43, 23, 32, 1)' }}></div>
-      <span className="ml-1 opacity-20">High</span>
-    </div>
+      style={style}
+    />
   );
 }

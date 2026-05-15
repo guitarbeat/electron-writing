@@ -92,68 +92,46 @@ Example:
 }
 ```
 
-## Firestore Shape
+## Database Stack
 
-Recommended Firestore structure:
+- **Database:** PostgreSQL (Neon)
+- **ORM:** Drizzle ORM
+- **Migration Tool:** Drizzle Kit
 
-```text
-cleanWriter/
-  app/
-    settings/
-      main
-    entries/
-      2026-05-15
-      2026-05-16
-      2026-05-17
+## Entry Model (SQL)
+
+```ts
+// src/db/schema.ts
+export const entries = pgTable("entries", {
+  id: text("id").primaryKey(), // date string: YYYY-MM-DD
+  date: text("date").notNull(), 
+  words: integer("words").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 ```
 
-Alternative simpler structure:
+## Settings Model (SQL)
 
-```text
-settings/
-  main
-
-entries/
-  2026-05-15
-  2026-05-16
-  2026-05-17
+```ts
+// src/db/schema.ts
+export const settings = pgTable("settings", {
+  id: text("id").primaryKey(), // "global"
+  name: text("name").notNull().default("Writer"),
+  color: text("color").notNull().default("#facc15"),
+  goalsEnabled: boolean("goals_enabled").notNull().default(true),
+  metric: text("metric").notNull().default("words"),
+  projectGoal: integer("project_goal").notNull().default(50000),
+  deadline: text("deadline").notNull().default("2026-12-31"),
+  activityThresholds: jsonb("activity_thresholds").notNull().$type<number[]>().default([250, 750, 1500]),
+  defaultChartView: text("default_chart_view").notNull().default("daily"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 ```
 
-Use the date as the document ID for entries. This makes one-entry-per-day behavior easy.
+## Storage Architecture
 
-## SQL Shape
-
-If using a SQL database instead:
-
-```sql
-create table entries (
-  id text primary key,
-  date date not null unique,
-  aaron_words integer not null default 0,
-  electra_words integer not null default 0,
-  note text,
-  created_at timestamp not null default now(),
-  updated_at timestamp not null default now()
-);
-
-create table settings (
-  id text primary key default 'main',
-  person_a_name text not null default 'Aaron',
-  person_b_name text not null default 'Electra',
-  person_a_color text not null default '#ff4d8d',
-  person_b_color text not null default '#7c3aed',
-  team_color text not null default '#2b1720',
-  goals_enabled boolean not null default true,
-  individual_goals_enabled boolean not null default false,
-  team_weekly_goal integer,
-  person_a_weekly_goal integer,
-  person_b_weekly_goal integer,
-  activity_thresholds jsonb not null default '[250, 750, 1500]',
-  default_chart_view text not null default 'daily',
-  default_grid_view text not null default 'team',
-  updated_at timestamp not null default now()
-);
-```
+We use a SQL database (PostgreSQL) hosted on Neon. The schema is managed via Drizzle ORM.
 
 ## Derived Values
 

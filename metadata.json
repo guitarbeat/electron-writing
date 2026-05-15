@@ -1,5 +1,5 @@
 {
   "name": "Smeemo",
-  "description": "A private duo Writing Tracker with shared passcode entry, Firestore persistence, and writing momentum visualizations.",
+  "description": "A private duo Writing Tracker with shared passcode entry, PostgreSQL persistence, and writing momentum visualizations.",
   "requestFramePermissions": []
 }

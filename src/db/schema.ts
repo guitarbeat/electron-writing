@@ -1,0 +1,29 @@
+import { pgTable, text, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+
+export const entries = pgTable("entries", {
+  id: text("id").primaryKey(), // date string
+  date: text("date").notNull(), 
+  aaronWords: integer("aaron_words").notNull().default(0),
+  electraWords: integer("electra_words").notNull().default(0),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const settings = pgTable("settings", {
+  id: text("id").primaryKey(), // "global"
+  personAName: text("person_a_name").notNull().default("Aaron"),
+  personBName: text("person_b_name").notNull().default("Electra"),
+  personAColor: text("person_a_color").notNull().default("#ff4d8d"),
+  personBColor: text("person_b_color").notNull().default("#7c3aed"),
+  teamColor: text("team_color").notNull().default("#2b1720"),
+  goalsEnabled: boolean("goals_enabled").notNull().default(true),
+  individualGoalsEnabled: boolean("individual_goals_enabled").notNull().default(false),
+  teamWeeklyGoal: integer("team_weekly_goal").notNull().default(7000),
+  personAWeeklyGoal: integer("person_a_weekly_goal").notNull().default(3500),
+  personBWeeklyGoal: integer("person_b_weekly_goal").notNull().default(3500),
+  activityThresholds: jsonb("activity_thresholds").notNull().$type<number[]>().default([250, 750, 1500]),
+  defaultChartView: text("default_chart_view").notNull().default("daily"),
+  defaultGridView: text("default_grid_view").notNull().default("team"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

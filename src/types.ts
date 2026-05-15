@@ -3,6 +3,7 @@ export interface Entry {
   date: string;
   aaronWords: number;
   electraWords: number;
+  note?: string;
   createdAt: any;
   updatedAt: any;
 }
@@ -15,11 +16,9 @@ export interface Settings {
   teamColor: string;
   goalsEnabled: boolean;
   individualGoalsEnabled: boolean;
-  metric: 'words' | 'pages';
-  projectGoal: number;
-  personAGoal: number;
-  personBGoal: number;
-  deadline: string;
+  teamWeeklyGoal: number;
+  personAWeeklyGoal: number;
+  personBWeeklyGoal: number;
   activityThresholds: number[];
   defaultChartView: 'daily' | 'weekly' | 'cumulative';
   defaultGridView: 'team' | 'personA' | 'personB';

@@ -144,7 +144,7 @@ Acceptance criteria:
 ### Must Have
 
 - Shared passcode gate
-- Hosted database persistence
+- Hosted database persistence (PostgreSQL)
 - Quick log form
 - Edit/delete entries
 - Line chart with Aaron, Electra, Team
