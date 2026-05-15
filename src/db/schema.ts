@@ -29,4 +29,5 @@ export const settings = pgTable("settings", {
   projectGoal: integer("project_goal").notNull().default(50000),
   deadline: text("deadline").notNull().default("2026-12-31"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastModifiedBy: text("last_modified_by").notNull().default("System"),
 });

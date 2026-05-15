@@ -9,8 +9,11 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg-paper flex items-center justify-center">
-        <div className="text-display text-2xl animate-pulse">Initializing...</div>
+      <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
+        <div className="text-display text-2xl animate-pulse">Waking up Smeemo...</div>
+        <p className="text-[10px] font-black uppercase text-ink/40 tracking-widest text-center max-w-xs">
+          The database server is spinning up. This can take a few seconds if it hasn't been used in a while.
+        </p>
       </div>
     );
   }

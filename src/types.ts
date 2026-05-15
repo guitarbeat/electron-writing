@@ -26,6 +26,7 @@ export interface Settings {
   projectGoal: number;
   deadline: string;
   updatedAt: any;
+  lastModifiedBy?: string;
 }
 
 export enum OperationType {

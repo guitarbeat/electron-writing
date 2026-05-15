@@ -173,6 +173,12 @@ export function Dashboard() {
           </div>
 
           <div className="flex items-center gap-4">
+            {settings?.updatedAt && (
+              <div className="text-[10px] font-black uppercase text-ink/40 tracking-widest text-right">
+                LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}:<br/>
+                {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
             <button
               onClick={() => setShowGuide(true)}
               className="button-playful bg-white text-ink text-xs px-5 py-3 flex items-center gap-2"
@@ -265,10 +271,26 @@ export function Dashboard() {
 
               {/* Stats Overview */}
               <div className="grid grid-cols-2 gap-4">
-                <MiniStatCard label={`Today's ${settings?.personAName}`} value={stats.todayAaron} hexColor={settings?.personAColor || "#ff4d8d"} />
-                <MiniStatCard label={`Today's ${settings?.personBName}`} value={stats.todayElectra} hexColor={settings?.personBColor || "#7c3aed"} />
-                <MiniStatCard label="Today" value={stats.todayTeam} hexColor={settings?.teamColor || "#2b1720"} textColor="#fff" />
-                <MiniStatCard label="Active Days" value={stats.activeDays} color="bg-mint" />
+                <MiniStatCard 
+                   label={`Today's ${settings?.personAName}`} 
+                   value={stats.todayAaron} 
+                   hexColor={settings?.personAColor || "#ff4d8d"} 
+                   onColorChange={(color) => updateSettings({ personAColor: color })}
+                />
+                <MiniStatCard 
+                   label={`Today's ${settings?.personBName}`} 
+                   value={stats.todayElectra} 
+                   hexColor={settings?.personBColor || "#7c3aed"} 
+                   onColorChange={(color) => updateSettings({ personBColor: color })}
+                />
+                <MiniStatCard 
+                   label="Today" 
+                   value={stats.todayTeam} 
+                   hexColor={settings?.teamColor || "#2b1720"} 
+                   textColor="#fff" 
+                   onColorChange={(color) => updateSettings({ teamColor: color })}
+                />
+                <MiniStatCard label="Active Days" value={stats.activeDays} hexColor="#5eead4" />
               </div>
 
               {/* Goals */}
@@ -280,6 +302,7 @@ export function Dashboard() {
                       target={settings?.projectGoal || 50000}
                       color={settings?.teamColor || "#2b1720"}
                       textColor={"#ffffff"}
+                      onColorChange={(color) => updateSettings({ teamColor: color })}
                    />
                  </div>
                )}
@@ -389,22 +412,81 @@ export function Dashboard() {
   );
 }
 
-function MiniStatCard({ label, value, color, hexColor, textColor = '#2b1720' }: { label: string, value: number, color?: string, hexColor?: string, textColor?: string }) {
+function LongPressColorArea({ color, onColorChange, children, className, style }: any) {
+  const colorInputRef = React.useRef<HTMLInputElement>(null);
+  const timerRef = React.useRef<any>(null);
+
+  const startPress = React.useCallback((e: React.SyntheticEvent) => {
+    if (!onColorChange) return;
+    timerRef.current = setTimeout(() => {
+      if (colorInputRef.current) {
+         colorInputRef.current.style.pointerEvents = 'auto';
+         colorInputRef.current.click();
+      }
+    }, 500);
+  }, [onColorChange]);
+
+  const endPress = React.useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
   return (
     <div 
+       className={cn("relative group", className)} 
+       style={style}
+       onMouseDown={startPress}
+       onMouseUp={endPress}
+       onMouseLeave={endPress}
+       onTouchStart={startPress}
+       onTouchEnd={endPress}
+       onContextMenu={(e) => {
+           if (onColorChange) {
+             e.preventDefault();
+             if (colorInputRef.current) colorInputRef.current.click();
+           }
+       }}
+    >
+       {children}
+       {onColorChange && (
+          <>
+            <input 
+              ref={colorInputRef}
+              type="color" 
+              value={color || '#ffffff'}
+              onChange={e => {
+                  onColorChange(e.target.value);
+                  if (colorInputRef.current) colorInputRef.current.style.pointerEvents = 'none';
+              }}
+              onBlur={() => {
+                  if (colorInputRef.current) colorInputRef.current.style.pointerEvents = 'none';
+              }}
+              className="opacity-0 absolute w-full h-full inset-0 pointer-events-none"
+            />
+            <div className="absolute -bottom-2 right-2 text-[8px] font-black italic text-ink/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none uppercase bg-white/50 px-1 rounded">Hold for color</div>
+          </>
+       )}
+    </div>
+  );
+}
+
+function MiniStatCard({ label, value, color, hexColor, textColor = '#2b1720', onColorChange }: { label: string, value: number, color?: string, hexColor?: string, textColor?: string, onColorChange?: (c: string) => void }) {
+  return (
+    <LongPressColorArea 
+      color={hexColor} 
+      onColorChange={onColorChange}
       className={cn("sticker-card p-4 bg-white flex flex-col items-center justify-center text-center gap-1 transition-transform")}
       style={hexColor ? { backgroundColor: hexColor, borderColor: '#2b1720' } : {}}
     >
       <p className="text-[10px] font-black uppercase opacity-60 tracking-widest" style={{ color: textColor }}>{label}</p>
       <p className="text-display text-2xl" style={{ color: textColor }}>{value}</p>
-    </div>
+    </LongPressColorArea>
   );
 }
 
-function GoalCard({ title, progress, target, color, textColor = '#2b1720' }: { title: string, progress: number, target: number, color: string, textColor?: string }) {
+function GoalCard({ title, progress, target, color, textColor = '#2b1720', onColorChange }: { title: string, progress: number, target: number, color: string, textColor?: string, onColorChange?: (c: string) => void }) {
    const percent = Math.min(100, (progress / (target || 1)) * 100);
    return (
-     <div className="sticker-card p-4 bg-white flex flex-col gap-3">
+     <LongPressColorArea color={color} onColorChange={onColorChange} className="sticker-card p-4 bg-white flex flex-col gap-3">
        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
          <span>{title}</span>
          <Trophy className="w-4 h-4" />
@@ -421,7 +503,7 @@ function GoalCard({ title, progress, target, color, textColor = '#2b1720' }: { t
          <span>{progress}</span>
          <span>{target}</span>
        </div>
-     </div>
+     </LongPressColorArea>
    );
 }
 
@@ -607,7 +689,7 @@ function SetupWizard({
 
   const handleSave = async (isSkip = false) => {
     setIsSaving(true);
-    const finalData = { ...formData };
+    const finalData = { ...formData, lastModifiedBy: "A Writer" };
     if (isSkip || currentStep === steps.length - 1) {
       finalData.isSetupComplete = true;
     }
