@@ -134,9 +134,17 @@ export function useTracker() {
   }, [checkSession]);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
     if (isAuthorized) {
       fetchEntries();
       fetchSettings();
+      interval = setInterval(() => {
+        fetchEntries();
+        fetchSettings();
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
     }
   }, [isAuthorized, fetchEntries, fetchSettings]);
 

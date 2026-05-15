@@ -13,7 +13,7 @@ import "dotenv/config";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SESSION_SECRET = process.env.CLEAN_WRITER_PASSCODE || "temporary-fallback-secret-for-dev";
+const SESSION_SECRET = process.env.PASSCODE || "temporary-fallback-secret-for-dev";
 const COOKIE_NAME = "clean_writer_session";
 
 async function startServer() {
@@ -48,7 +48,7 @@ async function startServer() {
   // Session
   app.post("/api/session", (req, res) => {
     const { passcode } = req.body;
-    const expectedPasscode = process.env.CLEAN_WRITER_PASSCODE || "0000"; // Default for easier recovery
+    const expectedPasscode = process.env.PASSCODE || "0000"; // Default for easier recovery
     if (passcode === expectedPasscode) {
       const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
       res.cookie(COOKIE_NAME, token, {

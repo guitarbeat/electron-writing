@@ -15,7 +15,7 @@ Each route should verify a shared passcode/session before reading or writing dat
 ## Environment Variables
 
 ```bash
-CLEAN_WRITER_PASSCODE=your-shared-passcode
+PASSCODE=your-shared-passcode
 DATABASE_URL=postgresql://...
 ```
 
@@ -39,7 +39,7 @@ Recommended:
 
 Simpler MVP:
 - Frontend sends passcode in request header.
-- API route compares it to `CLEAN_WRITER_PASSCODE`.
+- API route compares it to `PASSCODE`.
 
 For better privacy, prefer the session cookie approach.
 

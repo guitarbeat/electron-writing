@@ -57,10 +57,13 @@ export function Dashboard() {
   const stats = useMemo(() => calculateTrackerStats(entries, settings), [entries, settings]);
   const chartData = useMemo(() => getChartData(entries, chartView), [entries, chartView]);
 
+  const initializedRef = React.useRef(false);
+
   useEffect(() => {
-    if (settings) {
+    if (settings && !initializedRef.current) {
       if (settings.defaultChartView) setChartView(settings.defaultChartView as any);
       if (settings.defaultGridView) setGridView(settings.defaultGridView as any);
+      initializedRef.current = true;
     }
   }, [settings]);
 
@@ -70,19 +73,37 @@ export function Dashboard() {
     }
   }, [settings?.isSetupComplete, isLoading, isAuthorized, settings]);
 
+  const [currentLogDateInForm, setCurrentLogDateInForm] = useState(logDate);
+
   // Sync form with selected logDate
   useEffect(() => {
+    const isNewDate = currentLogDateInForm !== logDate;
+    if (isNewDate) {
+      setCurrentLogDateInForm(logDate);
+    }
+    
     const existing = entries.find(e => e.date === logDate);
     if (existing) {
-      setAaronInput(existing.aaronWords > 0 ? existing.aaronWords.toString() : '');
-      setElectraInput(existing.electraWords > 0 ? existing.electraWords.toString() : '');
-      setNoteInput(existing.note || '');
+      if (isNewDate) {
+        setAaronInput(existing.aaronWords > 0 ? existing.aaronWords.toString() : '');
+        setElectraInput(existing.electraWords > 0 ? existing.electraWords.toString() : '');
+        setNoteInput(existing.note || '');
+      } else {
+        // If not a new date, only update if the inputs are currently empty/unfocused,
+        // or just let the API update seamlessly if we added polling.
+        // For simplicity, we just safely merge if they aren't typing actively anything different.
+        setAaronInput(prev => (prev === '' && existing.aaronWords > 0) ? existing.aaronWords.toString() : prev);
+        setElectraInput(prev => (prev === '' && existing.electraWords > 0) ? existing.electraWords.toString() : prev);
+        setNoteInput(prev => (prev === '' && existing.note) ? existing.note : prev);
+      }
     } else {
-      setAaronInput('');
-      setElectraInput('');
-      setNoteInput('');
+      if (isNewDate) {
+        setAaronInput('');
+        setElectraInput('');
+        setNoteInput('');
+      }
     }
-  }, [logDate, entries]);
+  }, [logDate, entries, currentLogDateInForm]);
 
   const handleSaveLog = async (e: React.FormEvent) => {
     e.preventDefault();
