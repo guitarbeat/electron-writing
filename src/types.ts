@@ -16,12 +16,15 @@ export interface Settings {
   teamColor: string;
   goalsEnabled: boolean;
   individualGoalsEnabled: boolean;
-  teamWeeklyGoal: number;
   personAWeeklyGoal: number;
   personBWeeklyGoal: number;
   activityThresholds: number[];
   defaultChartView: 'daily' | 'weekly' | 'cumulative';
   defaultGridView: 'team' | 'personA' | 'personB';
+  isSetupComplete: boolean;
+  metric: 'words' | 'pages';
+  projectGoal: number;
+  deadline: string;
   updatedAt: any;
 }
 

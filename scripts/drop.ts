@@ -39,6 +39,7 @@ async function run() {
       "activity_thresholds" jsonb DEFAULT '[250, 750, 1500]'::jsonb NOT NULL,
       "default_chart_view" text DEFAULT 'daily' NOT NULL,
       "default_grid_view" text DEFAULT 'team' NOT NULL,
+      "is_setup_complete" boolean DEFAULT false NOT NULL,
       "updated_at" timestamp DEFAULT now() NOT NULL
     )
   `);

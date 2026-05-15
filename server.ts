@@ -169,12 +169,15 @@ async function startServer() {
           teamColor: "#2b1720",
           goalsEnabled: true,
           individualGoalsEnabled: false,
-          teamWeeklyGoal: 7000,
           personAWeeklyGoal: 3500,
           personBWeeklyGoal: 3500,
           activityThresholds: [250, 750, 1500],
           defaultChartView: "daily" as const,
           defaultGridView: "team" as const,
+          isSetupComplete: false,
+          metric: "words" as const,
+          projectGoal: 50000,
+          deadline: "2026-12-31",
           updatedAt: new Date(),
         };
         await db.insert(settings).values(defaults);
@@ -263,11 +266,16 @@ async function startServer() {
         await db.insert(settings).values({
           id: "global",
           ...importSettings,
+          isSetupComplete: true,
           updatedAt: new Date(),
         }).onConflictDoUpdate({
           target: settings.id,
           set: {
             ...importSettings,
+            isSetupComplete: true,
+            metric: importSettings.metric || "words",
+            projectGoal: importSettings.projectGoal || 50000,
+            deadline: importSettings.deadline || "2026-12-31",
             updatedAt: new Date(),
           }
         });

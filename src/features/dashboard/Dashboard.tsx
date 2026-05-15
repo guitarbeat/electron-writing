@@ -10,7 +10,8 @@ import {
   Upload,
   Trophy,
   History,
-  PenLine
+  PenLine,
+  Calendar
 } from 'lucide-react';
 import { useTracker } from '../../hooks/useTracker';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
@@ -64,12 +65,10 @@ export function Dashboard() {
   }, [settings]);
 
   useEffect(() => {
-    const hasSeenGuide = localStorage.getItem('clean_writer_guide_seen');
-    if (!hasSeenGuide && entries.length === 0 && !isLoading && isAuthorized) {
+    if (settings && !settings.isSetupComplete && !isLoading && isAuthorized) {
       setShowGuide(true);
-      localStorage.setItem('clean_writer_guide_seen', 'true');
     }
-  }, [entries.length, isLoading, isAuthorized]);
+  }, [settings?.isSetupComplete, isLoading, isAuthorized, settings]);
 
   // Sync form with selected logDate
   useEffect(() => {
@@ -128,7 +127,7 @@ export function Dashboard() {
 
       if (gridView === 'team') {
         words = entry ? entry.aaronWords + entry.electraWords : 0;
-        target = (settings?.teamWeeklyGoal || 7000) / 7;
+        target = (settings?.projectGoal || 50000) / 100; // placeholder divided daily goal
       } else if (gridView === 'personA') {
         words = entry ? entry.aaronWords : 0;
         target = (settings?.personAWeeklyGoal || 3500) / 7;
@@ -149,13 +148,14 @@ export function Dashboard() {
 
     return { 
       rows, 
-      dynamicBaseline: (settings?.teamWeeklyGoal || 7000) / 7
+      dynamicBaseline: (settings?.projectGoal || 50000) / 100
     };
   }, [entries, settings, gridView]);
 
   if (isLoading) return <div className="min-h-screen bg-bg-paper flex items-center justify-center font-black uppercase tracking-widest text-ink">Loading...</div>;
 
   const currentEntry = entries.find(e => e.date === logDate);
+  const metricLabel = settings?.metric === 'pages' ? 'Pages' : 'Words';
 
   return (
     <div className="min-h-screen bg-bg-paper text-ink font-sans p-4 md:p-8 selection:bg-primary/20 bg-[url('https://www.transparenttextures.com/patterns/felt.png')]">
@@ -165,7 +165,7 @@ export function Dashboard() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-display">Clean Writer</h1>
+              <h1 className="text-display">Smeemo</h1>
             </div>
             <p className="text-sm font-bold opacity-60">
               {settings?.personAName} & {settings?.personBName}'s Tracker
@@ -216,7 +216,7 @@ export function Dashboard() {
 
                    <div className="grid grid-cols-2 gap-4">
                      <div className="flex flex-col gap-1">
-                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personAColor }}>{settings?.personAName} Words</label>
+                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personAColor }}>{settings?.personAName} {metricLabel}</label>
                        <input 
                          type="number"
                          min="0"
@@ -227,7 +227,7 @@ export function Dashboard() {
                        />
                      </div>
                      <div className="flex flex-col gap-1">
-                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personBColor }}>{settings?.personBName} Words</label>
+                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: settings?.personBColor }}>{settings?.personBName} {metricLabel}</label>
                        <input 
                          type="number"
                          min="0"
@@ -267,7 +267,7 @@ export function Dashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <MiniStatCard label={`Today's ${settings?.personAName}`} value={stats.todayAaron} hexColor={settings?.personAColor || "#ff4d8d"} />
                 <MiniStatCard label={`Today's ${settings?.personBName}`} value={stats.todayElectra} hexColor={settings?.personBColor || "#7c3aed"} />
-                <MiniStatCard label="Today's Team" value={stats.todayTeam} hexColor={settings?.teamColor || "#2b1720"} textColor="#fff" />
+                <MiniStatCard label="Today" value={stats.todayTeam} hexColor={settings?.teamColor || "#2b1720"} textColor="#fff" />
                 <MiniStatCard label="Active Days" value={stats.activeDays} color="bg-mint" />
               </div>
 
@@ -275,22 +275,12 @@ export function Dashboard() {
               {settings?.goalsEnabled && (
                  <div className="flex flex-col gap-4">
                    <GoalCard 
-                      title="Team Weekly"
-                      progress={stats.weekTeam}
-                      target={settings?.teamWeeklyGoal || 7000}
+                      title="Project Target"
+                      progress={stats.totalTeam || 0}
+                      target={settings?.projectGoal || 50000}
                       color={settings?.teamColor || "#2b1720"}
                       textColor={"#ffffff"}
                    />
-                   {settings?.individualGoalsEnabled && (
-                     <>
-                        <GoalCard 
-                           title={`${settings?.personAName} Weekly`}
-                           progress={stats.todayAaron} // Wait, we didn't calculate weekly per person. I'll just skip individual progress bar or use a rough estimate. For MVP, we'll just show the team goal mostly.
-                           target={settings?.personAWeeklyGoal || 3500}
-                           color={settings?.personAColor || "#ff4d8d"}
-                        />
-                     </>
-                   )}
                  </div>
                )}
             </div>
@@ -316,8 +306,8 @@ export function Dashboard() {
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 w-full min-h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height={300} minWidth={0} minHeight={0}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
                       <XAxis 
@@ -436,6 +426,128 @@ function GoalCard({ title, progress, target, color, textColor = '#2b1720' }: { t
 }
 
 
+function ProjectSettingsStep({
+  formData,
+  setFormData,
+}: {
+  formData: Settings;
+  setFormData: React.Dispatch<React.SetStateAction<Settings>>;
+}) {
+  return (
+    <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+      <div className="grid grid-cols-2 gap-4">
+        {(["words", "pages"] as const).map((metric) => (
+          <button
+            key={metric}
+            onClick={() => setFormData({ ...formData, metric })}
+            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-transform hover:scale-[1.02] active:scale-95 ${
+              formData.metric === metric
+                ? "bg-ink text-white shadow-sticker"
+                : "bg-white hover:bg-primary/5"
+            }`}
+          >
+            Track {metric}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
+
+        <Knob
+          label={`Project Target (${formData.metric})`}
+          value={formData.projectGoal}
+          min={1000}
+          max={200000}
+          step={1000}
+          onChange={(value) =>
+            setFormData({ ...formData, projectGoal: value })
+          }
+          unit={formData.metric}
+          color="#facc15"
+        />
+
+        <div className="flex flex-col items-center gap-1">
+          <input
+            type="number"
+            value={formData.projectGoal}
+            onChange={(event) =>
+              setFormData({
+                ...formData,
+                projectGoal: parseInt(event.target.value) || 0,
+              })
+            }
+            className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
+          />
+
+          <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">
+            Spin to set absolute target
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <CalendarPicker
+          label="Project Deadline"
+          value={formData.deadline}
+          onChange={(deadline) => setFormData({ ...formData, deadline })}
+          color="#5eead4"
+        />
+
+        <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">
+          The heatmap will end on this date.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+type SetupWizardActionsProps = {
+  currentStep: number;
+  totalSteps: number;
+  isSaving: boolean;
+  onBack: () => void;
+  onNext: () => void;
+};
+
+export function SetupWizardActions({
+  currentStep,
+  totalSteps,
+  isSaving,
+  onBack,
+  onNext,
+}: SetupWizardActionsProps) {
+  const isLastStep = currentStep === totalSteps - 1;
+
+  return (
+    <div className="flex gap-4">
+      {currentStep > 0 && (
+        <button
+          onClick={onBack}
+          className="button-playful bg-white text-ink flex-1"
+          disabled={isSaving}
+        >
+          Back
+        </button>
+      )}
+
+      <button
+        onClick={onNext}
+        className="button-playful bg-primary text-ink flex-[2] relative"
+        disabled={isSaving}
+      >
+        {isSaving ? "Synching..." : isLastStep ? "Let's Write!" : "Next Step"}
+
+        {!isSaving && (
+          <ArrowRight className="w-4 h-4 absolute right-6 top-1/2 -translate-y-1/2" />
+        )}
+      </button>
+    </div>
+  );
+}
+
+import { LongPressInput } from '../../components/ui/LongPressInput';
+
 function SetupWizard({ 
   settings, 
   onClose, 
@@ -455,69 +567,58 @@ function SetupWizard({
     teamColor: '#2b1720',
     goalsEnabled: true,
     individualGoalsEnabled: false,
-    teamWeeklyGoal: 7000,
     personAWeeklyGoal: 3500,
     personBWeeklyGoal: 3500,
     activityThresholds: [250, 750, 1500],
     defaultChartView: 'daily',
     defaultGridView: 'team',
+    isSetupComplete: false,
+    metric: 'words',
+    projectGoal: 50000,
+    deadline: '2026-12-31',
     updatedAt: new Date()
   });
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const steps = [
     {
-      title: "Welcome to Clean Writer",
+      title: "Welcome to Smeemo",
       description: "A private tracker for you and your writing partner.",
       icon: <History className="w-8 h-8 text-primary" />
     },
     {
       title: "The Writers",
-      description: "Configure your team settings.",
+      description: "Configure your team.",
       icon: <SettingsIcon className="w-8 h-8 text-accent" />
     },
     {
-      title: "Data Backup",
-      description: "Export existing logs or import.",
-      icon: <Download className="w-8 h-8 text-mint" />
+      title: "Project Target",
+      description: "What are we aiming for?",
+      icon: <Trophy className="w-8 h-8 text-[#facc15]" />
+    },
+    {
+      title: "Project Deadline",
+      description: "When should we finish?",
+      icon: <Calendar className="w-8 h-8 text-mint" />
     }
   ];
 
-  const handleSave = async () => {
+  const handleSave = async (isSkip = false) => {
     setIsSaving(true);
-    await onSave(formData);
+    const finalData = { ...formData };
+    if (isSkip || currentStep === steps.length - 1) {
+      finalData.isSetupComplete = true;
+    }
+    await onSave(finalData);
     setIsSaving(false);
-    if (currentStep < steps.length - 1) {
+    if (!isSkip && currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      window.location.reload(); // Hard reload to apply settings fully through state trees easily
-      onClose();
+      window.location.reload(); 
+      if (onClose) onClose();
     }
-  };
-
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string);
-        const mode = window.confirm('Click OK to MERGE or CANCEL to REPLACE all existing data.') ? 'merge' : 'replace';
-        setIsSaving(true);
-        const success = await onImport(json, mode);
-        setIsSaving(false);
-        if (success) {
-           alert('Import Successful! 📚');
-           window.location.reload();
-        }
-      } catch (err) {
-        alert('Invalid JSON file.');
-      }
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -550,35 +651,87 @@ function SetupWizard({
           {currentStep === 1 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                     <label className="text-xs font-black uppercase">Person A Name</label>
-                     <input type="text" value={formData.personAName} onChange={e=>setFormData({...formData, personAName: e.target.value})} className="border-2 border-ink p-2 rounded-lg bg-white" />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <label className="text-xs font-black uppercase">Person B Name</label>
-                     <input type="text" value={formData.personBName} onChange={e=>setFormData({...formData, personBName: e.target.value})} className="border-2 border-ink p-2 rounded-lg bg-white" />
-                  </div>
-               </div>
-
-               <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase">Team Goal (Weekly Words)</label>
-                  <input type="number" value={formData.teamWeeklyGoal} onChange={e=>setFormData({...formData, teamWeeklyGoal: parseInt(e.target.value)||0})} className="border-2 border-ink p-2 rounded-lg bg-white" />
+                  <LongPressInput
+                     value={formData.personAName}
+                     onChangeName={(v) => setFormData({...formData, personAName: v})}
+                     color={formData.personAColor}
+                     onChangeColor={(c) => setFormData({...formData, personAColor: c})}
+                     placeholder="Aaron"
+                  />
+                  <LongPressInput
+                     value={formData.personBName}
+                     onChangeName={(v) => setFormData({...formData, personBName: v})}
+                     color={formData.personBColor}
+                     onChangeColor={(c) => setFormData({...formData, personBColor: c})}
+                     placeholder="Electra"
+                  />
                </div>
             </div>
           )}
 
           {currentStep === 2 && (
+             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+               <div className="grid grid-cols-2 gap-4">
+                 {(["words", "pages"] as const).map((metric) => (
+                   <button
+                     key={metric}
+                     onClick={() => setFormData({ ...formData, metric })}
+                     className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-transform hover:scale-[1.02] active:scale-95 ${
+                       formData.metric === metric
+                         ? "bg-ink text-white shadow-sticker"
+                         : "bg-white hover:bg-primary/5"
+                     }`}
+                   >
+                     Track {metric}
+                   </button>
+                 ))}
+               </div>
+
+               <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
+                 <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
+                 <Knob
+                   label={`Project Target (${formData.metric})`}
+                   value={formData.projectGoal}
+                   min={100}
+                   max={formData.metric === 'pages' ? 1000 : 200000}
+                   step={formData.metric === 'pages' ? 10 : 1000}
+                   onChange={(value) =>
+                     setFormData({ ...formData, projectGoal: value })
+                   }
+                   unit={formData.metric}
+                   color="#facc15"
+                 />
+                 <div className="flex flex-col items-center gap-1">
+                   <input
+                     type="number"
+                     value={formData.projectGoal}
+                     onChange={(event) =>
+                       setFormData({
+                         ...formData,
+                         projectGoal: parseInt(event.target.value) || 0,
+                       })
+                     }
+                     className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
+                   />
+                   <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">
+                     Spin to set absolute target
+                   </p>
+                 </div>
+               </div>
+             </div>
+          )}
+
+          {currentStep === 3 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-              <p className="text-sm font-bold italic text-ink/60 text-center">Need to move data from another machine?</p>
-              <div className="grid grid-cols-2 gap-4">
-                 <button onClick={() => window.location.href = '/api/export'} className="button-playful bg-mint text-ink py-4">
-                    <Download className="w-4 h-4 mx-auto mb-1" /> Export
-                 </button>
-                 <button onClick={() => fileInputRef.current?.click()} className="button-playful bg-[#facc15] text-ink py-4">
-                    <Upload className="w-4 h-4 mx-auto mb-1" /> Import
-                 </button>
-                 <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json" />
-              </div>
+              <CalendarPicker
+                label="Project Deadline"
+                value={formData.deadline}
+                onChange={(deadline) => setFormData({ ...formData, deadline })}
+                color="#5eead4"
+              />
+              <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">
+                The heatmap will end on this date.
+              </p>
             </div>
           )}
         </div>
@@ -593,28 +746,16 @@ function SetupWizard({
             ))}
           </div>
 
-          <div className="flex gap-4">
-            {currentStep > 0 && (
-              <button 
-                onClick={() => setCurrentStep(prev => prev - 1)}
-                className="button-playful bg-white text-ink flex-1"
-                disabled={isSaving}
-              >
-                Back
-              </button>
-            )}
-            <button 
-              onClick={handleSave}
-              className="button-playful bg-primary text-ink flex-[2] relative"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : currentStep === steps.length - 1 ? "Start" : 'Next Step'}
-              {!isSaving && <ArrowRight className="w-4 h-4 absolute right-6 top-1/2 -translate-y-1/2" />}
-            </button>
-          </div>
+          <SetupWizardActions 
+             currentStep={currentStep}
+             totalSteps={steps.length}
+             isSaving={isSaving}
+             onBack={() => setCurrentStep(prev => prev - 1)}
+             onNext={() => handleSave(false)}
+          />
           
           {currentStep === 0 && (
-            <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
+            <button onClick={() => handleSave(true)} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
               Skip for now
             </button>
           )}
