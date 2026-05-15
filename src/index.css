@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", "Cooper Black", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Colors from DESIGN.md */
+  --color-primary: #ff4d8d;
+  --color-primary-hover: #e73878;
+  --color-primary-soft: rgba(255, 77, 141, 0.14);
+  --color-secondary: #7c3aed;
+  --color-accent: #facc15;
+  --color-mint: #5eead4;
+  --color-peach: #fed7aa;
+
+  --color-bg-paper: #fff1f5;
+  --color-bg-surface: #fffafc;
+  --color-bg-elevated: #ffffff;
+  --color-bg-pop: #ffe4ef;
+  --color-bg-grid: rgba(255, 77, 141, 0.08);
+  
+  --color-ink: #2b1720;
+  --color-ink-muted: #7b5261;
+  --color-ink-faint: #b98294;
+
+  --radius-card: 32px;
+  --radius-panel: 24px;
+  --radius-button: 16px;
+  --radius-input: 18px;
+  
+  --shadow-sticker: 6px 6px 0 #2b1720;
+  --shadow-sticker-hover: 10px 10px 0 #2b1720;
+  --shadow-sticker-active: 2px 2px 0 #2b1720;
+  --shadow-soft-pop: 0 18px 40px rgba(255, 77, 141, 0.18);
+  --shadow-glow: 0 0 0 6px rgba(255, 77, 141, 0.12);
+  
+  --animate-bounce-soft: bounce-soft 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  @keyframes bounce-soft {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+}
+
+:root {
+  --background: #fff1f5;
+  --foreground: #2b1720;
+  
+  --bg-main: #fff1f5;
+  --bg-surface: #fffafc;
+  --bg-panel: #ffffff;
+  --border: rgba(43, 23, 32, 0.12);
+  --border-strong: #2b1720;
+  
+  --text-primary: #2b1720;
+  --text-secondary: #7b5261;
+}
+
+.dark {
+  --background: #1a0b12;
+  --foreground: #ffffff;
+  
+  --bg-main: #1a0b12;
+  --bg-surface: #2b1720;
+  --bg-panel: #2b1720;
+  --border: rgba(255, 255, 255, 0.18);
+  --border-strong: #ffffff;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #d9b6c4;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  background-image: 
+    radial-gradient(var(--color-bg-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-ink leading-tight;
+  }
+}
+
+@layer utilities {
+  .sticker-card {
+    @apply bg-bg-surface border-4 border-ink rounded-card shadow-sticker transition-all duration-300 outline-none;
+  }
+  
+  .sticker-card:hover {
+    @apply shadow-sticker-hover -translate-x-1 -translate-y-1;
+  }
+
+  .sticker-card:active {
+    @apply shadow-sticker-active translate-x-[4px] translate-y-[4px];
+  }
+
+  .blob-shape {
+    border-radius: 42% 58% 48% 52% / 56% 38% 62% 44%;
+  }
+
+  .text-display {
+    @apply font-display font-[800] text-[calc(2.5rem+2vw)] leading-[0.9] tracking-[-0.05em] text-ink;
+  }
+
+  .text-heading {
+    @apply font-display font-[750] text-[1.45rem] leading-[1.05] tracking-[-0.03em] text-ink;
+  }
+
+  .text-body {
+    @apply font-sans font-[500] text-base leading-[1.65] text-ink;
+  }
+
+  .text-data {
+    @apply font-mono font-[700] text-[2.25rem] leading-none tracking-[-0.035em] text-ink;
+  }
+
+  .text-label {
+    @apply font-sans font-[900] text-[0.72rem] leading-none tracking-[0.12em] uppercase text-ink;
+  }
+
+  .input-playful {
+    @apply bg-bg-surface border-4 border-ink rounded-input px-5 py-3 outline-none transition-all focus:ring-4 focus:ring-primary/20 text-ink font-bold;
+  }
+
+  .button-playful {
+    @apply relative px-8 py-4 font-black rounded-button border-4 border-ink shadow-sticker transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active bg-primary text-white hover:bg-primary-hover uppercase tracking-widest text-sm;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+

@@ -1,11 +1,20 @@
-<div align="center">
+# Clean Writer
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A private two-person writing tracker for logging words, seeing progress, and staying gently motivated.
 
-  <h1>Built with AI Studio</h2>
+## Documentation
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+All project documentation has been moved to the `docs/` directory:
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+- [Product Requirements](docs/PRODUCT.md)
+- [Design Guide](docs/DESIGN.md)
+- [Data Model](docs/DATA_MODEL.md)
+- [API Specification](docs/API.md)
+- [Implementation Notes](docs/IMPLEMENTATION.md)
+- [Project Overview (README)](docs/README.md)
 
-</div>
+## Development
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server

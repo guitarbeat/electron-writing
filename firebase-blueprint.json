@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Entry": {
+      "title": "Daily Writing Entry",
+      "description": "Records word counts for two writers on a specific date.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "ISO date string (YYYY-MM-DD)" },
+        "aaronWords": { "type": "integer", "description": "Words written by Aaron" },
+        "electraWords": { "type": "integer", "description": "Words written by Electra" },
+        "note": { "type": "string", "description": "Optional note about the day" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "aaronWords", "electraWords"]
+    },
+    "Setting": {
+      "title": "Tracker Settings",
+      "description": "Global configuration and goals for the writing tracker.",
+      "type": "object",
+      "properties": {
+        "personAName": { "type": "string" },
+        "personBName": { "type": "string" },
+        "personAColor": { "type": "string" },
+        "personBColor": { "type": "string" },
+        "teamColor": { "type": "string" },
+        "goalsEnabled": { "type": "boolean" },
+        "individualGoalsEnabled": { "type": "boolean" },
+        "teamWeeklyGoal": { "type": "integer" },
+        "personAWeeklyGoal": { "type": "integer" },
+        "personBWeeklyGoal": { "type": "integer" },
+        "activityThresholds": { "type": "object" },
+        "defaultChartView": { "type": "string", "enum": ["daily", "weekly", "cumulative"] },
+        "defaultGridView": { "type": "string", "enum": ["team", "aaron", "electra"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "entries": {
+      "schema": "Entry",
+      "description": "Collection of daily writing logs."
+    },
+    "settings": {
+      "schema": "Setting",
+      "description": "Global application settings (usually a single document)."
+    }
+  }
+}
