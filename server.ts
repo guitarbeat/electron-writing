@@ -27,14 +27,14 @@ export function createApp() {
   const authenticate = (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies[COOKIE_NAME];
     if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return (res as any).status(401).json({ error: "Unauthorized" });
     }
     try {
       jwt.verify(token, APP_PASSCODE as string);
-      next();
+      (next as any)();
     } catch (err) {
-      res.clearCookie(COOKIE_NAME);
-      return res.status(401).json({ error: "Invalid session" });
+      (res as any).clearCookie(COOKIE_NAME);
+      return (res as any).status(401).json({ error: "Invalid session" });
     }
   };
 
@@ -48,12 +48,18 @@ export function createApp() {
   // Session
   app.post("/api/session", (req, res) => {
     const { passcode } = req.body;
-    if (passcode && passcode.toString().trim() === APP_PASSCODE.trim()) {
+    
+    // Debug logging for authentication issues
+    const received = passcode ? passcode.toString().trim() : "MISSING";
+    const expected = APP_PASSCODE.trim();
+    console.log(`AUTH_CHECK: Received=[${received}], Expected=[${expected}], Match=${received === expected}`);
+
+    if (passcode && passcode.toString().trim() === expected) {
       const token = jwt.sign({ authorized: true }, APP_PASSCODE as string, { expiresIn: "30d" });
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true, // Always true for modern browsers/Vercel
+        sameSite: "lax", // Changed from strict for better compatibility
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
       return res.json({ status: "ok" });
