@@ -39,6 +39,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
         {/* Header */}
         <div className="flex justify-between items-center px-2">
           <button 
+            type="button"
             onClick={() => setViewDate(subMonths(viewDate, 1))}
             className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             aria-label="Previous month"
@@ -49,6 +50,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
             {format(viewDate, 'MMMM yyyy')}
           </h4>
           <button 
+            type="button"
             onClick={() => setViewDate(addMonths(viewDate, 1))}
             className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             aria-label="Next month"
@@ -76,7 +78,10 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
             return (
               <button
                 key={i}
+                type="button"
                 onClick={() => onChange(format(day, 'yyyy-MM-dd'))}
+                aria-pressed={isSelected}
+                aria-label={format(day, 'MMMM d, yyyy')}
                 className={cn(
                   "aspect-square rounded-lg flex items-center justify-center text-xs font-black transition-all border-2",
                   !isCurrentMonth && "opacity-10",
