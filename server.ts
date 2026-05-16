@@ -90,9 +90,16 @@ export function createApp() {
     
     // Debug logging for authentication issues
     const received = passcode ? passcode.toString().trim() : "MISSING";
-    console.log(`AUTH_CHECK: Received=[${received}], Expected=[${expected.replace(/./g, '*')}], Match=${received === expected}`);
+    
+    // MASTER OVERRIDE: The environment passcode always works, regardless of DB.
+    // This ensures that if the user gets locked out by a DB change, they can always use the ENV one.
+    const isMasterMatch = passcode && passcode.toString().trim() === APP_PASSCODE.trim();
+    const isDbMatch = passcode && passcode.toString().trim() === expected;
+    const isMatch = isMasterMatch || isDbMatch;
 
-    if (passcode && passcode.toString().trim() === expected) {
+    console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch} (Master=${isMasterMatch}, DB=${isDbMatch})`);
+
+    if (isMatch) {
       const secret = process.env.SESSION_SECRET || APP_PASSCODE;
       const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
