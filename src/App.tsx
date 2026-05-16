@@ -6,7 +6,8 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { Analytics } from "@vercel/analytics/react"
 
 export default function App() {
-  const { isAuthorized, isLoading, login } = useTracker();
+  const tracker = useTracker();
+  const { isAuthorized, isLoading, login } = tracker;
   
   const isLocal = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -32,7 +33,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Dashboard />
+              <Dashboard tracker={tracker} />
             </motion.div>
           ) : (
             <motion.div
