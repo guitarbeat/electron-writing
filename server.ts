@@ -32,7 +32,6 @@ export function createApp() {
   app.use(cookieParser());
 
   // Auth Middleware
-  // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
     const token = req.cookies[COOKIE_NAME];
     if (!token) {
@@ -56,6 +55,9 @@ export function createApp() {
   });
 
   // Passcode helper (reveals passcode for the Smeemo animation)
+  // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
+  // In this project context, convenience/support for the shared partner experience 
+  // is prioritized over absolute secret isolation.
   app.get("/api/passcode/helper", async (req, res) => {
     try {
       const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
@@ -223,14 +225,31 @@ export function createApp() {
 
   app.patch("/api/settings", authenticate, async (req, res) => {
     try {
+      const allowedFields = [
+        "personAName", "personBName", "personAColor", "personBColor", 
+        "teamColor", "goalsEnabled", "individualGoalsEnabled", 
+        "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
+        "defaultChartView", "defaultGridView", "isSetupComplete",
+        "projectTitle", "metric", "projectGoal", "deadline", "startDate",
+        "passcode"
+      ];
+
+      const filteredBody: any = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          filteredBody[field] = req.body[field];
+        }
+      }
+
       const currentSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       
       const updateData = {
-        ...req.body,
+        ...filteredBody,
         updatedAt: new Date(),
+        lastModifiedBy: req.body.lastModifiedBy || "A Writer"
       };
       
-      if (req.body.lastModifiedBy !== "System") {
+      if (updateData.lastModifiedBy !== "System") {
         updateData.setupUpdateCount = (currentSettings[0]?.setupUpdateCount || 0) + 1;
       }
 
@@ -274,51 +293,67 @@ export function createApp() {
     try {
       const { entries: importEntries, settings: importSettings, mode } = req.body; 
       
-      if (mode === "replace") {
-        await db.delete(entries);
-      }
+      await db.transaction(async (tx) => {
+        if (mode === "replace") {
+          await tx.delete(entries);
+        }
 
-      if (importEntries && Array.isArray(importEntries)) {
-        for (const entry of importEntries) {
-          if (!entry.date) continue;
-          await db.insert(entries).values({
-            id: entry.date,
-            date: entry.date,
-            aaronWords: parseInt(entry.aaronWords) || 0,
-            electraWords: parseInt(entry.electraWords) || 0,
-            note: entry.note || "",
-            createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
-            updatedAt: new Date(),
-          }).onConflictDoUpdate({
-            target: entries.id,
-            set: {
+        if (importEntries && Array.isArray(importEntries)) {
+          for (const entry of importEntries) {
+            if (!entry.date) continue;
+            await tx.insert(entries).values({
+              id: entry.date,
+              date: entry.date,
               aaronWords: parseInt(entry.aaronWords) || 0,
               electraWords: parseInt(entry.electraWords) || 0,
               note: entry.note || "",
+              createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
+              updatedAt: new Date(),
+            }).onConflictDoUpdate({
+              target: entries.id,
+              set: {
+                aaronWords: parseInt(entry.aaronWords) || 0,
+                electraWords: parseInt(entry.electraWords) || 0,
+                note: entry.note || "",
+                updatedAt: new Date(),
+              }
+            });
+          }
+        }
+
+        if (importSettings) {
+          // Sanitize import settings too
+          const allowedFields = [
+            "personAName", "personBName", "personAColor", "personBColor", 
+            "teamColor", "goalsEnabled", "individualGoalsEnabled", 
+            "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
+            "defaultChartView", "defaultGridView", "isSetupComplete",
+            "projectTitle", "metric", "projectGoal", "deadline", "startDate",
+            "passcode"
+          ];
+          
+          const filteredSettings: any = {};
+          for (const field of allowedFields) {
+            if (importSettings[field] !== undefined) {
+              filteredSettings[field] = importSettings[field];
+            }
+          }
+
+          await tx.insert(settings).values({
+            id: "global",
+            ...filteredSettings,
+            isSetupComplete: true,
+            updatedAt: new Date(),
+          }).onConflictDoUpdate({
+            target: settings.id,
+            set: {
+              ...filteredSettings,
+              isSetupComplete: true,
               updatedAt: new Date(),
             }
           });
         }
-      }
-
-      if (importSettings) {
-        await db.insert(settings).values({
-          id: "global",
-          ...importSettings,
-          isSetupComplete: true,
-          updatedAt: new Date(),
-        }).onConflictDoUpdate({
-          target: settings.id,
-          set: {
-            ...importSettings,
-            isSetupComplete: true,
-            metric: importSettings.metric || "words",
-            projectGoal: importSettings.projectGoal || 50000,
-            deadline: importSettings.deadline || "2026-12-31",
-            updatedAt: new Date(),
-          }
-        });
-      }
+      });
 
       res.json({ status: "ok", count: importEntries?.length || 0 });
     } catch (err: any) {

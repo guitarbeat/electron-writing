@@ -11,7 +11,8 @@ export interface TrackerStats {
 }
 
 export function calculateTrackerStats(entries: Entry[], settings: Settings | null): TrackerStats {
-  const today = new Date();
+  const now = new Date();
+  const todayStr = format(now, 'yyyy-MM-dd');
   
   let todayAaron = 0;
   let todayElectra = 0;
@@ -21,7 +22,6 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
   let totalTeam = 0;
 
   entries.forEach(entry => {
-    const entryDate = parseISO(entry.date);
     const aaron = entry.aaronWords || 0;
     const electra = entry.electraWords || 0;
     const team = aaron + electra;
@@ -32,13 +32,15 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
       activeDays++;
     }
 
-    if (isSameDay(entryDate, today)) {
+    if (entry.date === todayStr) {
       todayAaron += aaron;
       todayElectra += electra;
       todayTeam += team;
     }
 
-    if (isSameWeek(entryDate, today, { weekStartsOn: 1 })) { // Monday start
+    // Weekly stats (Monday start)
+    const entryDate = parseISO(entry.date);
+    if (isSameWeek(entryDate, now, { weekStartsOn: 1 })) {
       weekTeam += team;
     }
   });
