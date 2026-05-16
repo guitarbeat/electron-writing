@@ -1,52 +1,97 @@
-import { createApp } from '../server';
-import request from 'supertest'; // I'll check if I can use this or just fetch
+import { fetch } from 'undici';
 
-async function smokeTest() {
-  const app = createApp();
-  // Since I don't have supertest, I'll use a simpler approach if needed
-  // But let's try to see if we can just mock a request
-  console.log("Starting smoke test...");
-  
-  // We'll use a dynamic import for supertest if it's there, otherwise we'll use a fallback
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const PASSCODE = process.env.PASSCODE || '0000';
+
+async function check(name: string, fn: () => Promise<void>) {
   try {
-    const { default: supertest } = await import('supertest');
-    const res = await supertest(app)
-      .post('/api/session')
-      .send({ passcode: '0000' });
-    
-    console.log('Status:', res.status);
-    console.log('Body:', res.body);
-    
-    if (res.status === 200 && res.body.status === 'ok') {
-      console.log('✅ Smoke test PASSED: 0000 works!');
-    } else {
-      console.log('❌ Smoke test FAILED!');
+    await fn();
+    console.log(`✅ [PASS] ${name}`);
+  } catch (error: any) {
+    console.error(`❌ [FAIL] ${name}`);
+
+    // Cleanse error messages from secrets
+    let errorMessage = error.message || String(error);
+    if (PASSCODE) {
+      errorMessage = errorMessage.split(PASSCODE).join('[REDACTED_PASSCODE]');
     }
-  } catch (e) {
-    console.log("Supertest not found, trying manual server start...");
-    const server = app.listen(0, async () => {
-      const port = (server.address() as any).port;
-      try {
-        const response = await fetch(`http://localhost:${port}/api/session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ passcode: '0000' })
-        });
-        const data = await response.json();
-        console.log('Status:', response.status);
-        console.log('Data:', data);
-        if (response.status === 200 && data.status === 'ok') {
-          console.log('✅ Smoke test PASSED: 0000 works!');
-        } else {
-          console.log('❌ Smoke test FAILED!');
-        }
-      } catch (err) {
-        console.error('Manual test failed:', err);
-      } finally {
-        server.close();
-      }
-    });
+    if (process.env.DATABASE_URL) {
+      errorMessage = errorMessage.split(process.env.DATABASE_URL).join('[REDACTED_DATABASE_URL]');
+    }
+    if (process.env.POSTGRES_URL) {
+      errorMessage = errorMessage.split(process.env.POSTGRES_URL).join('[REDACTED_POSTGRES_URL]');
+    }
+    
+    console.error(`   Reason: ${errorMessage}`);
+    process.exitCode = 1;
   }
 }
 
-smokeTest();
+async function runSmokeTests() {
+  console.log(`Starting smoke tests against ${BASE_URL}\n`);
+
+  await check('Static app loads (GET /)', async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const text = await res.text();
+    if (!text.includes('<html') && !text.includes('<!DOCTYPE html>')) {
+      throw new Error('Response does not look like HTML');
+    }
+  });
+
+  await check('/api/health returns 200 JSON', async () => {
+    const res = await fetch(`${BASE_URL}/api/health`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Expected JSON content-type, got ${contentType}`);
+    }
+
+    const data = await res.json() as { status?: string };
+    if (data.status !== 'ok') {
+      throw new Error(`Expected status 'ok', got ${JSON.stringify(data)}`);
+    }
+  });
+
+  await check('POST /api/session accepts configured PASSCODE', async () => {
+    const res = await fetch(`${BASE_URL}/api/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode: PASSCODE }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText} - Passcode validation failed`);
+
+    const data = await res.json() as { status?: string };
+    if (data.status !== 'ok') {
+      throw new Error(`Expected status 'ok', got ${JSON.stringify(data)}`);
+    }
+
+    const setCookie = res.headers.get('set-cookie');
+    if (!setCookie || !setCookie.includes('clean_writer_session')) {
+      throw new Error('Missing clean_writer_session cookie in response');
+    }
+  });
+
+  await check('Manifest and PWA assets return 200', async () => {
+    const assets = ['/manifest.webmanifest', '/smeemo.png'];
+    for (const asset of assets) {
+      const res = await fetch(`${BASE_URL}${asset}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load ${asset} - HTTP ${res.status}: ${res.statusText}`);
+      }
+    }
+  });
+
+  if (process.exitCode === 1) {
+    console.error('\nSmoke tests failed. Review logs above for actionable diagnostics.');
+  } else {
+    console.log('\n🎉 All smoke tests passed successfully!');
+  }
+}
+
+runSmokeTests().catch((err) => {
+  console.error('Fatal error during smoke tests:', err);
+  process.exitCode = 1;
+});
