@@ -31,22 +31,12 @@ async function runTests() {
     console.error(`❌ stats.totalTeam FAILED: expected 1800, got ${stats.totalTeam}`);
   }
 
-  // 2. Test /api/passcode/helper
-  console.log("\n--- Testing /api/passcode/helper ---");
-  const app = createApp();
-  const res = await request(app).get('/api/passcode/helper');
-  
-  if (res.status === 200 && res.body.passcode !== undefined) {
-    console.log(`✅ /api/passcode/helper returned passcode: ${res.body.passcode.replace(/./g, '*')}`);
-  } else {
-    console.error(`❌ /api/passcode/helper FAILED: status ${res.status}, body:`, res.body);
-  }
-
-  // 3. Test /api/settings sanitization
+  // 2. Test /api/settings sanitization
   console.log("\n--- Testing /api/settings sanitization ---");
+  const app = createApp();
   const loginRes = await request(app)
     .post('/api/session')
-    .send({ passcode: res.body.passcode });
+    .send({ passcode: process.env.PASSCODE || '0000' });
   
   const cookie = loginRes.header['set-cookie'];
 

@@ -10,72 +10,6 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-
-  const [revealedPasscode, setRevealedPasscode] = useState((import.meta.env.VITE_PASSCODE || '0000').toString().trim());
-
-  React.useEffect(() => {
-    const triggerHelper = async () => {
-      // Only trigger if we have enough attempts
-      if (attempts >= 3 && !isLoading && !isTyping) {
-        setIsTyping(true);
-        setError(false);
-        setPasscode('');
-
-        let activePasscode = revealedPasscode;
-
-        // Try to fetch the latest from the server
-        try {
-          const response = await fetch('/api/passcode/helper');
-          const data = await response.json();
-          if (data.passcode) {
-            activePasscode = data.passcode.toString().trim();
-            setRevealedPasscode(activePasscode);
-          }
-        } catch (err) {
-          console.warn('SMEEMO_HELPER: Failed to fetch latest passcode, using local fallback.');
-        }
-
-        console.log('SMEEMO_HELPER: Starting auto-type animation...');
-        
-        let i = 0;
-        const interval = setInterval(() => {
-          setPasscode(activePasscode.slice(0, i + 1));
-          i++;
-          if (i >= activePasscode.length) {
-            clearInterval(interval);
-            setTimeout(async () => {
-              setIsLoading(true);
-              console.log('SMEEMO_HELPER: Attempting auto-login...');
-              const success = await onLogin(activePasscode);
-              if (success) {
-                setAttempts(0);
-              } else {
-                setAttempts(0); 
-                setError(true);
-                console.error('SMEEMO_HELPER: Auto-login failed. Sync issue?');
-              }
-              setIsLoading(false);
-              setIsTyping(false);
-            }, 600);
-          }
-        }, 150);
-        
-        return interval;
-      }
-    };
-
-    let intervalId: any;
-    triggerHelper().then(id => {
-      intervalId = id;
-    });
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [attempts, isLoading, isTyping, onLogin, revealedPasscode]);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +19,8 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
     if (!success) {
       setError(true);
       setPasscode('');
-      setAttempts(prev => prev + 1);
-    } else {
-      setAttempts(0);
     }
     setIsLoading(false);
-
   };
 
   return (
@@ -126,20 +56,10 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
               autoFocus
               aria-label="Shared passcode"
             />
-            {error && !isTyping && (
+            {error && (
               <p className="text-red-500 text-xs font-black uppercase mt-2 text-center tracking-tighter">
                 Oops! Incorrect passcode.
               </p>
-            )}
-            {isTyping && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-primary text-[10px] font-black uppercase mt-2 text-center tracking-tighter"
-              >
-                Smeemo is helping you out... ✨
-              </motion.p>
             )}
           </div>
 

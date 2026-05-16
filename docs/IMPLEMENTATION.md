@@ -69,8 +69,6 @@ npm run db:studio
 
 `POST /api/session` compares the submitted passcode to `PASSCODE`. On success, it sets the HTTP-only `clean_writer_session` cookie signed with the same `PASSCODE`.
 
-For convenience in this private app, the frontend reveals the passcode after 3 failed attempts (provided `PASSCODE` was injected at build time).
-
 All entry, settings, import, and export routes require that cookie. `GET /api/session/check` is used by the frontend to restore session state on load.
 
 

@@ -27,5 +27,4 @@ Always run these before proposing changes or after logic updates.
 ## Tricky Logic Notes
 
 - **Date Handling**: Always use string-based comparisons (`YYYY-MM-DD`) for daily stats to avoid timezone mismatches between client and server.
-- **Security**: The `/api/passcode/helper` endpoint is intentionally public to support the Smeemo helper animation.
 - **Imports**: The import route uses database transactions to ensure atomicity and prevent partial data loss.
