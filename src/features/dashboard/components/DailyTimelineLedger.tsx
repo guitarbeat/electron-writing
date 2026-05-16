@@ -30,7 +30,7 @@ interface EditingTile {
   writer: WriterKey;
 }
 
-const INK = '#2b1720';
+const INK_HEX = '#2b1720';
 
 function getReadableTextColor(hex: string | undefined) {
   if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return '#ffffff';
@@ -40,7 +40,7 @@ function getReadableTextColor(hex: string | undefined) {
   const b = parseInt(hex.slice(5, 7), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-  return luminance > 0.68 ? INK : '#ffffff';
+  return luminance > 0.68 ? INK_HEX : '#ffffff';
 }
 
 function formatCount(value: number, metric: string) {
@@ -196,21 +196,21 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
   };
 
   return (
-    <section className="sticker-card bg-white p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+    <section className="sticker-card p-4 sm:p-6 md:p-8 flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-4 border-ink pb-5">
         <div>
-          <h2 className="font-display text-3xl md:text-4xl font-black text-ink">Daily Writing Ledger</h2>
-          <p className="text-sm md:text-base font-bold text-ink-muted mt-2">
+          <h2 className="text-heading text-3xl md:text-4xl">Daily Writing Ledger</h2>
+          <p className="text-body text-sm md:text-base font-bold text-ink-muted mt-2">
             Track the ink from first log through deadline.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-bg-paper border-4 border-ink px-3 sm:px-4 py-2 sm:py-3 shadow-[4px_4px_0_#2b1720]">
+        <div className="flex flex-wrap items-center gap-3 bg-bg-paper border-4 border-ink px-3 sm:px-4 py-2 sm:py-3 shadow-sticker">
           <LegendSwatch color={personAColor} label={personAName} />
           <div className="w-1 h-8 bg-ink" />
           <LegendSwatch color={personBColor} label={personBName} />
           <div className="w-1 h-8 bg-ink hidden sm:block" />
-          <span className="font-mono text-[10px] font-black uppercase tracking-widest text-ink-muted">
+          <span className="text-label text-[10px] text-ink-muted">
             Unit: {metric}
           </span>
         </div>
@@ -218,23 +218,23 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
 
       <div className="max-h-[760px] overflow-y-auto hide-scrollbar pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
-          <div className="absolute left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
+          <div className="absolute left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
 
           {days.map(day => (
             <div key={day.date} className="relative flex flex-col gap-3">
               {day.showMonthLabel && (
-                <div className="ml-20 md:ml-24 py-2">
-                  <span className="inline-flex bg-bg-paper border-2 border-ink px-3 py-1 font-mono text-[10px] font-black uppercase tracking-widest text-ink-muted">
+                <div className="ml-[4.5rem] md:ml-24 py-2">
+                  <span className="inline-flex bg-bg-paper border-2 border-ink px-3 py-1 text-label text-[9px] sm:text-[10px] text-ink-muted">
                     {day.monthLabel}
                   </span>
                 </div>
               )}
 
-              <div className={cn('flex items-start gap-4 md:gap-6', day.isDeadlineDay && 'mt-2')}>
+              <div className={cn('flex items-start gap-3 sm:gap-4 md:gap-6', day.isDeadlineDay && 'mt-2')}>
                 <div
                   className={cn(
-                    'w-14 h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-[4px_4px_0_#2b1720] z-10 font-display text-xl md:text-2xl font-black',
-                    day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_#2b1720]' : day.hasAnyWriting ? 'bg-white text-ink' : 'bg-bg-paper text-ink-muted'
+                    'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-lg sm:text-xl md:text-2xl font-black',
+                    day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)]' : day.hasAnyWriting ? 'bg-white text-ink' : 'bg-bg-paper text-ink-muted'
                   )}
                 >
                   {day.dayNumber}
@@ -243,11 +243,12 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                 <div
                   className={cn(
                     'flex-1 min-w-0 flex flex-col gap-3',
-                    day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[8px_8px_0_#2b1720] p-3 sm:p-4 md:p-6'
+                    day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)] p-3 sm:p-4 md:p-6 rounded-card'
                   )}
                 >
+
                   {day.isDeadlineDay && (
-                    <div className="flex items-center gap-2 self-start bg-ink text-white px-3 py-2 font-mono text-[10px] font-black uppercase tracking-widest rotate-[-1deg]">
+                    <div className="flex items-center gap-2 self-start bg-ink text-white px-3 py-2 text-label text-[10px] rotate-[-1deg]">
                       <Flag className="w-4 h-4" />
                       Deadline
                     </div>
@@ -288,7 +289,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                         onClick={() => beginNoteEdit(day)}
                         title={`Edit note for ${format(parseISO(day.date), 'MMM d')}`}
                         className={cn(
-                          'w-11 h-11 border-4 border-ink bg-white shadow-[4px_4px_0_#2b1720] flex items-center justify-center transition-all active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0_#2b1720]',
+                          'w-11 h-11 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
                           day.entry?.note && 'bg-accent'
                         )}
                       >
@@ -321,13 +322,13 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                               if (event.key === 'Escape') cancelNoteEdit();
                             }}
                             placeholder="What did you work on?"
-                            className="input-playful min-w-0 flex-1 rounded-button py-2"
+                            className="input-playful min-w-0 flex-1 py-2"
                           />
                           <div className="flex gap-2">
                             <button
                               type="button"
                               onClick={() => saveNoteEdit(day)}
-                              className="w-12 h-12 border-4 border-ink bg-primary text-white shadow-[4px_4px_0_#2b1720] flex items-center justify-center"
+                              className="w-12 h-12 border-4 border-ink bg-primary text-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
                               title="Save note"
                             >
                               <Check className="w-5 h-5" />
@@ -335,7 +336,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                             <button
                               type="button"
                               onClick={cancelNoteEdit}
-                              className="w-12 h-12 border-4 border-ink bg-white shadow-[4px_4px_0_#2b1720] flex items-center justify-center"
+                              className="w-12 h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
                               title="Cancel note edit"
                             >
                               <X className="w-5 h-5" />
@@ -346,7 +347,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                         <button
                           type="button"
                           onClick={() => beginNoteEdit(day)}
-                          className="text-left bg-bg-paper border-2 border-ink px-4 py-3 font-bold text-sm text-ink-muted w-full"
+                          className="text-left bg-bg-paper border-2 border-ink px-4 py-3 text-body text-sm text-ink-muted w-full font-bold"
                         >
                           {day.entry?.note}
                         </button>
@@ -360,6 +361,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
         </div>
       </div>
     </section>
+
   );
 }
 
@@ -367,7 +369,7 @@ function LegendSwatch({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-5 h-5 border-2 border-ink" style={{ backgroundColor: color }} />
-      <span className="font-mono text-[10px] font-black uppercase tracking-widest text-ink">{label}</span>
+      <span className="text-label text-[10px] text-ink">{label}</span>
     </div>
   );
 }
@@ -402,8 +404,8 @@ function WriterTile({
 
   if (isEditing) {
     return (
-      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 bg-white border-4 border-ink shadow-[6px_6px_0_#2b1720] p-3 flex flex-col justify-between">
-        <label className="font-mono text-[10px] font-black uppercase tracking-widest text-ink-muted truncate">{name}</label>
+      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 bg-white border-4 border-ink shadow-sticker p-3 flex flex-col justify-between">
+        <label className="text-label text-[10px] text-ink-muted truncate">{name}</label>
         <input
           autoFocus
           value={draft}
@@ -436,9 +438,9 @@ function WriterTile({
       onClick={onBeginEdit}
       title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center',
-        'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0_#2b1720] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0_#2b1720]',
-        hasValue ? 'border-ink shadow-[6px_6px_0_#2b1720]' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
+        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group',
+        'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
+        hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
       )}
       style={hasValue ? { backgroundColor: color, color: textColor } : undefined}
     >
@@ -452,9 +454,10 @@ function WriterTile({
       ) : (
         <>
           <Minus className="w-7 h-7 shrink-0" />
-          <span className="font-mono text-[10px] font-black uppercase tracking-widest">{name}</span>
+          <span className="text-label text-[10px]">{name}</span>
         </>
       )}
     </button>
   );
 }
+

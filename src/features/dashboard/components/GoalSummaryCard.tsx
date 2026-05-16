@@ -20,7 +20,7 @@ export function GoalSummaryCard({ settings, totalTeam }: GoalSummaryCardProps) {
         <h3 className="text-sm font-black uppercase tracking-widest lg:text-base opacity-70 flex items-center gap-2">
           <Target className="w-5 h-5" /> Project Goal
         </h3>
-        <p className="text-4xl text-primary font-display mt-2 break-words">
+        <p className="text-2xl sm:text-3xl md:text-4xl text-primary font-display mt-2 break-words">
           {goal.toLocaleString()} {metric}
         </p>
         <p className="text-sm font-bold opacity-80 flex items-center gap-1 mt-1">

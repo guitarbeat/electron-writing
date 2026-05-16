@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS = {
   startDate: "2026-01-01",
   setupUpdateCount: 0,
   lastModifiedBy: "System",
+  passcode: "", // Optional override for the env PASSCODE
 };
 
 export const settings = pgTable("settings", {
@@ -59,4 +60,5 @@ export const settings = pgTable("settings", {
   setupUpdateCount: integer("setup_update_count").notNull().default(DEFAULT_SETTINGS.setupUpdateCount),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastModifiedBy: text("last_modified_by").notNull().default(DEFAULT_SETTINGS.lastModifiedBy),
+  passcode: text("passcode").notNull().default(""),
 });

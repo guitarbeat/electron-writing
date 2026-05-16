@@ -20,14 +20,24 @@ export function useTracker() {
   }, []);
 
   const login = async (passcode: string) => {
-    const res = await fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode }),
-    });
-    if (res.ok) {
-      setIsAuthorized(true);
-      return true;
+    try {
+      const res = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode }),
+      });
+      
+      if (res.ok) {
+        // Double-check the session to ensure the cookie was accepted by the browser
+        const authorized = await checkSession();
+        if (!authorized) {
+          console.warn('LOGIN_WARNING: Passcode accepted but session cookie was not established.');
+          return false;
+        }
+        return true;
+      }
+    } catch (err) {
+      console.error('Login request failed', err);
     }
     return false;
   };

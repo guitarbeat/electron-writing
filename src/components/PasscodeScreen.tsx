@@ -13,14 +13,17 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
   const [attempts, setAttempts] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
 
-  const revealedPasscode = import.meta.env.VITE_PASSCODE || '0000';
+  const revealedPasscode = (import.meta.env.VITE_PASSCODE || '0000').toString().trim();
 
   React.useEffect(() => {
-    if (attempts >= 3 && revealedPasscode && !isLoading && !isTyping) {
+    // Only trigger if we have a valid-looking passcode and enough attempts
+    if (attempts >= 3 && revealedPasscode.length > 0 && !isLoading && !isTyping) {
       setIsTyping(true);
       setError(false);
       let i = 0;
       setPasscode('');
+      
+      console.log('SMEEMO_HELPER: Starting auto-type animation...');
       
       const interval = setInterval(() => {
         setPasscode(revealedPasscode.slice(0, i + 1));
@@ -29,16 +32,18 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
           clearInterval(interval);
           setTimeout(async () => {
             setIsLoading(true);
+            console.log('SMEEMO_HELPER: Attempting auto-login...');
             const success = await onLogin(revealedPasscode);
             if (success) {
               setAttempts(0);
             } else {
-              setAttempts(0); // Reset anyway to prevent infinite loop
+              setAttempts(0); // Reset to prevent infinite loop
               setError(true);
+              console.error('SMEEMO_HELPER: Auto-login failed. Sync issue?');
             }
             setIsLoading(false);
             setIsTyping(false);
-          }, 500);
+          }, 600); // Slightly longer delay for natural feel
         }
       }, 150);
       
@@ -68,7 +73,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="sticker-card p-10 max-w-md w-full bg-bg-surface flex flex-col items-center gap-8"
+        className="sticker-card p-6 sm:p-10 max-w-md w-full bg-bg-surface flex flex-col items-center gap-6 sm:gap-8"
       >
         <div className="w-24 h-24 rounded-full border-4 border-ink shadow-sticker rotate-3 overflow-hidden bg-bg-paper">
           <img
@@ -102,14 +107,19 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
               </p>
             )}
             {isTyping && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-primary text-xs font-black uppercase mt-2 text-center tracking-tighter"
-              >
-                Smeemo is helping you out... ✨
-              </motion.p>
+              <div className="flex flex-col items-center gap-1 mt-2">
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="text-primary text-[10px] font-black uppercase text-center tracking-tighter"
+                >
+                  Smeemo is helping you out... ✨
+                </motion.p>
+                <p className="text-[8px] font-bold italic text-ink/30 uppercase">
+                  (Helper only knows original factory passcode)
+                </p>
+              </div>
             )}
           </div>
 

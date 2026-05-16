@@ -28,5 +28,6 @@ export interface Settings {
   setupUpdateCount: number;
   updatedAt: any;
   lastModifiedBy?: string;
+  passcode?: string;
 }
 

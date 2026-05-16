@@ -1,4 +1,4 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
@@ -6,6 +6,12 @@ import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import fs from "fs";
+
+// Standardize environment loading to match Vite's behavior
+dotenv.config();
+if (fs.existsSync(".env.local")) {
+  dotenv.config({ path: ".env.local", override: true });
+}
 import { db } from "./src/db/index";
 import { entries, settings, DEFAULT_SETTINGS } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -33,7 +39,8 @@ export function createApp() {
       return res.status(401).json({ error: "Unauthorized" });
     }
     try {
-      jwt.verify(token, APP_PASSCODE as string);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       next();
     } catch (err) {
       res.clearCookie(COOKIE_NAME);
@@ -49,22 +56,42 @@ export function createApp() {
   });
 
   // Session
-  app.post("/api/session", (req, res) => {
+  app.post("/api/session", async (req, res) => {
     const { passcode } = req.body;
+    
+    // Fetch dynamic passcode from DB with fallback to env
+    let expected = APP_PASSCODE.trim();
+    try {
+      const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+      if (dbSettings.length > 0 && dbSettings[0].passcode) {
+        expected = dbSettings[0].passcode.trim();
+        console.log(`AUTH_CHECK: Using dynamic passcode from database.`);
+      } else {
+        console.log(`AUTH_CHECK: Using fallback environment passcode.`);
+      }
+    } catch (err) {
+      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback", err);
+    }
     
     // Debug logging for authentication issues
     const received = passcode ? passcode.toString().trim() : "MISSING";
-    const expected = APP_PASSCODE.trim();
-    console.log(`AUTH_CHECK: Received=[${received}], Expected=[${expected}], Match=${received === expected}`);
+    console.log(`AUTH_CHECK: Received=[${received}], Expected=[${expected.replace(/./g, '*')}], Match=${received === expected}`);
 
     if (passcode && passcode.toString().trim() === expected) {
-      const token = jwt.sign({ authorized: true }, APP_PASSCODE as string, { expiresIn: "30d" });
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
+      const isProd = process.env.NODE_ENV === "production";
+      const isVercel = !!process.env.VERCEL;
+      
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        secure: true, // Always true for modern browsers/Vercel
-        sameSite: "lax", // Changed from strict for better compatibility
+        // Only require secure cookies in production or on Vercel
+        // This fixes login issues on local http://localhost
+        secure: isProd || isVercel, 
+        sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
+      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd || isVercel}`);
       return res.json({ status: "ok" });
     }
     return res.status(401).json({ error: "Invalid passcode" });
@@ -80,7 +107,8 @@ export function createApp() {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.json({ authorized: false });
     try {
-      jwt.verify(token, APP_PASSCODE as string);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       res.json({ authorized: true });
     } catch (err) {
       res.json({ authorized: false });

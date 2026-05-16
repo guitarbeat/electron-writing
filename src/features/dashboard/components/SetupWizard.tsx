@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight } from 'lucide-react';
+import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight, Lock } from 'lucide-react';
 import { Settings } from '../../../types';
 import { LongPressInput } from '../../../components/ui/LongPressInput';
 import { Knob } from '../../../components/ui/Knob';
@@ -63,6 +63,34 @@ export function ProjectSettingsStep({
           <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">
             Spin to set absolute target
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SecurityStep({
+  formData,
+  setFormData,
+}: {
+  formData: Settings;
+  setFormData: React.Dispatch<React.SetStateAction<Settings>>;
+}) {
+  return (
+    <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+      <div className="bg-white p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker">
+        <div className="w-full">
+           <label className="text-[10px] font-black uppercase text-ink/40 mb-2 block px-2">Shared Passcode</label>
+           <input
+             type="text"
+             value={formData.passcode || ""}
+             onChange={(e) => setFormData({ ...formData, passcode: e.target.value })}
+             placeholder="Default is 0000"
+             className="input-playful w-full text-center text-xl tracking-widest"
+           />
+           <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-2 text-center">
+             This overrides the environment variable passcode.
+           </p>
         </div>
       </div>
     </div>
@@ -164,8 +192,10 @@ export function SetupWizard({
     metric: 'words',
     projectGoal: 50000,
     deadline: '2026-12-31',
+    setupUpdateCount: 0,
     updatedAt: new Date(),
-    lastModifiedBy: "System"
+    lastModifiedBy: "System",
+    passcode: ""
   });
   const [errorStep, setErrorStep] = useState<number | null>(null);
 
@@ -192,6 +222,11 @@ export function SetupWizard({
       title: "Timeline",
       description: "When do we want this done?",
       icon: <Calendar className="w-8 h-8 text-[#5eead4]" />
+    },
+    {
+      title: "Security",
+      description: "Set your shared passcode.",
+      icon: <Lock className="w-8 h-8 text-[#ff4d8d]" />
     }
   ];
 
@@ -272,6 +307,10 @@ export function SetupWizard({
 
           {currentStep === 3 && (
              <DeadlineStep formData={formData} setFormData={setFormData} />
+          )}
+          
+          {currentStep === 4 && (
+             <SecurityStep formData={formData} setFormData={setFormData} />
           )}
         </div>
 
