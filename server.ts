@@ -65,6 +65,7 @@ export function createApp() {
         : APP_PASSCODE;
       res.json({ passcode });
     } catch (err) {
+      console.error("API Error fetching helper data:", err);
       res.status(500).json({ error: "Could not fetch helper data" });
     }
   });
@@ -142,7 +143,8 @@ export function createApp() {
       const allEntries = await db.select().from(entries).orderBy(desc(entries.id));
       res.json(allEntries);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -179,7 +181,8 @@ export function createApp() {
         res.json({ ...newEntry, status: "created" });
       }
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -197,7 +200,8 @@ export function createApp() {
       await db.update(entries).set(updateData).where(eq(entries.id, id));
       res.json({ id, ...updateData });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -207,7 +211,8 @@ export function createApp() {
       await db.delete(entries).where(eq(entries.id, id));
       res.json({ status: "deleted" });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -225,7 +230,8 @@ export function createApp() {
       }
       res.json(results[0]);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -262,7 +268,8 @@ export function createApp() {
       await db.update(settings).set(updateData).where(eq(settings.id, "global"));
       res.json(updateData);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -291,7 +298,8 @@ export function createApp() {
       res.setHeader("Content-Disposition", "attachment; filename=clean_writer_export.json");
       res.send(JSON.stringify(data, null, 2));
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -363,7 +371,8 @@ export function createApp() {
 
       res.json({ status: "ok", count: importEntries?.length || 0 });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
