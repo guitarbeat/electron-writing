@@ -27,7 +27,6 @@ Required:
 
 ```bash
 PASSCODE="0000"
-SESSION_SECRET="long-random-string"
 DATABASE_URL="postgresql://..."
 ```
 

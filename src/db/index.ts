@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { DATABASE_URL, DATABASE_POOL_MAX } from "./config";
 import * as schema from "./schema";
 

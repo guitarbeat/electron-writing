@@ -10,6 +10,10 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+
+  const revealedPasscode = import.meta.env.VITE_PASSCODE;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,8 +23,12 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
     if (!success) {
       setError(true);
       setPasscode('');
+      setAttempts(prev => prev + 1);
+    } else {
+      setAttempts(0);
     }
     setIsLoading(false);
+
   };
 
   return (
@@ -55,7 +63,9 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
             />
             {error && (
               <p className="text-red-500 text-xs font-black uppercase mt-2 text-center tracking-tighter">
-                Oops! Incorrect passcode.
+                {attempts >= 3 && revealedPasscode 
+                  ? `Hint: The passcode is ${revealedPasscode}` 
+                  : 'Oops! Incorrect passcode.'}
               </p>
             )}
           </div>

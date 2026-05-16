@@ -49,6 +49,7 @@ export default defineConfig(({mode}) => {
       })
     ],
     define: {
+      'import.meta.env.VITE_PASSCODE': JSON.stringify(env.PASSCODE),
     },
     resolve: {
       alias: {

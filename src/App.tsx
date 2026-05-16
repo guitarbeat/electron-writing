@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTracker } from './hooks/useTracker';
 import { PasscodeScreen } from './components/PasscodeScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 export default function App() {
   const { isAuthorized, isLoading, login } = useTracker();

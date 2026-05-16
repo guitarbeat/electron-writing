@@ -35,7 +35,6 @@ Required:
 
 ```bash
 PASSCODE="0000"
-SESSION_SECRET="long-random-string"
 DATABASE_URL="postgresql://..."
 ```
 
@@ -68,9 +67,12 @@ npm run db:studio
 
 ## Auth
 
-`POST /api/session` compares the submitted passcode to `PASSCODE`. On success, it sets the HTTP-only `clean_writer_session` cookie signed with `SESSION_SECRET`.
+`POST /api/session` compares the submitted passcode to `PASSCODE`. On success, it sets the HTTP-only `clean_writer_session` cookie signed with the same `PASSCODE`.
+
+For convenience in this private app, the frontend reveals the passcode after 3 failed attempts (provided `PASSCODE` was injected at build time).
 
 All entry, settings, import, and export routes require that cookie. `GET /api/session/check` is used by the frontend to restore session state on load.
+
 
 ## Database
 
@@ -101,7 +103,6 @@ After changing Vercel environment variables, redeploy or promote a new deploymen
 Required Vercel variables:
 
 - `PASSCODE`
-- `SESSION_SECRET`
 - `DATABASE_URL` or `POSTGRES_URL`
 
 Recommended Vercel checks:
