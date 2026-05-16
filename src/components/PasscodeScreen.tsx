@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Lock, PenTool } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 interface PasscodeScreenProps {
   onLogin: (passcode: string) => Promise<boolean>;
@@ -30,8 +30,12 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
         animate={{ scale: 1, opacity: 1 }}
         className="sticker-card p-10 max-w-md w-full bg-bg-surface flex flex-col items-center gap-8"
       >
-        <div className="w-20 h-20 bg-accent rounded-full border-4 border-ink flex items-center justify-center shadow-sticker rotate-3">
-          <PenTool className="w-10 h-10 text-ink" />
+        <div className="w-24 h-24 rounded-full border-4 border-ink shadow-sticker rotate-3 overflow-hidden bg-bg-paper">
+          <img
+            src="/smeemo.png"
+            alt="Smeemo"
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div className="text-center">

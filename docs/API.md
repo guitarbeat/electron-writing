@@ -1,59 +1,41 @@
-# Clean Writer API Specification
+# Smeemo API
 
-## Overview
+The frontend never connects to Neon directly. It talks to Express routes under `/api`, and every data route requires the HTTP-only `clean_writer_session` cookie.
 
-The frontend should not directly access the hosted database.
-
-Use server-side API routes as a private gate:
-
-```text
-Frontend → API route → Database
-```
-
-Each route should verify a shared passcode/session before reading or writing data.
-
-## Environment Variables
+## Environment
 
 ```bash
-PASSCODE=your-shared-passcode
-DATABASE_URL=postgresql://...
+PASSCODE="0000"
+SESSION_SECRET="long-random-string"
+DATABASE_URL="postgresql://..."
+POSTGRES_URL="postgresql://..." # optional fallback
+DATABASE_POOL_MAX="5"           # optional
 ```
 
-Use whichever database variables match the chosen backend.
+`PASSCODE` controls the private gate. `SESSION_SECRET` signs session cookies. `DATABASE_URL` should be the Neon pooled PostgreSQL URL; `POSTGRES_URL` is accepted as a fallback because Vercel/Neon integrations can provide it.
 
-Do not expose database admin credentials to the browser.
+## Session Routes
 
-## Auth Pattern
+### GET `/api/health`
 
-This app does not need user accounts.
+Returns server status.
 
-Use:
-- shared passcode
-- server-side verification
-- local session flag or signed session cookie
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-05-15T20:30:00.000Z"
+}
+```
 
-Recommended:
-- `POST /api/session` validates passcode.
-- Server sets an HTTP-only session cookie.
-- Other API routes require that session cookie.
+### POST `/api/session`
 
-Simpler MVP:
-- Frontend sends passcode in request header.
-- API route compares it to `PASSCODE`.
-
-For better privacy, prefer the session cookie approach.
-
-## Endpoints
-
-### POST /api/session
-
-Validates shared passcode.
+Validates the shared passcode and sets `clean_writer_session`.
 
 Request:
 
 ```json
 {
-  "passcode": "shared-passcode"
+  "passcode": "0000"
 }
 ```
 
@@ -61,7 +43,7 @@ Success:
 
 ```json
 {
-  "ok": true
+  "status": "ok"
 }
 ```
 
@@ -69,48 +51,53 @@ Failure:
 
 ```json
 {
-  "ok": false,
   "error": "Invalid passcode"
 }
 ```
 
-### DELETE /api/session
+### DELETE `/api/session`
 
-Clears session.
-
-Success:
+Clears the session cookie.
 
 ```json
 {
-  "ok": true
+  "status": "ok"
 }
 ```
 
-### GET /api/entries
+### GET `/api/session/check`
 
-Returns all writing entries, sorted by date ascending.
-
-Response:
+Checks whether the session cookie is valid.
 
 ```json
 {
-  "entries": [
-    {
-      "id": "2026-05-15",
-      "date": "2026-05-15",
-      "aaronWords": 600,
-      "electraWords": 450,
-      "note": "Drafted opening scene",
-      "createdAt": "2026-05-15T20:30:00.000Z",
-      "updatedAt": "2026-05-15T20:30:00.000Z"
-    }
-  ]
+  "authorized": true
 }
 ```
 
-### POST /api/entries
+## Entry Routes
 
-Creates or updates an entry for a date.
+### GET `/api/entries`
+
+Requires session. Returns all entries ordered by descending `id`.
+
+```json
+[
+  {
+    "id": "2026-05-15",
+    "date": "2026-05-15",
+    "aaronWords": 600,
+    "electraWords": 450,
+    "note": "Drafted opening scene",
+    "createdAt": "2026-05-15T20:30:00.000Z",
+    "updatedAt": "2026-05-15T20:30:00.000Z"
+  }
+]
+```
+
+### POST `/api/entries`
+
+Requires session. Creates or replaces the entry for a date.
 
 Request:
 
@@ -123,27 +110,11 @@ Request:
 }
 ```
 
-Response:
+Success includes the entry fields and `status` set to `created` or `updated`.
 
-```json
-{
-  "entry": {
-    "id": "2026-05-15",
-    "date": "2026-05-15",
-    "aaronWords": 600,
-    "electraWords": 450,
-    "note": "Drafted opening scene",
-    "createdAt": "2026-05-15T20:30:00.000Z",
-    "updatedAt": "2026-05-15T20:30:00.000Z"
-  }
-}
-```
+### PATCH `/api/entries/:id`
 
-### PATCH /api/entries/:id
-
-Updates an entry.
-
-Request:
+Requires session. Partially updates one entry.
 
 ```json
 {
@@ -153,94 +124,35 @@ Request:
 }
 ```
 
-Response:
+### DELETE `/api/entries/:id`
+
+Requires session. Deletes one entry.
 
 ```json
 {
-  "entry": {}
+  "status": "deleted"
 }
 ```
 
-### DELETE /api/entries/:id
+## Settings Routes
 
-Deletes an entry.
+### GET `/api/settings`
 
-Response:
+Requires session. Returns the global settings row. If it does not exist, the server creates default settings first.
 
-```json
-{
-  "ok": true
-}
-```
+### PATCH `/api/settings`
 
-### GET /api/settings
+Requires session. Updates global settings and increments `setupUpdateCount` unless `lastModifiedBy` is `System`.
 
-Returns app settings.
+## Import and Export
 
-Response:
+### GET `/api/export`
 
-```json
-{
-  "settings": {
-    "personAName": "Aaron",
-    "personBName": "Electra",
-    "personAColor": "#ff4d8d",
-    "personBColor": "#7c3aed",
-    "teamColor": "#2b1720",
-    "goalsEnabled": true,
-    "individualGoalsEnabled": false,
-    "teamWeeklyGoal": 7000,
-    "personAWeeklyGoal": 3500,
-    "personBWeeklyGoal": 3500,
-    "activityThresholds": [250, 750, 1500],
-    "defaultChartView": "daily",
-    "defaultGridView": "team",
-    "updatedAt": "2026-05-15T20:30:00.000Z"
-  }
-}
-```
+Requires session. Downloads a JSON backup with `version`, `exportedAt`, `settings`, and `entries`.
 
-### PATCH /api/settings
+### POST `/api/import`
 
-Updates settings.
-
-Request:
-
-```json
-{
-  "teamWeeklyGoal": 8000,
-  "goalsEnabled": true
-}
-```
-
-Response:
-
-```json
-{
-  "settings": {}
-}
-```
-
-### GET /api/export
-
-Exports all data.
-
-Response:
-
-```json
-{
-  "version": 1,
-  "exportedAt": "2026-05-15T20:30:00.000Z",
-  "settings": {},
-  "entries": []
-}
-```
-
-### POST /api/import
-
-Imports data.
-
-Request:
+Requires session. Imports entries and optional settings.
 
 ```json
 {
@@ -251,50 +163,6 @@ Request:
 ```
 
 Modes:
-- `merge`
-- `replace`
 
-Response:
-
-```json
-{
-  "ok": true,
-  "importedEntries": 30
-}
-```
-
-## Error Format
-
-Use a consistent error shape:
-
-```json
-{
-  "ok": false,
-  "error": "Human-readable error message"
-}
-```
-
-## Status Codes
-
-- `200` success
-- `201` created
-- `400` validation error
-- `401` passcode/session required
-- `404` not found
-- `500` server error
-
-## Security Notes
-
-Do not:
-- expose database admin keys in frontend code
-- allow public database writes
-- commit `.env` files
-- rely on obscurity alone
-- put the passcode in client code
-
-Do:
-- store secrets server-side
-- validate all input server-side
-- sanitize notes
-- lock down database rules
-- add export for backup
+- `merge` - upsert incoming entries by date
+- `replace` - delete existing entries before importing

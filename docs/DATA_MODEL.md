@@ -1,211 +1,89 @@
-# Clean Writer Data Model
+# Smeemo Data Model
 
-## Overview
+Smeemo stores two tables in Neon PostgreSQL: `entries` and `settings`. The schema lives in `src/db/schema.ts` and is managed with Drizzle Kit.
 
-The data model should stay simple. The app only needs entries and settings.
+## Entries
 
-Recommended collections/tables:
-
-1. `entries`
-2. `settings`
-
-Optional later:
-
-3. `backups`
-4. `projects`
-
-## Entry Model
-
-Use one entry per date.
+One row represents one date.
 
 ```ts
-type WritingEntry = {
-  id: string;
-  date: string; // YYYY-MM-DD
-  aaronWords: number;
-  electraWords: number;
-  note?: string;
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
-};
-```
-
-Example:
-
-```json
-{
-  "id": "2026-05-15",
-  "date": "2026-05-15",
-  "aaronWords": 600,
-  "electraWords": 450,
-  "note": "Drafted opening scene",
-  "createdAt": "2026-05-15T20:30:00.000Z",
-  "updatedAt": "2026-05-15T20:30:00.000Z"
-}
-```
-
-## Settings Model
-
-```ts
-type CleanWriterSettings = {
-  personAName: string;
-  personBName: string;
-
-  personAColor: string;
-  personBColor: string;
-  teamColor: string;
-
-  goalsEnabled: boolean;
-  individualGoalsEnabled: boolean;
-
-  teamWeeklyGoal?: number;
-  personAWeeklyGoal?: number;
-  personBWeeklyGoal?: number;
-
-  activityThresholds: number[];
-
-  defaultChartView: "daily" | "weekly" | "cumulative";
-  defaultGridView: "team" | "personA" | "personB";
-
-  updatedAt: string;
-};
-```
-
-Example:
-
-```json
-{
-  "personAName": "Aaron",
-  "personBName": "Electra",
-  "personAColor": "#ff4d8d",
-  "personBColor": "#7c3aed",
-  "teamColor": "#2b1720",
-  "goalsEnabled": true,
-  "individualGoalsEnabled": false,
-  "teamWeeklyGoal": 7000,
-  "personAWeeklyGoal": 3500,
-  "personBWeeklyGoal": 3500,
-  "activityThresholds": [250, 750, 1500],
-  "defaultChartView": "daily",
-  "defaultGridView": "team",
-  "updatedAt": "2026-05-15T20:30:00.000Z"
-}
-```
-
-## Database Stack
-
-- **Database:** PostgreSQL (Neon)
-- **ORM:** Drizzle ORM
-- **Migration Tool:** Drizzle Kit
-
-## Entry Model (SQL)
-
-```ts
-// src/db/schema.ts
 export const entries = pgTable("entries", {
-  id: text("id").primaryKey(), // date string: YYYY-MM-DD
-  date: text("date").notNull(), 
-  words: integer("words").notNull().default(0),
+  id: text("id").primaryKey(),
+  date: text("date").notNull(),
+  aaronWords: integer("aaron_words").notNull().default(0),
+  electraWords: integer("electra_words").notNull().default(0),
+  note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 ```
 
-## Settings Model (SQL)
+App type:
 
 ```ts
-// src/db/schema.ts
+export interface Entry {
+  id: string;
+  date: string;
+  aaronWords: number;
+  electraWords: number;
+  note?: string;
+  createdAt: any;
+  updatedAt: any;
+}
+```
+
+Rules:
+
+- `id` and `date` use the same `YYYY-MM-DD` string.
+- Word values are clamped to non-negative integers.
+- A save requires a date plus at least one word count or a note.
+- Saving an existing date updates that date.
+
+## Settings
+
+There is one settings row with `id = "global"`.
+
+```ts
 export const settings = pgTable("settings", {
-  id: text("id").primaryKey(), // "global"
-  name: text("name").notNull().default("Writer"),
-  color: text("color").notNull().default("#facc15"),
+  id: text("id").primaryKey(),
+  personAName: text("person_a_name").notNull().default("Aaron"),
+  personBName: text("person_b_name").notNull().default("Electra"),
+  personAColor: text("person_a_color").notNull().default("#ff4d8d"),
+  personBColor: text("person_b_color").notNull().default("#7c3aed"),
+  teamColor: text("team_color").notNull().default("#2b1720"),
   goalsEnabled: boolean("goals_enabled").notNull().default(true),
+  individualGoalsEnabled: boolean("individual_goals_enabled").notNull().default(false),
+  personAWeeklyGoal: integer("person_a_weekly_goal").notNull().default(3500),
+  personBWeeklyGoal: integer("person_b_weekly_goal").notNull().default(3500),
+  activityThresholds: jsonb("activity_thresholds").notNull().$type<number[]>().default([250, 750, 1500]),
+  defaultChartView: text("default_chart_view").notNull().default("daily"),
+  defaultGridView: text("default_grid_view").notNull().default("team"),
+  isSetupComplete: boolean("is_setup_complete").notNull().default(false),
   metric: text("metric").notNull().default("words"),
   projectGoal: integer("project_goal").notNull().default(50000),
   deadline: text("deadline").notNull().default("2026-12-31"),
-  activityThresholds: jsonb("activity_thresholds").notNull().$type<number[]>().default([250, 750, 1500]),
-  defaultChartView: text("default_chart_view").notNull().default("daily"),
+  setupUpdateCount: integer("setup_update_count").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastModifiedBy: text("last_modified_by").notNull().default("System"),
 });
 ```
 
-## Storage Architecture
-
-We use a SQL database (PostgreSQL) hosted on Neon. The schema is managed via Drizzle ORM.
+Settings control names, colors, chart defaults, grid defaults, goal configuration, setup/onboarding state, metric label, project goal, and deadline.
 
 ## Derived Values
 
-These do not need to be stored.
+Derived statistics are calculated in `src/lib/stats.ts` and are not stored:
 
-### Team Words
+- team total: `aaronWords + electraWords`
+- daily chart points
+- weekly chart points
+- cumulative chart points
+- heatmap intensity from `activityThresholds`
+- goal progress against `projectGoal`, `personAWeeklyGoal`, and `personBWeeklyGoal`
 
-```ts
-const teamWords = entry.aaronWords + entry.electraWords;
-```
+## Import and Export
 
-### Daily Chart Points
-
-For each date:
-
-```ts
-{
-  date: "2026-05-15",
-  aaron: 600,
-  electra: 450,
-  team: 1050
-}
-```
-
-### Weekly Chart Points
-
-Group entries by week:
-
-```ts
-{
-  weekStart: "2026-05-11",
-  aaron: 3200,
-  electra: 2800,
-  team: 6000
-}
-```
-
-### Cumulative Chart Points
-
-Running total over time:
-
-```ts
-{
-  date: "2026-05-15",
-  aaron: 12600,
-  electra: 11200,
-  team: 23800
-}
-```
-
-## Validation Rules
-
-### Entry
-
-- `date` is required.
-- `date` must be YYYY-MM-DD.
-- `aaronWords` must be a non-negative integer.
-- `electraWords` must be a non-negative integer.
-- `note` is optional.
-- `note` should be trimmed.
-- At least one word count should be greater than 0.
-
-### Settings
-
-- Names should not be empty.
-- Colors should be valid hex values.
-- Goals should be positive integers if enabled.
-- Activity thresholds should be ascending positive integers.
-- Default chart view must be one of: daily, weekly, cumulative.
-- Default grid view must be one of: team, personA, personB.
-
-## Export Format
-
-Export should produce JSON:
+Export produces:
 
 ```json
 {
@@ -216,14 +94,4 @@ Export should produce JSON:
 }
 ```
 
-## Import Behavior
-
-Recommended behavior:
-- Validate imported data.
-- Show a preview count.
-- Ask whether to merge or replace.
-- For MVP, use replace-only or merge-by-date.
-
-Merge rule:
-- Same date replaces existing entry.
-- New dates are added.
+Import supports `merge` and `replace`. Entries are upserted by date.

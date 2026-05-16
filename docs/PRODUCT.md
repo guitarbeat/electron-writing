@@ -1,8 +1,8 @@
-# Clean Writer Product Requirements
+# Smeemo Product Requirements
 
 ## Overview
 
-Clean Writer is a private website used by two writing partners to log daily writing activity, save it to a hosted database, and visualize progress through charts and an activity grid.
+Smeemo is a private website used by two writing partners to log daily writing activity, save it to a hosted database, and visualize progress through charts and an activity grid.
 
 The app should stay intentionally small.
 
@@ -17,7 +17,7 @@ The app should stay intentionally small.
 
 ## Non-Goals
 
-Clean Writer is not:
+Smeemo is not:
 - a social app
 - a public portfolio
 - a full project management app

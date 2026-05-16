@@ -3,22 +3,17 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import { fileURLToPath } from "url";
 import fs from "fs";
 import { db } from "./src/db/index";
 import { entries, settings } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
-import "dotenv/config";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const SESSION_SECRET = process.env.PASSCODE || "temporary-fallback-secret-for-dev";
+const APP_PASSCODE = process.env.PASSCODE || "0000";
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.PASSCODE || "temporary-fallback-secret-for-dev";
 const COOKIE_NAME = "clean_writer_session";
 
-async function startServer() {
+export function createApp() {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
   app.use(cookieParser());
@@ -48,8 +43,7 @@ async function startServer() {
   // Session
   app.post("/api/session", (req, res) => {
     const { passcode } = req.body;
-    const expectedPasscode = process.env.PASSCODE || "0000"; // Default for easier recovery
-    if (passcode === expectedPasscode) {
+    if (passcode === APP_PASSCODE) {
       const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
@@ -295,6 +289,13 @@ async function startServer() {
     }
   });
 
+  return app;
+}
+
+export async function startServer() {
+  const app = createApp();
+  const PORT = Number(process.env.PORT) || 3000;
+
   // --- Vite Middleware / Static Assets ---
 
   try {
@@ -313,7 +314,7 @@ async function startServer() {
       const distPath = path.join(process.cwd(), "dist");
       if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
-        app.get("*", (req, res) => {
+        app.get(/.*/, (req, res) => {
           res.sendFile(path.join(distPath, "index.html"));
         });
         console.log("SERVER_BOOT: Serving static files from dist.");
@@ -330,4 +331,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}

@@ -10,6 +10,11 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
+        <img
+          src="/smeemo.png"
+          alt="Smeemo"
+          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
+        />
         <div className="text-display text-2xl animate-pulse">Smeemo</div>
       </div>
     );
