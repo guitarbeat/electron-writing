@@ -21,6 +21,8 @@ interface ProgressChartProps {
 }
 
 export function ProgressChart({ chartView, setChartView, chartData, settings }: ProgressChartProps) {
+  const hasChartData = chartData.length > 0;
+
   return (
     <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -32,6 +34,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <button
               key={v}
               onClick={() => setChartView(v)}
+              aria-pressed={chartView === v}
               className={`text-[9px] sm:text-[10px] font-black uppercase px-2 sm:px-3 py-1 rounded transition-colors ${chartView === v ? 'bg-ink text-white' : 'hover:bg-primary/10'}`}
             >
               {v}
@@ -39,7 +42,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
           ))}
         </div>
       </div>
-      <div className="w-full flex-1 min-h-0">
+      <div className="w-full flex-1 min-h-0 relative">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ bottom: 5, left: -20, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
@@ -69,8 +72,16 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <Line name="Team" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
+
+        {!hasChartData && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-bg-paper border-2 border-ink px-4 py-3 shadow-[4px_4px_0_var(--color-ink)] text-center">
+              <p className="text-label text-[10px] text-ink-muted">No entries yet</p>
+              <p className="text-sm font-bold text-ink mt-1">Start with a ledger tile below.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

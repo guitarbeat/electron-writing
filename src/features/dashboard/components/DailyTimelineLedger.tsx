@@ -283,14 +283,16 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                       onBlur={handleTileBlur}
                     />
 
-                    <div className="flex items-center gap-2 min-h-24 md:min-h-28">
+                    <div className="flex items-center gap-2 min-h-0 sm:min-h-24 md:min-h-28">
                       <button
                         type="button"
                         onClick={() => beginNoteEdit(day)}
                         title={`Edit note for ${format(parseISO(day.date), 'MMM d')}`}
                         className={cn(
-                          'w-11 h-11 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
-                          day.entry?.note && 'bg-accent'
+                          'w-11 h-11 border-4 flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
+                          day.entry?.note
+                            ? 'border-ink bg-accent text-ink shadow-sticker'
+                            : 'border-dashed border-ink/30 bg-transparent text-ink-faint hover:border-ink hover:bg-white hover:text-ink hover:shadow-sticker'
                         )}
                       >
                         <StickyNote className="w-5 h-5" />
@@ -425,7 +427,7 @@ function WriterTile({
           inputMode="numeric"
           min="0"
           type="number"
-          className="w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl font-black text-ink outline-none focus:bg-white"
+          className="number-input-clean w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl font-black text-ink outline-none focus:bg-white"
           aria-label={`${name} ${metric} for ${date}`}
         />
       </div>
@@ -460,4 +462,3 @@ function WriterTile({
     </button>
   );
 }
-
