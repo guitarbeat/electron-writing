@@ -2,6 +2,9 @@ import { calculateTrackerStats } from '../src/lib/stats.js';
 import { Entry, Settings } from '../src/types.js';
 import { createApp } from '../server.js';
 import request from 'supertest';
+import { db } from '../src/db';
+import { settings } from '../src/db/schema';
+import { eq } from 'drizzle-orm';
 import { format } from 'date-fns';
 
 async function runTests() {
@@ -44,9 +47,20 @@ async function runTests() {
 
   // 3. Test /api/settings sanitization
   console.log("\n--- Testing /api/settings sanitization ---");
+
+  // Setup some settings in the DB first so login fallback uses DB if needed, or at least exists
+  try {
+      await db.insert(settings).values({ id: 'global', passcode: '0000', isSetupComplete: true }).onConflictDoNothing();
+  } catch (e) {
+      console.log("Error inserting settings (maybe schema missing?), proceeding:", e);
+  }
   const loginRes = await request(app)
     .post('/api/session')
-    .send({ passcode: res.body.passcode });
+    .send({ passcode: res.body.passcode || '0000' });
+
+  if (loginRes.status !== 200) {
+      console.error("Login failed:", loginRes.body);
+  }
   
   const cookie = loginRes.header['set-cookie'];
 
