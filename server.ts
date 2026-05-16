@@ -14,7 +14,9 @@ const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
   const app = express();
-  const APP_PASSCODE = process.env.PASSCODE || "0000";
+  // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
+  const rawPasscode = process.env.PASSCODE || "0000";
+  const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
   
   if (!process.env.PASSCODE) {
     console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
@@ -24,17 +26,18 @@ export function createApp() {
   app.use(cookieParser());
 
   // Auth Middleware
-  const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  // Auth Middleware
+  const authenticate = (req: any, res: any, next: any) => {
     const token = req.cookies[COOKIE_NAME];
     if (!token) {
-      return (res as any).status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     try {
       jwt.verify(token, APP_PASSCODE as string);
-      (next as any)();
+      next();
     } catch (err) {
-      (res as any).clearCookie(COOKIE_NAME);
-      return (res as any).status(401).json({ error: "Invalid session" });
+      res.clearCookie(COOKIE_NAME);
+      return res.status(401).json({ error: "Invalid session" });
     }
   };
 

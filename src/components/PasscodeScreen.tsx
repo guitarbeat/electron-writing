@@ -48,7 +48,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
 
         <div className="text-center">
           <h1 className="text-display text-4xl mb-2">Smeemo</h1>
-          <p className="text-ink-muted font-bold italic">Aaron and Electra's private space...</p>
+          <p className="text-ink-muted font-bold italic">Aaron & Electra's private writing nook</p>
         </div>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
@@ -78,7 +78,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
             {isLoading ? 'Verifying...' : (
               <>
                 <Lock className="w-5 h-5" />
-                Enter Workspace
+                Unlock our desk
               </>
             )}
           </button>

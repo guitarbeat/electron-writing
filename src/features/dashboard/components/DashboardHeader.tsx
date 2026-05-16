@@ -15,8 +15,8 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
         <div className="flex items-center gap-3">
           <h1 className="text-display">Smeemo</h1>
         </div>
-        <p className="text-sm font-bold opacity-60">
-          {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Tracker
+        <p className="text-sm font-bold italic opacity-60">
+          {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Writing Sanctuary
         </p>
       </div>
 
