@@ -1,6 +1,6 @@
-import { calculateTrackerStats } from '../src/lib/stats';
-import { Entry, Settings } from '../src/types';
-import { createApp } from '../server';
+import { calculateTrackerStats } from '../src/lib/stats.js';
+import { Entry, Settings } from '../src/types.js';
+import { createApp } from '../server.js';
 import request from 'supertest';
 import { format } from 'date-fns';
 
