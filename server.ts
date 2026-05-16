@@ -149,11 +149,13 @@ export function createApp() {
 
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
-      const { date, aaronWords, electraWords, note } = req.body;
+      const { date, aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
       const parsedAaron = Math.max(0, parseInt(aaronWords) || 0);
       const parsedElectra = Math.max(0, parseInt(electraWords) || 0);
+      const parsedAaronTime = Math.max(0, parseInt(aaronTime) || 0);
+      const parsedElectraTime = Math.max(0, parseInt(electraTime) || 0);
 
-      if (!date || (parsedAaron === 0 && parsedElectra === 0 && !note)) {
+      if (!date || (parsedAaron === 0 && parsedElectra === 0 && parsedAaronTime === 0 && parsedElectraTime === 0 && !note)) {
         return res.status(400).json({ error: "Date and at least some content required" });
       }
 
@@ -164,6 +166,8 @@ export function createApp() {
         date: date,
         aaronWords: parsedAaron,
         electraWords: parsedElectra,
+        aaronTime: parsedAaronTime,
+        electraTime: parsedElectraTime,
         note: note || "",
         updatedAt: new Date(),
       };
@@ -188,12 +192,14 @@ export function createApp() {
   app.patch("/api/entries/:id", authenticate, async (req, res) => {
     try {
       const { id } = req.params as { id: string };
-      const { aaronWords, electraWords, note } = req.body;
+      const { aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
       const updateData: any = {
         updatedAt: new Date(),
       };
       if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
       if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
+      if (aaronTime !== undefined) updateData.aaronTime = Math.max(0, parseInt(aaronTime) || 0);
+      if (electraTime !== undefined) updateData.electraTime = Math.max(0, parseInt(electraTime) || 0);
       if (note !== undefined) updateData.note = note;
 
       await db.update(entries).set(updateData).where(eq(entries.id, id));
@@ -287,6 +293,8 @@ export function createApp() {
           date: e.id,
           aaronWords: e.aaronWords,
           electraWords: e.electraWords,
+          aaronTime: e.aaronTime,
+          electraTime: e.electraTime,
           note: e.note,
           createdAt: e.createdAt.toISOString(),
           updatedAt: e.updatedAt.toISOString(),
@@ -319,6 +327,8 @@ export function createApp() {
               date: entry.date,
               aaronWords: parseInt(entry.aaronWords) || 0,
               electraWords: parseInt(entry.electraWords) || 0,
+              aaronTime: parseInt(entry.aaronTime) || 0,
+              electraTime: parseInt(entry.electraTime) || 0,
               note: entry.note || "",
               createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
               updatedAt: new Date(),
@@ -327,6 +337,8 @@ export function createApp() {
               set: {
                 aaronWords: parseInt(entry.aaronWords) || 0,
                 electraWords: parseInt(entry.electraWords) || 0,
+                aaronTime: parseInt(entry.aaronTime) || 0,
+                electraTime: parseInt(entry.electraTime) || 0,
                 note: entry.note || "",
                 updatedAt: new Date(),
               }
