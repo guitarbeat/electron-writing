@@ -8,8 +8,8 @@ import { db } from "./src/db/index";
 import { entries, settings } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
 
-const APP_PASSCODE = process.env.PASSCODE || "0000";
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.PASSCODE || "temporary-fallback-secret-for-dev";
+const APP_PASSCODE = process.env.PASSCODE;
+const SESSION_SECRET = APP_PASSCODE;
 const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
