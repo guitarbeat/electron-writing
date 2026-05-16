@@ -53,6 +53,18 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Diagnostics
+  app.get("/api/diagnostics", async (req, res) => {
+    try {
+      const { sql } = await import("drizzle-orm");
+      await db.execute(sql`SELECT 1`);
+      res.json({ status: "ok", message: "Database connection successful", timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("DIAGNOSTICS_ERROR:", err.message);
+      res.status(500).json({ status: "error", message: "Database connection failed", timestamp: new Date().toISOString() });
+    }
+  });
+
   // Passcode helper (reveals passcode for the Smeemo animation)
   // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
   // In this project context, convenience/support for the shared partner experience 
@@ -64,9 +76,9 @@ export function createApp() {
         ? dbSettings[0].passcode 
         : APP_PASSCODE;
       res.json({ passcode });
-    } catch (err) {
-      console.error("API Error fetching helper data:", err);
-      res.status(500).json({ error: "Could not fetch helper data" });
+    } catch (err: any) {
+      console.warn("DB_WARN: Could not fetch passcode from DB. Using fallback.", err.message);
+      res.json({ passcode: APP_PASSCODE });
     }
   });
 
@@ -84,8 +96,8 @@ export function createApp() {
       } else {
         console.log(`AUTH_CHECK: Using fallback environment passcode.`);
       }
-    } catch (err) {
-      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback", err);
+    } catch (err: any) {
+      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", err.message);
     }
     
     // Debug logging for authentication issues
