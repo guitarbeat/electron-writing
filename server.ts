@@ -55,6 +55,19 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Passcode helper (reveals passcode for the Smeemo animation)
+  app.get("/api/passcode/helper", async (req, res) => {
+    try {
+      const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+      const passcode = (dbSettings.length > 0 && dbSettings[0].passcode) 
+        ? dbSettings[0].passcode 
+        : APP_PASSCODE;
+      res.json({ passcode });
+    } catch (err) {
+      res.status(500).json({ error: "Could not fetch helper data" });
+    }
+  });
+
   // Session
   app.post("/api/session", async (req, res) => {
     const { passcode } = req.body;
