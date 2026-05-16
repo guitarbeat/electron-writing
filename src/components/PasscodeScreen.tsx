@@ -11,8 +11,40 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
 
-  const revealedPasscode = import.meta.env.VITE_PASSCODE;
+  const revealedPasscode = import.meta.env.VITE_PASSCODE || '0000';
+
+  React.useEffect(() => {
+    if (attempts >= 3 && revealedPasscode && !isLoading && !isTyping) {
+      setIsTyping(true);
+      setError(false);
+      let i = 0;
+      setPasscode('');
+      
+      const interval = setInterval(() => {
+        setPasscode(revealedPasscode.slice(0, i + 1));
+        i++;
+        if (i >= revealedPasscode.length) {
+          clearInterval(interval);
+          setTimeout(async () => {
+            setIsLoading(true);
+            const success = await onLogin(revealedPasscode);
+            if (success) {
+              setAttempts(0);
+            } else {
+              setAttempts(0); // Reset anyway to prevent infinite loop
+              setError(true);
+            }
+            setIsLoading(false);
+            setIsTyping(false);
+          }, 500);
+        }
+      }, 150);
+      
+      return () => clearInterval(interval);
+    }
+  }, [attempts, revealedPasscode, isLoading, isTyping, onLogin]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,19 +86,30 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
           <div className="relative">
             <input
-              type="password"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="Enter shared passcode..."
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               className={`input-playful w-full text-center text-2xl tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
               autoFocus
+              aria-label="Shared passcode"
             />
-            {error && (
+            {error && !isTyping && (
               <p className="text-red-500 text-xs font-black uppercase mt-2 text-center tracking-tighter">
-                {attempts >= 3 && revealedPasscode 
-                  ? `Hint: The passcode is ${revealedPasscode}` 
-                  : 'Oops! Incorrect passcode.'}
+                Oops! Incorrect passcode.
               </p>
+            )}
+            {isTyping && (
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="text-primary text-xs font-black uppercase mt-2 text-center tracking-tighter"
+              >
+                Smeemo is helping you out... ✨
+              </motion.p>
             )}
           </div>
 

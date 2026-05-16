@@ -132,10 +132,14 @@ Every card should feel like it was slapped onto the blush paper background.
 - **Hover**: `-translate-x-1 -translate-y-1 shadow-sticker-hover`
 - **Active**: `translate-x-[4px] translate-y-[4px] shadow-sticker-active`
 
-### 4. Interactive "Juice"
-- **Buttons**: Should "click" down physically (hard shadow shift).
-- **Inputs**: Should have a "thick" focus ring that feels like a marker outline.
 - **Charts**: Use `var(--color-primary)` and `var(--color-secondary)` exclusively. No generic blues.
+
+### 5. High-Density Metrics (NaNoWriMo Successor)
+Since Smeemo tracks aggressive writing goals, metrics should be "tactile" and high-contrast.
+- **Health Indicators**: "Overall Health" should use the `status` palette. `status.success` (Mint) for on-track/ahead, and `status.error` (Juicy Pink) for "Danger" (significant deficit).
+- **Deficit Logic**: Use "Green for Gain, Red for Pain". A positive deficit (ahead of schedule) should be highlighted with `bg-status-success` or `text-status-success`. A negative deficit should use `text-status-error`.
+- **WPM & Stats**: Use `JetBrains Mono` for all technical metrics (Speed, Words, Days Left). This reinforces the "spreadsheet as an app" feeling from the Camp NaNoWriMo heritage.
+- **Status Pills**: Use uppercase labels with thick borders for "ACHIEVED" vs "MISSED" day statuses.
 
 ## Implementation Guidelines
 

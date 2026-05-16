@@ -87,6 +87,8 @@ Requires session. Returns all entries ordered by descending `id`.
     "date": "2026-05-15",
     "aaronWords": 600,
     "electraWords": 450,
+    "aaronTime": 45,
+    "electraTime": 30,
     "note": "Drafted opening scene",
     "createdAt": "2026-05-15T20:30:00.000Z",
     "updatedAt": "2026-05-15T20:30:00.000Z"
@@ -105,6 +107,8 @@ Request:
   "date": "2026-05-15",
   "aaronWords": 600,
   "electraWords": 450,
+  "aaronTime": 45,
+  "electraTime": 30,
   "note": "Drafted opening scene"
 }
 ```
