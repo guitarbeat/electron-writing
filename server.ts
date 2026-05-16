@@ -9,7 +9,6 @@ import { entries, settings } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 const APP_PASSCODE = process.env.PASSCODE;
-const SESSION_SECRET = APP_PASSCODE;
 const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
@@ -25,7 +24,7 @@ export function createApp() {
       return res.status(401).json({ error: "Unauthorized" });
     }
     try {
-      jwt.verify(token, SESSION_SECRET);
+      jwt.verify(token, APP_PASSCODE as string);
       next();
     } catch (err) {
       res.clearCookie(COOKIE_NAME);
@@ -44,7 +43,7 @@ export function createApp() {
   app.post("/api/session", (req, res) => {
     const { passcode } = req.body;
     if (passcode === APP_PASSCODE) {
-      const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
+      const token = jwt.sign({ authorized: true }, APP_PASSCODE as string, { expiresIn: "30d" });
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -66,7 +65,7 @@ export function createApp() {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.json({ authorized: false });
     try {
-      jwt.verify(token, SESSION_SECRET);
+      jwt.verify(token, APP_PASSCODE as string);
       res.json({ authorized: true });
     } catch (err) {
       res.json({ authorized: false });

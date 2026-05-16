@@ -3,44 +3,51 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTracker } from './hooks/useTracker';
 import { PasscodeScreen } from './components/PasscodeScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
+import { Analytics } from "@vercel/analytics/next"
 
 export default function App() {
   const { isAuthorized, isLoading, login } = useTracker();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
-        <img
-          src="/smeemo.png"
-          alt="Smeemo"
-          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
-        />
-        <div className="text-display text-2xl animate-pulse">Smeemo</div>
-      </div>
+      <>
+        <Analytics />
+        <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
+          <img
+            src="/smeemo.png"
+            alt="Smeemo"
+            className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
+          />
+          <div className="text-display text-2xl animate-pulse">Smeemo</div>
+        </div>
+      </>
     );
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {isAuthorized ? (
-        <motion.div
-           key="dashboard"
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           exit={{ opacity: 0 }}
-        >
-          <Dashboard />
-        </motion.div>
-      ) : (
-        <motion.div
-           key="passcode"
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           exit={{ opacity: 0 }}
-        >
-          <PasscodeScreen onLogin={login} />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <>
+      <Analytics />
+      <AnimatePresence mode="wait">
+        {isAuthorized ? (
+          <motion.div
+            key="dashboard"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Dashboard />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="passcode"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <PasscodeScreen onLogin={login} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
