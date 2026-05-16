@@ -40,7 +40,8 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
         <div className="flex justify-between items-center px-2">
           <button 
             onClick={() => setViewDate(subMonths(viewDate, 1))}
-            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10"
+            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            aria-label="Previous month"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -49,7 +50,8 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
           </h4>
           <button 
             onClick={() => setViewDate(addMonths(viewDate, 1))}
-            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10"
+            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            aria-label="Next month"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
