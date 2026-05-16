@@ -35,7 +35,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
     <div className="flex flex-col gap-4">
       {label && <label className="text-[10px] font-black uppercase tracking-widest text-ink/40 pl-1">{label}</label>}
       
-      <div className="sticker-card bg-white p-4 border-4 border-ink flex flex-col gap-4 min-w-[300px]">
+      <div className="sticker-card bg-white p-3 sm:p-4 border-4 border-ink flex flex-col gap-4 w-full max-w-[320px] mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-2">
           <button 

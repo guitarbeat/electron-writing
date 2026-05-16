@@ -196,7 +196,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
   };
 
   return (
-    <section className="sticker-card bg-white p-4 md:p-8 flex flex-col gap-6">
+    <section className="sticker-card bg-white p-4 sm:p-6 md:p-8 flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-4 border-ink pb-5">
         <div>
           <h2 className="font-display text-3xl md:text-4xl font-black text-ink">Daily Writing Ledger</h2>
@@ -205,7 +205,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-bg-paper border-4 border-ink px-4 py-3 shadow-[4px_4px_0_#2b1720]">
+        <div className="flex flex-wrap items-center gap-3 bg-bg-paper border-4 border-ink px-3 sm:px-4 py-2 sm:py-3 shadow-[4px_4px_0_#2b1720]">
           <LegendSwatch color={personAColor} label={personAName} />
           <div className="w-1 h-8 bg-ink" />
           <LegendSwatch color={personBColor} label={personBName} />
@@ -243,7 +243,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                 <div
                   className={cn(
                     'flex-1 min-w-0 flex flex-col gap-3',
-                    day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[8px_8px_0_#2b1720] p-4 md:p-6'
+                    day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[8px_8px_0_#2b1720] p-3 sm:p-4 md:p-6'
                   )}
                 >
                   {day.isDeadlineDay && (
@@ -253,7 +253,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-start gap-3 md:gap-4">
+                  <div className="flex flex-row flex-wrap sm:flex-nowrap items-start gap-3 md:gap-4">
                     <WriterTile
                       date={day.date}
                       name={personAName}
@@ -402,7 +402,7 @@ function WriterTile({
 
   if (isEditing) {
     return (
-      <div className="w-[calc(50%-0.375rem)] min-w-[8.5rem] md:w-36 h-24 md:h-28 bg-white border-4 border-ink shadow-[6px_6px_0_#2b1720] p-3 flex flex-col justify-between">
+      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 bg-white border-4 border-ink shadow-[6px_6px_0_#2b1720] p-3 flex flex-col justify-between">
         <label className="font-mono text-[10px] font-black uppercase tracking-widest text-ink-muted truncate">{name}</label>
         <input
           autoFocus
@@ -436,7 +436,7 @@ function WriterTile({
       onClick={onBeginEdit}
       title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'w-[calc(50%-0.375rem)] min-w-[8.5rem] md:w-36 h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center',
+        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center',
         'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0_#2b1720] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0_#2b1720]',
         hasValue ? 'border-ink shadow-[6px_6px_0_#2b1720]' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
       )}

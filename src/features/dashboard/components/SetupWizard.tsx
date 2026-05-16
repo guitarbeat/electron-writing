@@ -15,7 +15,7 @@ export function ProjectSettingsStep({
 }) {
   return (
     <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(["words", "pages"] as const).map((metric) => (
           <button
             key={metric}
@@ -167,6 +167,7 @@ export function SetupWizard({
     updatedAt: new Date(),
     lastModifiedBy: "System"
   });
+  const [errorStep, setErrorStep] = useState<number | null>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -196,12 +197,19 @@ export function SetupWizard({
 
   const handleSave = async (isSkip = false) => {
     setIsSaving(true);
+    setErrorStep(null);
     const finalData = { ...formData, lastModifiedBy: "A Writer" };
     if (isSkip || currentStep === steps.length - 1) {
       finalData.isSetupComplete = true;
     }
-    await onSave(finalData);
+    const success = await onSave(finalData);
     setIsSaving(false);
+
+    if (!success) {
+      setErrorStep(currentStep);
+      return;
+    }
+
     if (!isSkip && currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
@@ -215,16 +223,16 @@ export function SetupWizard({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6 mt-0"
+      className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[100] flex items-center justify-center p-3 sm:p-6 mt-0"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-8 relative overflow-hidden max-h-[90vh] overflow-y-auto"
+        className={`sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-6 sm:gap-8 relative overflow-hidden max-h-[95vh] overflow-y-auto ${errorStep === currentStep ? 'animate-shake border-red-500' : ''}`}
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full -translate-y-1/2 translate-x-1/2" />
         
-        <div className="p-8 pb-0">
+        <div className="p-6 sm:p-8 pb-0">
           <div className="flex flex-col items-center text-center gap-4 relative">
             <div className="w-16 h-16 bg-white border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
               {steps[currentStep].icon}
@@ -236,10 +244,10 @@ export function SetupWizard({
           </div>
         </div>
 
-        <div className="px-8 flex-1">
+        <div className="px-6 sm:px-8 flex-1">
           {currentStep === 1 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <LongPressInput
                      value={formData.personAName}
                      onChangeName={(v) => setFormData({...formData, personAName: v})}
@@ -267,7 +275,7 @@ export function SetupWizard({
           )}
         </div>
 
-        <div className="p-8 pt-0 flex flex-col gap-6">
+        <div className="p-6 sm:p-8 pt-0 flex flex-col gap-6">
           <div className="flex justify-center gap-2">
             {steps.map((_, i) => (
               <div 
@@ -289,6 +297,12 @@ export function SetupWizard({
             <button onClick={() => handleSave(true)} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
               Skip for now
             </button>
+          )}
+
+          {settings?.isSetupComplete && (
+             <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
+                Close Settings
+             </button>
           )}
         </div>
       </motion.div>
