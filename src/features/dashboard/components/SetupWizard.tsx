@@ -65,7 +65,19 @@ export function ProjectSettingsStep({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
 
+export function DeadlineStep({
+  formData,
+  setFormData,
+}: {
+  formData: Settings;
+  setFormData: React.Dispatch<React.SetStateAction<Settings>>;
+}) {
+  return (
+    <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
       <div className="flex flex-col gap-4">
         <CalendarPicker
           label="Project Deadline"
@@ -171,9 +183,14 @@ export function SetupWizard({
       icon: <SettingsIcon className="w-8 h-8 text-accent" />
     },
     {
-      title: "Project Settings",
+      title: "Project Target",
       description: "What are we aiming for?",
       icon: <Trophy className="w-8 h-8 text-[#facc15]" />
+    },
+    {
+      title: "Timeline",
+      description: "When do we want this done?",
+      icon: <Calendar className="w-8 h-8 text-[#5eead4]" />
     }
   ];
 
@@ -243,6 +260,10 @@ export function SetupWizard({
 
           {currentStep === 2 && (
              <ProjectSettingsStep formData={formData} setFormData={setFormData} />
+          )}
+
+          {currentStep === 3 && (
+             <DeadlineStep formData={formData} setFormData={setFormData} />
           )}
         </div>
 
