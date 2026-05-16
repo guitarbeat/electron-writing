@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import { db } from "./src/db/index";
-import { entries, settings } from "./src/db/schema";
+import { entries, settings, DEFAULT_SETTINGS } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 const APP_PASSCODE = process.env.PASSCODE;
@@ -152,26 +152,8 @@ export function createApp() {
     try {
       const results = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       if (results.length === 0) {
-        // Initial defaults
         const defaults = {
-          id: "global",
-          personAName: "Aaron",
-          personBName: "Electra",
-          personAColor: "#ff4d8d",
-          personBColor: "#7c3aed",
-          teamColor: "#2b1720",
-          goalsEnabled: true,
-          individualGoalsEnabled: false,
-          personAWeeklyGoal: 3500,
-          personBWeeklyGoal: 3500,
-          activityThresholds: [250, 750, 1500],
-          defaultChartView: "daily" as const,
-          defaultGridView: "team" as const,
-          isSetupComplete: false,
-          metric: "words" as const,
-          projectGoal: 50000,
-          deadline: "2026-12-31",
-          setupUpdateCount: 0,
+          ...DEFAULT_SETTINGS,
           updatedAt: new Date(),
         };
         await db.insert(settings).values(defaults);
