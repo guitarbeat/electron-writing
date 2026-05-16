@@ -37,8 +37,8 @@ colors:
 
 typography:
   fonts:
-    sans: "Nunito, ui-sans-serif, system-ui, sans-serif"
-    display: "Fraunces, Cooper Black, Georgia, serif"
+    sans: "Inter, ui-sans-serif, system-ui, sans-serif"
+    display: "Space Grotesk, system-ui, sans-serif"
     mono: "JetBrains Mono, ui-monospace, SFMono-Regular, monospace"
 
   scales:
@@ -113,7 +113,7 @@ The aesthetic remains **"Sticker Pop"** — a collision of high-end editorial ty
 
 ### 1. The Collaborative Header
 Titles emphasize the partnership.
-- **Project Title**: Oversized `Fraunces` heading.
+- **Project Title**: Oversized `Space Grotesk` heading.
 - **Status Indicator**: "Collaborative Project: Aaron & Electra" subtitle using the `Sans` scale with italic contrast.
 - **Author Avatars**: Circular, high-contrast avatars with thick `ink` borders and hard shadows.
 
@@ -140,8 +140,8 @@ Every card should feel like it was slapped onto the blush paper background.
 ## Implementation Guidelines
 
 ### Typography Pairings
-- **Fraunces** (Display): Use for project titles, major milestones, and collaborative status.
-- **Nunito** (UI): Primary interface font for labels, readability, and partner interaction.
+- **Space Grotesk** (Display): Use for project titles, major milestones, and collaborative status.
+- **Inter** (UI): Primary interface font for labels, readability, and partner interaction.
 - **JetBrains Mono** (Data): Technical readouts, spreadsheet cells, and writing metrics.
 
 ### Layout Logic

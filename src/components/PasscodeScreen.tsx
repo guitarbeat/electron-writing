@@ -36,7 +36,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
 
         <div className="text-center">
           <h1 className="text-display text-4xl mb-2">Smeemo</h1>
-          <p className="text-ink-muted font-bold italic">The Writers' private space.</p>
+          <p className="text-ink-muted font-bold italic">Aaron and Electra's private space...</p>
         </div>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
