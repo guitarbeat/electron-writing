@@ -2,18 +2,19 @@
 
 ## Overview
 
-Smeemo is a private website used by two writing partners to log daily writing activity, save it to a hosted database, and visualize progress through charts and an activity grid.
+Smeemo is a private writing tracker and a **spiritual successor to Camp NaNoWriMo tracking**. It is designed for two writing partners to log daily word counts, track time spent, and monitor progress toward ambitious goals through high-density metrics and expressive visualizations.
 
-The app should stay intentionally small.
+The app should stay intentionally small but feature-rich in its data tracking.
 
 ## Product Goals
 
-1. Make logging writing activity fast.
-2. Show individual and team writing progress.
-3. Support optional team and individual goals.
-4. Make consistency visible through an activity grid.
-5. Avoid login complexity while keeping the site private.
-6. Allow settings/onboarding information to be updated over time.
+1. Make logging writing activity and time fast.
+2. Show individual and team writing progress using NaNoWriMo-style metrics.
+3. Support aggressive goal tracking (e.g., 50k words in 30 days).
+4. Make consistency visible through an activity grid and "Achieved/Missed" day tracking.
+5. Provide high-precision speed and deficit analysis.
+6. Avoid login complexity while keeping the site private.
+7. Allow settings/onboarding information to be updated over time.
 
 ## Non-Goals
 
@@ -41,44 +42,44 @@ Do not add:
 ### Aaron
 
 Needs:
-- quickly log writing words
-- see personal writing line
-- see team progress
+- quickly log writing words and time spent
+- see personal writing line and speed (WPM)
+- see team progress and deficit
 - adjust goals/settings as needed
 
 ### Electra
 
 Needs:
-- quickly log writing words
-- see personal writing line
-- see team progress
+- quickly log writing words and time spent
+- see personal writing line and speed (WPM)
+- see team progress and deficit
 - use the app without friction
 
 ## Core User Stories
 
 ### Logging
 
-As a user, I want to enter today’s word counts so the tracker updates.
+As a user, I want to enter today’s word counts and time spent so the tracker updates.
 
 Acceptance criteria:
 - I can choose a date.
-- I can enter Aaron words.
-- I can enter Electra words.
-- I can leave either value at 0.
+- I can enter Aaron words and minutes spent.
+- I can enter Electra words and minutes spent.
+- I can leave any value at 0.
 - I can add an optional note.
 - I can save the entry.
 - I can edit/delete an existing entry.
 
 ### Charts
 
-As a user, I want to see writing progress over time.
+As a user, I want to see writing progress and velocity over time.
 
 Acceptance criteria:
 - I can see a line for Aaron.
 - I can see a line for Electra.
 - I can see a line for team total.
 - I can switch between daily, weekly, and cumulative views.
-- Tooltips show date/period and word counts.
+- Tooltips show date/period, word counts, and writing speed (WPM).
 
 ### Activity Grid
 
@@ -92,13 +93,31 @@ Acceptance criteria:
 
 ### Goals
 
-As a user, I want optional goals so we can track momentum without pressure.
+As a user, I want detailed goal metrics so we can track momentum and manage backlogs.
 
 Acceptance criteria:
-- Team goal can be enabled/disabled.
+- Team goal and deadline are configurable.
 - Individual goals can be enabled/disabled.
-- Weekly goals are supported.
-- Progress is shown in a calm, non-competitive way.
+- The app calculates "Overall Health" (Danger/Success) based on the deficit.
+- I can see "Days Left" and "Per Day Goal" for the remaining period.
+- I can see "Achieved Days" vs "Missed Days" relative to the daily target.
+- Progress is shown in a way that highlights the "Deficit" (Green for ahead, Red for behind).
+
+## Core Metrics
+
+To support the Camp NaNoWriMo workflow, Smeemo must track or derive:
+
+| Metric | Description |
+| :--- | :--- |
+| **Overall Health** | A status indicator (Danger/Success) based on current progress vs. target. |
+| **Deficit** | The backlog of words needed to reach the target. Green = ahead, Red = behind. |
+| **Speed (WPM)** | Calculated as `Words Written / Time Spent (min)`. |
+| **Per Day Goal** | `(Total Goal - Cumulative Words) / Days Left`. |
+| **Achieved Days** | Count of days where the daily target was met. |
+| **Missed Days** | Count of days where the daily target was missed. |
+| **Cumulative Words** | Total words written across the entire project/season. |
+| **Completion %** | `(Cumulative Words / Total Goal) * 100`. |
+| **Days Over/Left** | Tracking against the start date and deadline. |
 
 ### Settings
 
