@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
@@ -9,11 +10,15 @@ import { db } from "./src/db/index";
 import { entries, settings, DEFAULT_SETTINGS } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
 
-const APP_PASSCODE = process.env.PASSCODE;
 const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
   const app = express();
+  const APP_PASSCODE = process.env.PASSCODE || "0000";
+  
+  if (!process.env.PASSCODE) {
+    console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
+  }
 
   app.use(express.json());
   app.use(cookieParser());
@@ -43,7 +48,7 @@ export function createApp() {
   // Session
   app.post("/api/session", (req, res) => {
     const { passcode } = req.body;
-    if (passcode === APP_PASSCODE) {
+    if (passcode && passcode.toString().trim() === APP_PASSCODE.trim()) {
       const token = jwt.sign({ authorized: true }, APP_PASSCODE as string, { expiresIn: "30d" });
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
