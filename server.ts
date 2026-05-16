@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import fs from "fs";
@@ -380,6 +379,7 @@ export async function startServer() {
   try {
     if (process.env.NODE_ENV !== "production") {
       console.log("SERVER_BOOT: Initializing Vite middleware...");
+      const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { 
           middlewareMode: true,
