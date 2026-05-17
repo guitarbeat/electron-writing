@@ -1,6 +1,6 @@
 # Smeemo Data Model
 
-Smeemo stores two tables in Neon PostgreSQL: `entries` and `settings`. The schema lives in `src/db/schema.ts` and is managed with Drizzle Kit.
+Smeemo stores two tables in Neon PostgreSQL: `entries` and `settings`. The schema lives in `server/db/schema.ts` and is managed with Drizzle Kit.
 
 ## Entries
 
@@ -76,7 +76,7 @@ export const settings = pgTable("settings", {
 
 Settings control names, colors, chart defaults, grid defaults, goal configuration, setup/onboarding state, metric label, project goal, and deadline.
 
-Derived statistics are calculated in `src/lib/stats.ts` to support the Camp NaNoWriMo tracking logic:
+Derived statistics are calculated in `client/lib/stats.ts` to support the Camp NaNoWriMo tracking logic:
 
 - **Totals**: `teamWords = aaronWords + electraWords`, `teamTime = aaronTime + electraTime`.
 - **Targeting**:

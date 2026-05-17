@@ -8,11 +8,11 @@ This document outlines the workflows, commands, and architecture patterns for Sm
 Always run these before proposing changes or after logic updates.
 
 - **Type Check**: `pnpm run lint` (runs `tsc --noEmit`)
-- **Smoke Test**: `npx tsx scratch/smoke_test.ts` (verifies basic login)
-- **Logic Tests**: `npx tsx scratch/logic_test.ts` (verifies stats, security sanitization, and session checks)
+- **Smoke Test**: `npx tsx tests/smoke.test.ts` (verifies basic login)
+- **Logic Tests**: `npx tsx tests/logic.test.ts` (verifies stats, security sanitization, and session checks)
 
 ### 2. Database Management
-- **Schema Push**: `pnpm run db:push` (syncs `src/db/schema.ts` to the database)
+- **Schema Push**: `pnpm run db:push` (syncs `server/db/schema.ts` to the database)
 - **Database Studio**: `pnpm run db:studio` (GUI for database inspection)
 
 ### 3. Build & Deploy
