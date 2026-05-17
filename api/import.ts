@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { db } from "./_lib/db";
-import { entries, settings } from "./_lib/schema";
-import { isAuthenticated } from "./_lib/auth";
+import { db } from "./_lib/db.js";
+import { entries, settings } from "./_lib/schema.js";
+import { isAuthenticated } from "./_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthenticated(req)) {

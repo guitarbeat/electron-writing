@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { db } from "../_lib/db";
-import { settings } from "../_lib/schema";
+import { db } from "../_lib/db.js";
+import { settings } from "../_lib/schema.js";
 import { eq } from "drizzle-orm";
-import { APP_PASSCODE, createSessionToken, setCookieHeader, clearCookieHeader } from "../_lib/auth";
+import { APP_PASSCODE, createSessionToken, setCookieHeader, clearCookieHeader } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST - Create session (login)

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { db } from "../_lib/db";
-import { entries } from "../_lib/schema";
+import { db } from "../_lib/db.js";
+import { entries } from "../_lib/schema.js";
 import { eq, desc } from "drizzle-orm";
-import { isAuthenticated } from "../_lib/auth";
+import { isAuthenticated } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthenticated(req)) {
