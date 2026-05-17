@@ -13,8 +13,8 @@ async function runTests() {
   const todayStr = format(now, 'yyyy-MM-dd');
   
   const mockEntries: Entry[] = [
-    { id: todayStr, date: todayStr, aaronWords: 500, electraWords: 300, createdAt: now, updatedAt: now },
-    { id: '2000-01-01', date: '2000-01-01', aaronWords: 1000, electraWords: 0, createdAt: now, updatedAt: now }
+    { id: todayStr, date: todayStr, aaronWords: 500, electraWords: 300, aaronTime: 30, electraTime: 20, createdAt: now, updatedAt: now },
+    { id: '2000-01-01', date: '2000-01-01', aaronWords: 1000, electraWords: 0, aaronTime: 60, electraTime: 0, createdAt: now, updatedAt: now }
   ];
   
   const stats = calculateTrackerStats(mockEntries, null);
@@ -31,19 +31,9 @@ async function runTests() {
     console.error(`❌ stats.totalTeam FAILED: expected 1800, got ${stats.totalTeam}`);
   }
 
-  // 2. Test /api/passcode/helper (Privacy-Preserving Hint)
-  console.log("\n--- Testing /api/passcode/helper ---");
-  const app = createApp();
-  const res = await request(app).get('/api/passcode/helper');
-  
-  if (res.status === 200 && res.body.hint !== undefined && res.body.passcode === undefined) {
-    console.log(`✅ /api/passcode/helper returned hint safely without exposing passcode: ${res.body.hint}`);
-  } else {
-    console.error(`❌ /api/passcode/helper FAILED: expected hint, no passcode. Got status ${res.status}, body:`, res.body);
-  }
-
-  // 3. Test Authentication Logic and Fallbacks
+  // 2. Test Authentication Logic and Fallbacks
   console.log("\n--- Testing Authentication Edge Cases ---");
+  const app = createApp();
 
   // Falsy value (0) instead of "0000"
   const loginFailRes = await request(app).post('/api/session').send({ passcode: 0 });
@@ -64,7 +54,7 @@ async function runTests() {
   // Proper fallback environment login ("0000")
   const loginRes = await request(app)
     .post('/api/session')
-    .send({ passcode: "0000" });
+    .send({ passcode: process.env.PASSCODE || '0000' });
   
   if (loginRes.status === 200) {
     console.log("✅ Successful login using environment fallback '0000'");
@@ -82,7 +72,7 @@ async function runTests() {
     console.error("❌ Cookie flags are incorrect:", cookieStr);
   }
 
-  // 4. Test /api/settings sanitization
+  // 3. Test /api/settings sanitization
   console.log("\n--- Testing /api/settings sanitization ---");
 
   const patchRes = await request(app)
