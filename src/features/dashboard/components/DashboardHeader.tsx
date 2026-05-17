@@ -18,15 +18,17 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setShowGuide(true)}
-              className="w-10 h-10 rounded-button border-4 border-ink bg-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+              className="w-10 h-10 rounded-button border-4 border-ink bg-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
               title="Settings"
+              aria-label="Open writing setup"
             >
               <SettingsIcon className="w-5 h-5" />
             </button>
             <button
               onClick={logout}
-              className="w-10 h-10 rounded-button border-4 border-red-500 bg-red-100 text-red-600 flex items-center justify-center shadow-[4px_4px_0_#ef4444] active:shadow-[1px_1px_0_#ef4444] active:translate-x-1 active:translate-y-1"
+              className="w-10 h-10 rounded-button border-4 border-red-500 bg-red-100 text-red-600 flex items-center justify-center shadow-[4px_4px_0_#ef4444] active:shadow-[1px_1px_0_#ef4444] active:translate-x-1 active:translate-y-1 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
               title="Logout"
+              aria-label="Log out"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -53,7 +55,8 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
         </button>
         <button
           onClick={logout}
-          className="button-playful bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] border-red-500 hover:bg-red-200 p-3"
+          className="button-playful bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] border-red-500 hover:bg-red-200 p-3 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
+          aria-label="Log out"
         >
           <LogOut className="w-5 h-5" />
         </button>
@@ -67,4 +70,3 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
     </header>
   );
 }
-

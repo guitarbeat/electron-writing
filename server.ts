@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import fs from "fs";
+import { createServer as createViteServer } from "vite";
 
 // Standardize environment loading to match Vite's behavior
 dotenv.config();
@@ -54,6 +54,18 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Diagnostics
+  app.get("/api/diagnostics", async (req, res) => {
+    try {
+      const { sql } = await import("drizzle-orm");
+      await db.execute(sql`SELECT 1`);
+      res.json({ status: "ok", message: "Database connection successful", timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("DIAGNOSTICS_ERROR:", err.message);
+      res.status(500).json({ status: "error", message: "Database connection failed", timestamp: new Date().toISOString() });
+    }
+  });
+
   // Passcode helper (reveals passcode for the Smeemo animation)
   // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
   // In this project context, convenience/support for the shared partner experience 
@@ -74,8 +86,9 @@ export function createApp() {
         ? dbSettings[0].passcode 
         : APP_PASSCODE;
       res.json({ passcode });
-    } catch (err) {
-      res.status(500).json({ error: "Could not fetch helper data" });
+    } catch (err: any) {
+      console.warn("DB_WARN: Could not fetch passcode from DB. Using fallback.", err.message);
+      res.json({ passcode: APP_PASSCODE });
     }
   });
 
@@ -102,8 +115,8 @@ export function createApp() {
       } else {
         console.log(`AUTH_CHECK: Using fallback environment passcode.`);
       }
-    } catch (err) {
-      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback", err);
+    } catch (err: any) {
+      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", err.message);
     }
     
     // Debug logging for authentication issues
@@ -121,17 +134,16 @@ export function createApp() {
       const secret = process.env.SESSION_SECRET || APP_PASSCODE;
       const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
-      const isVercel = !!process.env.VERCEL;
       
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        // Only require secure cookies in production or on Vercel
+        // Only require secure cookies in production
         // This fixes login issues on local http://localhost
-        secure: isProd || isVercel, 
+        secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
-      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd || isVercel}`);
+      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
       return res.json({ status: "ok" });
     }
     return res.status(401).json({ error: "Invalid passcode" });
@@ -161,17 +173,20 @@ export function createApp() {
       const allEntries = await db.select().from(entries).orderBy(desc(entries.id));
       res.json(allEntries);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
-      const { date, aaronWords, electraWords, note } = req.body;
+      const { date, aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
       const parsedAaron = Math.max(0, parseInt(aaronWords) || 0);
       const parsedElectra = Math.max(0, parseInt(electraWords) || 0);
+      const parsedAaronTime = Math.max(0, parseInt(aaronTime) || 0);
+      const parsedElectraTime = Math.max(0, parseInt(electraTime) || 0);
 
-      if (!date || (parsedAaron === 0 && parsedElectra === 0 && !note)) {
+      if (!date || (parsedAaron === 0 && parsedElectra === 0 && parsedAaronTime === 0 && parsedElectraTime === 0 && !note)) {
         return res.status(400).json({ error: "Date and at least some content required" });
       }
 
@@ -182,6 +197,8 @@ export function createApp() {
         date: date,
         aaronWords: parsedAaron,
         electraWords: parsedElectra,
+        aaronTime: parsedAaronTime,
+        electraTime: parsedElectraTime,
         note: note || "",
         updatedAt: new Date(),
       };
@@ -198,25 +215,29 @@ export function createApp() {
         res.json({ ...newEntry, status: "created" });
       }
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
   app.patch("/api/entries/:id", authenticate, async (req, res) => {
     try {
       const { id } = req.params as { id: string };
-      const { aaronWords, electraWords, note } = req.body;
+      const { aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
       const updateData: any = {
         updatedAt: new Date(),
       };
       if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
       if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
+      if (aaronTime !== undefined) updateData.aaronTime = Math.max(0, parseInt(aaronTime) || 0);
+      if (electraTime !== undefined) updateData.electraTime = Math.max(0, parseInt(electraTime) || 0);
       if (note !== undefined) updateData.note = note;
 
       await db.update(entries).set(updateData).where(eq(entries.id, id));
       res.json({ id, ...updateData });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -226,7 +247,8 @@ export function createApp() {
       await db.delete(entries).where(eq(entries.id, id));
       res.json({ status: "deleted" });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -244,7 +266,8 @@ export function createApp() {
       }
       res.json(results[0]);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -296,7 +319,8 @@ export function createApp() {
       }
       res.json(updateData);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -315,6 +339,8 @@ export function createApp() {
           date: e.id,
           aaronWords: e.aaronWords,
           electraWords: e.electraWords,
+          aaronTime: e.aaronTime,
+          electraTime: e.electraTime,
           note: e.note,
           createdAt: e.createdAt.toISOString(),
           updatedAt: e.updatedAt.toISOString(),
@@ -325,7 +351,8 @@ export function createApp() {
       res.setHeader("Content-Disposition", "attachment; filename=clean_writer_export.json");
       res.send(JSON.stringify(data, null, 2));
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -346,6 +373,8 @@ export function createApp() {
               date: entry.date,
               aaronWords: parseInt(entry.aaronWords) || 0,
               electraWords: parseInt(entry.electraWords) || 0,
+              aaronTime: parseInt(entry.aaronTime) || 0,
+              electraTime: parseInt(entry.electraTime) || 0,
               note: entry.note || "",
               createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
               updatedAt: new Date(),
@@ -354,6 +383,8 @@ export function createApp() {
               set: {
                 aaronWords: parseInt(entry.aaronWords) || 0,
                 electraWords: parseInt(entry.electraWords) || 0,
+                aaronTime: parseInt(entry.aaronTime) || 0,
+                electraTime: parseInt(entry.electraTime) || 0,
                 note: entry.note || "",
                 updatedAt: new Date(),
               }
@@ -362,26 +393,10 @@ export function createApp() {
         }
 
         if (importSettings) {
-          // Sanitize import settings too
-          const allowedFields = [
-            "personAName", "personBName", "personAColor", "personBColor", 
-            "teamColor", "goalsEnabled", "individualGoalsEnabled", 
-            "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
-            "defaultChartView", "defaultGridView", "isSetupComplete",
-            "projectTitle", "metric", "projectGoal", "deadline", "startDate",
-            "passcode"
-          ];
-          
-          const filteredSettings: any = {};
-          for (const field of allowedFields) {
-            if (importSettings[field] !== undefined) {
-              filteredSettings[field] = importSettings[field];
-            }
-          }
-
+          const { id, createdAt, updatedAt, ...filteredSettings } = importSettings;
           await tx.insert(settings).values({
-            id: "global",
             ...filteredSettings,
+            id: "global",
             isSetupComplete: true,
             updatedAt: new Date(),
           }).onConflictDoUpdate({
@@ -394,8 +409,18 @@ export function createApp() {
           });
         }
       });
-
       res.json({ status: "ok", count: importEntries?.length || 0 });
+    } catch (err: any) {
+      console.error("API Error:", err.message);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/test-db", async (req, res) => {
+    try {
+      const { sql } = await import("drizzle-orm");
+      await db.execute(sql`SELECT 1`);
+      res.json({ status: "ok" });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -426,7 +451,7 @@ export async function startServer() {
       const distPath = path.join(process.cwd(), "dist");
       if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
-        app.get(/.*/, (req, res) => {
+        app.get("*", (req, res) => {
           res.sendFile(path.join(distPath, "index.html"));
         });
         console.log("SERVER_BOOT: Serving static files from dist.");

@@ -21,6 +21,8 @@ interface LedgerDay {
   entry?: Entry;
   personAValue: number;
   personBValue: number;
+  personATime: number;
+  personBTime: number;
   isDeadlineDay: boolean;
   hasAnyWriting: boolean;
 }
@@ -84,6 +86,8 @@ function buildLedgerDays(entries: Entry[], settings: Settings | null): LedgerDay
       entry,
       personAValue: entry?.aaronWords || 0,
       personBValue: entry?.electraWords || 0,
+      personATime: entry?.aaronTime || 0,
+      personBTime: entry?.electraTime || 0,
       isDeadlineDay: date === deadlineStr,
       hasAnyWriting: Boolean((entry?.aaronWords || 0) + (entry?.electraWords || 0)),
     };
@@ -93,6 +97,7 @@ function buildLedgerDays(entries: Entry[], settings: Settings | null): LedgerDay
 export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry }: DailyTimelineLedgerProps) {
   const [editingTile, setEditingTile] = useState<EditingTile | null>(null);
   const [tileDraft, setTileDraft] = useState('');
+  const [tileTimeDraft, setTileTimeDraft] = useState('');
   const [editingNoteDate, setEditingNoteDate] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const skipNextTileBlurSave = useRef(false);
@@ -109,15 +114,18 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
 
   const beginTileEdit = (day: LedgerDay, writer: WriterKey) => {
     const value = writer === 'personA' ? day.personAValue : day.personBValue;
+    const timeValue = writer === 'personA' ? day.personATime : day.personBTime;
     setEditingNoteDate(null);
     setEditingTile({ date: day.date, writer });
     setTileDraft(value > 0 ? value.toString() : '');
+    setTileTimeDraft(timeValue > 0 ? timeValue.toString() : '');
   };
 
   const cancelTileEdit = (skipBlurSave = false) => {
     skipNextTileBlurSave.current = skipBlurSave;
     setEditingTile(null);
     setTileDraft('');
+    setTileTimeDraft('');
   };
 
   const saveTileEdit = async () => {
@@ -125,14 +133,19 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
 
     const currentEntry = getEntryForDate(editingTile.date);
     const nextValue = parseNonNegativeInteger(tileDraft);
+    const nextTimeValue = parseNonNegativeInteger(tileTimeDraft);
+
     const nextAaron = editingTile.writer === 'personA' ? nextValue : currentEntry?.aaronWords || 0;
     const nextElectra = editingTile.writer === 'personB' ? nextValue : currentEntry?.electraWords || 0;
+    const nextAaronTime = editingTile.writer === 'personA' ? nextTimeValue : currentEntry?.aaronTime || 0;
+    const nextElectraTime = editingTile.writer === 'personB' ? nextTimeValue : currentEntry?.electraTime || 0;
     const nextNote = currentEntry?.note || '';
 
     setEditingTile(null);
     setTileDraft('');
+    setTileTimeDraft('');
 
-    if (nextAaron === 0 && nextElectra === 0 && !nextNote.trim()) {
+    if (nextAaron === 0 && nextElectra === 0 && nextAaronTime === 0 && nextElectraTime === 0 && !nextNote.trim()) {
       if (currentEntry) await deleteEntry(editingTile.date);
       return;
     }
@@ -141,6 +154,8 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
       date: editingTile.date,
       aaronWords: nextAaron,
       electraWords: nextElectra,
+      aaronTime: nextAaronTime,
+      electraTime: nextElectraTime,
       note: nextNote,
     });
   };
@@ -169,11 +184,13 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
     const nextNote = noteDraft.trim();
     const nextAaron = day.entry?.aaronWords || 0;
     const nextElectra = day.entry?.electraWords || 0;
+    const nextAaronTime = day.entry?.aaronTime || 0;
+    const nextElectraTime = day.entry?.electraTime || 0;
 
     setEditingNoteDate(null);
     setNoteDraft('');
 
-    if (nextAaron === 0 && nextElectra === 0 && !nextNote) {
+    if (nextAaron === 0 && nextElectra === 0 && nextAaronTime === 0 && nextElectraTime === 0 && !nextNote) {
       if (day.entry) await deleteEntry(day.date);
       return;
     }
@@ -182,6 +199,8 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
       date: day.date,
       aaronWords: nextAaron,
       electraWords: nextElectra,
+      aaronTime: nextAaronTime,
+      electraTime: nextElectraTime,
       note: nextNote,
     });
   };
@@ -259,11 +278,14 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                       date={day.date}
                       name={personAName}
                       value={day.personAValue}
+                      timeValue={day.personATime}
                       color={personAColor}
                       metric={metric}
                       isEditing={editingTile?.date === day.date && editingTile.writer === 'personA'}
                       draft={tileDraft}
+                      timeDraft={tileTimeDraft}
                       onDraftChange={setTileDraft}
+                      onTimeDraftChange={setTileTimeDraft}
                       onBeginEdit={() => beginTileEdit(day, 'personA')}
                       onCancel={() => cancelTileEdit(true)}
                       onBlur={handleTileBlur}
@@ -273,24 +295,29 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                       date={day.date}
                       name={personBName}
                       value={day.personBValue}
+                      timeValue={day.personBTime}
                       color={personBColor}
                       metric={metric}
                       isEditing={editingTile?.date === day.date && editingTile.writer === 'personB'}
                       draft={tileDraft}
+                      timeDraft={tileTimeDraft}
                       onDraftChange={setTileDraft}
+                      onTimeDraftChange={setTileTimeDraft}
                       onBeginEdit={() => beginTileEdit(day, 'personB')}
                       onCancel={() => cancelTileEdit(true)}
                       onBlur={handleTileBlur}
                     />
 
-                    <div className="flex items-center gap-2 min-h-24 md:min-h-28">
+                    <div className="flex items-center gap-2 min-h-0 sm:min-h-24 md:min-h-28">
                       <button
                         type="button"
                         onClick={() => beginNoteEdit(day)}
                         title={`Edit note for ${format(parseISO(day.date), 'MMM d')}`}
                         className={cn(
-                          'w-11 h-11 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
-                          day.entry?.note && 'bg-accent'
+                          'w-11 h-11 border-4 flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
+                          day.entry?.note
+                            ? 'border-ink bg-accent text-ink shadow-sticker'
+                            : 'border-dashed border-ink/30 bg-transparent text-ink-faint hover:border-ink hover:bg-white hover:text-ink hover:shadow-sticker'
                         )}
                       >
                         <StickyNote className="w-5 h-5" />
@@ -378,11 +405,14 @@ function WriterTile({
   date,
   name,
   value,
+  timeValue,
   color,
   metric,
   isEditing,
   draft,
+  timeDraft,
   onDraftChange,
+  onTimeDraftChange,
   onBeginEdit,
   onCancel,
   onBlur,
@@ -390,55 +420,98 @@ function WriterTile({
   date: string;
   name: string;
   value: number;
+  timeValue: number;
   color: string;
   metric: string;
   isEditing: boolean;
   draft: string;
+  timeDraft: string;
   onDraftChange: (value: string) => void;
+  onTimeDraftChange: (value: string) => void;
   onBeginEdit: () => void;
   onCancel: () => void;
   onBlur: () => void;
 }) {
-  const hasValue = value > 0;
+  const hasValue = value > 0 || timeValue > 0;
   const textColor = getReadableTextColor(color);
 
   if (isEditing) {
     return (
-      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 bg-white border-4 border-ink shadow-sticker p-3 flex flex-col justify-between">
+      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-auto min-h-20 sm:min-h-24 md:min-h-28 bg-white border-4 border-ink shadow-sticker p-2 sm:p-3 flex flex-col gap-1 justify-between">
         <label className="text-label text-[10px] text-ink-muted truncate">{name}</label>
-        <input
-          autoFocus
-          value={draft}
-          onChange={event => onDraftChange(event.target.value)}
-          onFocus={event => event.target.select()}
-          onBlur={onBlur}
-          onKeyDown={event => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              event.currentTarget.blur();
-            }
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              onCancel();
-            }
-          }}
-          inputMode="numeric"
-          min="0"
-          type="number"
-          className="w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl font-black text-ink outline-none focus:bg-white"
-          aria-label={`${name} ${metric} for ${date}`}
-        />
+        <div className="flex flex-col gap-1">
+          <input
+            autoFocus
+            value={draft}
+            onChange={event => onDraftChange(event.target.value)}
+            onFocus={event => event.target.select()}
+            onBlur={(e) => {
+              if (!e.relatedTarget || !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
+                onBlur();
+              }
+            }}
+            onKeyDown={event => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                onCancel();
+              }
+            }}
+            inputMode="numeric"
+            min="0"
+            type="number"
+            placeholder={metric}
+            className="number-input-clean w-full min-w-0 bg-bg-paper border-2 border-ink px-1 py-0.5 sm:px-2 sm:py-1 font-mono text-lg sm:text-xl md:text-2xl font-black text-ink outline-none focus:bg-white placeholder:text-ink-muted/50"
+            aria-label={`${name} ${metric} for ${date}`}
+          />
+          <div className="relative">
+            <input
+              value={timeDraft}
+              onChange={event => onTimeDraftChange(event.target.value)}
+              onFocus={event => event.target.select()}
+              onBlur={(e) => {
+                if (!e.relatedTarget || !e.currentTarget.parentElement?.parentElement?.contains(e.relatedTarget as Node)) {
+                  onBlur();
+                }
+              }}
+              onKeyDown={event => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  onCancel();
+                }
+              }}
+              inputMode="numeric"
+              min="0"
+              type="number"
+              placeholder="mins"
+              className="number-input-clean w-full min-w-0 bg-bg-paper border-2 border-ink px-1 py-0.5 sm:px-2 sm:py-1 font-mono text-sm sm:text-base font-bold text-ink outline-none focus:bg-white placeholder:text-ink-muted/50 pr-8"
+              aria-label={`${name} minutes for ${date}`}
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-ink-muted pointer-events-none">
+              min
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
+
+  const wpm = timeValue > 0 ? Math.round(value / timeValue) : 0;
 
   return (
     <button
       type="button"
       onClick={onBeginEdit}
-      title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
+      title={`Edit ${name} metrics for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group',
+        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-1 sm:gap-2 transition-all text-center group relative overflow-hidden',
         'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
         hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
       )}
@@ -446,18 +519,31 @@ function WriterTile({
     >
       {hasValue ? (
         <>
-          <NotebookPen className="w-6 h-6 shrink-0" />
-          <span className="font-mono text-[13px] font-black leading-tight px-2 break-words">
-            {formatCount(value, metric)}
-          </span>
+          <div className="flex items-center justify-center gap-1">
+            <NotebookPen className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 opacity-80" />
+            <span className="font-mono text-sm sm:text-base md:text-lg font-black leading-tight break-words">
+              {formatCount(value, metric)}
+            </span>
+          </div>
+          {timeValue > 0 && (
+            <div className="flex flex-col items-center leading-none mt-1">
+              <span className="font-mono text-[10px] sm:text-xs font-bold opacity-90">
+                {timeValue}m
+              </span>
+              {wpm > 0 && (
+                <span className="font-mono text-[8px] sm:text-[9px] opacity-70">
+                  ({wpm} wpm)
+                </span>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <>
-          <Minus className="w-7 h-7 shrink-0" />
-          <span className="text-label text-[10px]">{name}</span>
+          <Minus className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 shrink-0" />
+          <span className="text-label text-[9px] sm:text-[10px]">{name}</span>
         </>
       )}
     </button>
   );
 }
-
