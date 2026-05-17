@@ -69,7 +69,7 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
-      // Proxy API requests to the backend server running on port 3001
+      // Proxy API requests to the backend server running on port 3001 (for standalone vite mode)
       proxy: {
         '/api': {
           target: 'http://localhost:3001',

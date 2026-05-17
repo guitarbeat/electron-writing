@@ -4,7 +4,8 @@
   "version": "5.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx server/index.ts",
+    "dev:vite-only": "vite",
     "dev:server": "tsx server/index.ts",
     "dev:full": "concurrently \"vite\" \"PORT=3001 NO_VITE=true tsx server/index.ts\"",
     "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
