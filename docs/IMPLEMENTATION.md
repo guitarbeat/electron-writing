@@ -34,7 +34,7 @@ This follows Vercel's current Express guidance: put the Express entrypoint under
 Required:
 
 ```bash
-PASSCODE="0000"
+PASSCODE="5947"
 DATABASE_URL="postgresql://..."
 ```
 
@@ -80,7 +80,9 @@ The database client uses:
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 ```
 
-This makes the app work with either the app-specific `DATABASE_URL` or Vercel's Neon integration variables. Keep database secrets server-side only.
+This makes the app work with either the app-specific `DATABASE_URL` or Vercel's Neon integration variables. 
+
+**Note on CJS Build:** In the CommonJS build (used for production), `dotenv.config()` must be called before importing the database module to ensure `process.env.DATABASE_URL` is available during initialization. Keep database secrets server-side only.
 
 ## PWA and Branding
 
