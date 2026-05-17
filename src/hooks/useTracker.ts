@@ -166,6 +166,7 @@ export function useTracker() {
     isLoading,
     login,
     logout,
+    checkSession,
     saveEntry,
     deleteEntry,
     updateSettings,
