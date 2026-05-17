@@ -13,6 +13,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   const [isLoading, setIsLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [isBypassing, setIsBypassing] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
 
   // After 3 failed attempts, Smeemo (the cat) lets you through
   useEffect(() => {
@@ -24,6 +25,17 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
       setIsBypassing(true);
       setError(false);
       setPasscode('');
+
+      // Try to fetch a hint from the server to show while bypassing
+      try {
+        const response = await fetch('/api/passcode/helper');
+        const data = await response.json();
+        if (data.hint) {
+          setHint(data.hint);
+        }
+      } catch (err) {
+        console.warn('SMEEMO_BYPASS: Failed to fetch hint', err);
+      }
 
       // Brief pause so the user sees the "Smeemo is helping" message
       await new Promise((r) => setTimeout(r, 2000));
@@ -121,7 +133,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="text-primary text-[10px] font-black uppercase mt-2 text-center tracking-tighter"
               >
-                {"Smeemo is letting you through... \u2728"}
+                {hint ? `Smeemo whispers: ${hint} ✨` : "Smeemo is letting you through... ✨"}
               </motion.p>
             )}
           </div>

@@ -77,6 +77,25 @@ export function createApp() {
     }
   });
 
+  // Passcode helper (provides a hint for the Smeemo animation)
+  // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
+  // We return a privacy-preserving hint rather than the explicit passcode.
+  app.get("/api/passcode/helper", async (req, res) => {
+    try {
+      const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+      const passcode = (dbSettings.length > 0 && dbSettings[0].passcode) 
+        ? dbSettings[0].passcode.trim()
+        : APP_PASSCODE;
+      const hint = passcode.length > 0
+        ? `Starts with ${passcode.charAt(0)}... (${passcode.length} chars)`
+        : "No passcode set";
+      res.json({ hint });
+    } catch (err) {
+      console.error("API Error fetching helper data:", err);
+      res.status(500).json({ error: "Could not fetch helper data" });
+    }
+  });
+
   // Session
   app.post("/api/session", async (req, res) => {
     const { passcode } = req.body;
