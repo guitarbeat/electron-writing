@@ -152,6 +152,7 @@ export function useTracker() {
       fetchSettings();
       interval = setInterval(() => {
         fetchEntries();
+        fetchSettings();
       }, 5000);
     }
     return () => {

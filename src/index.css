@@ -95,11 +95,11 @@ body {
     @apply bg-bg-surface border-4 border-ink rounded-card shadow-sticker transition-all duration-300 outline-none;
   }
   
-  .sticker-interactive:hover {
+  .sticker-card:hover {
     @apply shadow-sticker-hover -translate-x-1 -translate-y-1;
   }
 
-  .sticker-interactive:active {
+  .sticker-card:active {
     @apply shadow-sticker-active translate-x-[4px] translate-y-[4px];
   }
 
@@ -132,17 +132,7 @@ body {
   }
 
   .button-playful {
-    @apply relative px-8 py-4 font-black rounded-button border-4 border-ink shadow-sticker transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active bg-primary text-white hover:bg-primary-hover uppercase tracking-widest text-sm disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0;
-  }
-
-  .number-input-clean::-webkit-outer-spin-button,
-  .number-input-clean::-webkit-inner-spin-button {
-    margin: 0;
-    appearance: none;
-  }
-
-  .number-input-clean {
-    appearance: textfield;
+    @apply relative px-8 py-4 font-black rounded-button border-4 border-ink shadow-sticker transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active bg-primary text-white hover:bg-primary-hover uppercase tracking-widest text-sm;
   }
 
   .hide-scrollbar::-webkit-scrollbar {

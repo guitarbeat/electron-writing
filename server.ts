@@ -137,16 +137,17 @@ export function createApp() {
     if (isMatch) {
       const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
+      const isVercel = !!process.env.VERCEL;
       
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        // Only require secure cookies in production
+        // Only require secure cookies in production or on Vercel
         // This fixes login issues on local http://localhost
-        secure: isProd,
+        secure: isProd || isVercel,
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
-      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
+      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd || isVercel}`);
       return res.json({ status: "ok" });
     }
     return res.status(401).json({ error: "Invalid passcode" });

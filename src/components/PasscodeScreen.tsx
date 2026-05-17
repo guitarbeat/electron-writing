@@ -12,6 +12,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
+<<<<<<< HEAD
   const [isBypassing, setIsBypassing] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
@@ -32,11 +33,38 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
         const data = await response.json();
         if (data.hint) {
           setHint(data.hint);
+=======
+  const [isTyping, setIsTyping] = useState(false);
+
+  const [revealedPasscode, setRevealedPasscode] = useState((import.meta.env.VITE_PASSCODE || '0000').toString().trim());
+
+  React.useEffect(() => {
+    const triggerHelper = async () => {
+      // Only trigger if we have enough attempts
+      if (attempts >= 3 && !isLoading && !isTyping) {
+        setIsTyping(true);
+        setError(false);
+        setPasscode('');
+
+        let activePasscode = revealedPasscode;
+
+        // Try to fetch the latest from the server
+        try {
+          const response = await fetch('/api/passcode/helper');
+          const data = await response.json();
+          if (data.passcode) {
+            activePasscode = data.passcode.toString().trim();
+            setRevealedPasscode(activePasscode);
+          }
+        } catch (err) {
+          console.warn('SMEEMO_HELPER: Failed to fetch latest passcode, using local fallback.');
+>>>>>>> origin/fix-test-timeouts-4864288518525717396
         }
       } catch (err) {
         console.warn('SMEEMO_BYPASS: Failed to fetch hint', err);
       }
 
+<<<<<<< HEAD
       // Brief pause so the user sees the "Smeemo is helping" message
       await new Promise((r) => setTimeout(r, 2000));
       if (cancelled) return;
@@ -53,6 +81,30 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
             // Re-check session in the parent to transition to the dashboard
             await onBypassSuccess();
             return;
+=======
+        console.log('SMEEMO_HELPER: Starting auto-type animation...');
+        
+        let i = 0;
+        const interval = setInterval(() => {
+          setPasscode(activePasscode.slice(0, i + 1));
+          i++;
+          if (i >= activePasscode.length) {
+            clearInterval(interval);
+            setTimeout(async () => {
+              setIsLoading(true);
+              console.log('SMEEMO_HELPER: Attempting auto-login...');
+              const success = await onLogin(activePasscode);
+              if (success) {
+                setAttempts(0);
+              } else {
+                setAttempts(0); 
+                setError(true);
+                console.error('SMEEMO_HELPER: Auto-login failed. Sync issue?');
+              }
+              setIsLoading(false);
+              setIsTyping(false);
+            }, 600);
+>>>>>>> origin/fix-test-timeouts-4864288518525717396
           }
         }
       } catch (err) {
@@ -116,7 +168,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
               placeholder="Enter shared passcode..."
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              className={`input-playful w-full text-center text-lg sm:text-2xl tracking-wider sm:tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
+              className={`input-playful w-full text-center text-2xl tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
               autoFocus
               disabled={isBypassing}
               aria-label="Shared passcode"
@@ -133,7 +185,11 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="text-primary text-[10px] font-black uppercase mt-2 text-center tracking-tighter"
               >
+<<<<<<< HEAD
                 {hint ? `Smeemo whispers: ${hint} ✨` : "Smeemo is letting you through... ✨"}
+=======
+                Smeemo is helping you out... ✨
+>>>>>>> origin/fix-test-timeouts-4864288518525717396
               </motion.p>
             )}
           </div>
