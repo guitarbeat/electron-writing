@@ -1,16 +1,18 @@
 import dotenv from "dotenv";
+import fs from "fs";
+
+// Standardize environment loading to match Vite's behavior
+// This MUST happen before any other imports that might use process.env
+dotenv.config();
+if (fs.existsSync(".env.local")) {
+  dotenv.config({ path: ".env.local", override: true });
+}
+
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import fs from "fs";
-
-// Standardize environment loading to match Vite's behavior
-dotenv.config();
-if (fs.existsSync(".env.local")) {
-  dotenv.config({ path: ".env.local", override: true });
-}
 import { db } from "./src/db/index";
 import { entries, settings, DEFAULT_SETTINGS } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
