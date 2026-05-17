@@ -19,9 +19,11 @@ const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
   const app = express();
+  app.set("trust proxy", 1);
   // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
   const rawPasscode = process.env.PASSCODE || "0000";
   const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
+  const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSCODE || "clean_writer_fallback_secret_12345";
   
   if (!process.env.PASSCODE) {
     console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
@@ -37,8 +39,7 @@ export function createApp() {
       return res.status(401).json({ error: "Unauthorized" });
     }
     try {
-      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
-      jwt.verify(token, secret as string);
+      jwt.verify(token, SESSION_SECRET);
       next();
     } catch (err) {
       res.clearCookie(COOKIE_NAME);
@@ -53,32 +54,22 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Diagnostics
-  app.get("/api/diagnostics", async (req, res) => {
-    try {
-      const { sql } = await import("drizzle-orm");
-      await db.execute(sql`SELECT 1`);
-      res.json({ status: "ok", message: "Database connection successful", timestamp: new Date().toISOString() });
-    } catch (err: any) {
-      console.error("DIAGNOSTICS_ERROR:", err.message);
-      res.status(500).json({ status: "error", message: "Database connection failed", timestamp: new Date().toISOString() });
-    }
-  });
-
-  // Passcode helper (reveals passcode for the Smeemo animation)
+  // Passcode helper (provides a hint for the Smeemo animation)
   // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
-  // In this project context, convenience/support for the shared partner experience 
-  // is prioritized over absolute secret isolation.
+  // We return a privacy-preserving hint rather than the explicit passcode.
   app.get("/api/passcode/helper", async (req, res) => {
     try {
       const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       const passcode = (dbSettings.length > 0 && dbSettings[0].passcode) 
-        ? dbSettings[0].passcode 
+        ? dbSettings[0].passcode.trim()
         : APP_PASSCODE;
-      res.json({ passcode });
-    } catch (err: any) {
-      console.warn("DB_WARN: Could not fetch passcode from DB. Using fallback.", err.message);
-      res.json({ passcode: APP_PASSCODE });
+      const hint = passcode.length > 0
+        ? `Starts with ${passcode.charAt(0)}... (${passcode.length} chars)`
+        : "No passcode set";
+      res.json({ hint });
+    } catch (err) {
+      console.error("API Error fetching helper data:", err);
+      res.status(500).json({ error: "Could not fetch helper data" });
     }
   });
 
@@ -96,31 +87,30 @@ export function createApp() {
       } else {
         console.log(`AUTH_CHECK: Using fallback environment passcode.`);
       }
-    } catch (err: any) {
-      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", err.message);
+    } catch (err) {
+      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback", err);
     }
     
     // Debug logging for authentication issues
-    const received = passcode ? passcode.toString().trim() : "MISSING";
+    const received = passcode !== undefined && passcode !== null ? String(passcode).trim() : "MISSING";
     
     // MASTER OVERRIDE: The environment passcode always works, regardless of DB.
     // This ensures that if the user gets locked out by a DB change, they can always use the ENV one.
-    const isMasterMatch = passcode && passcode.toString().trim() === APP_PASSCODE.trim();
-    const isDbMatch = passcode && passcode.toString().trim() === expected;
+    const isMasterMatch = received !== "MISSING" && received === APP_PASSCODE;
+    const isDbMatch = received !== "MISSING" && received === expected;
     const isMatch = isMasterMatch || isDbMatch;
 
     console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch} (Master=${isMasterMatch}, DB=${isDbMatch})`);
 
     if (isMatch) {
-      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
-      const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
+      const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
       
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
         // Only require secure cookies in production
         // This fixes login issues on local http://localhost
-        secure: process.env.NODE_ENV === "production",
+        secure: isProd,
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
@@ -140,8 +130,7 @@ export function createApp() {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.json({ authorized: false });
     try {
-      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
-      jwt.verify(token, secret as string);
+      jwt.verify(token, SESSION_SECRET);
       res.json({ authorized: true });
     } catch (err) {
       res.json({ authorized: false });
@@ -161,13 +150,11 @@ export function createApp() {
 
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
-      const { date, aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
+      const { date, aaronWords, electraWords, note } = req.body;
       const parsedAaron = Math.max(0, parseInt(aaronWords) || 0);
       const parsedElectra = Math.max(0, parseInt(electraWords) || 0);
-      const parsedAaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      const parsedElectraTime = Math.max(0, parseInt(electraTime) || 0);
 
-      if (!date || (parsedAaron === 0 && parsedElectra === 0 && parsedAaronTime === 0 && parsedElectraTime === 0 && !note)) {
+      if (!date || (parsedAaron === 0 && parsedElectra === 0 && !note)) {
         return res.status(400).json({ error: "Date and at least some content required" });
       }
 
@@ -178,8 +165,6 @@ export function createApp() {
         date: date,
         aaronWords: parsedAaron,
         electraWords: parsedElectra,
-        aaronTime: parsedAaronTime,
-        electraTime: parsedElectraTime,
         note: note || "",
         updatedAt: new Date(),
       };
@@ -204,14 +189,12 @@ export function createApp() {
   app.patch("/api/entries/:id", authenticate, async (req, res) => {
     try {
       const { id } = req.params as { id: string };
-      const { aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
+      const { aaronWords, electraWords, note } = req.body;
       const updateData: any = {
         updatedAt: new Date(),
       };
       if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
       if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
-      if (aaronTime !== undefined) updateData.aaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      if (electraTime !== undefined) updateData.electraTime = Math.max(0, parseInt(electraTime) || 0);
       if (note !== undefined) updateData.note = note;
 
       await db.update(entries).set(updateData).where(eq(entries.id, id));
@@ -305,8 +288,6 @@ export function createApp() {
           date: e.id,
           aaronWords: e.aaronWords,
           electraWords: e.electraWords,
-          aaronTime: e.aaronTime,
-          electraTime: e.electraTime,
           note: e.note,
           createdAt: e.createdAt.toISOString(),
           updatedAt: e.updatedAt.toISOString(),
@@ -339,8 +320,6 @@ export function createApp() {
               date: entry.date,
               aaronWords: parseInt(entry.aaronWords) || 0,
               electraWords: parseInt(entry.electraWords) || 0,
-              aaronTime: parseInt(entry.aaronTime) || 0,
-              electraTime: parseInt(entry.electraTime) || 0,
               note: entry.note || "",
               createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
               updatedAt: new Date(),
@@ -349,8 +328,6 @@ export function createApp() {
               set: {
                 aaronWords: parseInt(entry.aaronWords) || 0,
                 electraWords: parseInt(entry.electraWords) || 0,
-                aaronTime: parseInt(entry.aaronTime) || 0,
-                electraTime: parseInt(entry.electraTime) || 0,
                 note: entry.note || "",
                 updatedAt: new Date(),
               }
@@ -402,3 +379,46 @@ export function createApp() {
   return app;
 }
 
+export async function startServer() {
+  const app = createApp();
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // --- Vite Middleware / Static Assets ---
+
+  try {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("SERVER_BOOT: Initializing Vite middleware...");
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { 
+          middlewareMode: true,
+          hmr: false, 
+        },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+      console.log("SERVER_BOOT: Vite middleware attached.");
+    } else {
+      const distPath = path.join(process.cwd(), "dist");
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get(/.*/, (req, res) => {
+          res.sendFile(path.join(distPath, "index.html"));
+        });
+        console.log("SERVER_BOOT: Serving static files from dist.");
+      } else {
+        console.error("SERVER_BOOT: dist folder not found in production mode!");
+      }
+    }
+  } catch (viteError) {
+    console.error("SERVER_BOOT: Failed to initialize Vite/Static middleware", viteError);
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`SERVER_BOOT: Server running on http://localhost:${PORT}`);
+  });
+}
+
+if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+  startServer();
+}
