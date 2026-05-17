@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 
 interface PasscodeScreenProps {
@@ -74,17 +74,27 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passcode.trim() || isLoading || isBypassing) return;
+    
     setIsLoading(true);
     setError(false);
-    const success = await onLogin(passcode);
-    if (!success) {
+    
+    try {
+      const success = await onLogin(passcode);
+      if (!success) {
+        setError(true);
+        setPasscode('');
+        setAttempts((prev) => prev + 1);
+      } else {
+        setAttempts(0);
+      }
+    } catch (err) {
+      console.warn('PasscodeScreen: Login failed', err);
       setError(true);
       setPasscode('');
-      setAttempts((prev) => prev + 1);
-    } else {
-      setAttempts(0);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
