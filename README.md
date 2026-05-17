@@ -17,7 +17,7 @@ Project documentation lives in `docs/`:
 
 Required runtime variables:
 
-- `PASSCODE` - shared app passcode used for entry and session signing. Current deployed value is `0000`.
+- `PASSCODE` - shared app passcode used for entry and session signing. Current deployed value is `5947`.
 - `DATABASE_URL` - Neon PostgreSQL pooled connection string.
 
 The server also accepts `POSTGRES_URL` as a fallback for Vercel/Neon integrations.

@@ -30,12 +30,12 @@ export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
   // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
-  const rawPasscode = process.env.PASSCODE || "0000";
+  const rawPasscode = process.env.PASSCODE || "5947";
   const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
   const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSCODE || "clean_writer_fallback_secret_12345";
   
   if (!process.env.PASSCODE) {
-    console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
+    console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '5947'.");
   }
 
   app.use(express.json());
@@ -87,7 +87,7 @@ export function createApp() {
         dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       } catch (e: any) {
         if (process.env.NODE_ENV === 'test' && (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('host'))) {
-          dbSettings = [{ passcode: process.env.PASSCODE || "0000" }];
+          dbSettings = [{ passcode: process.env.PASSCODE || "5947" }];
         } else {
           throw e;
         }
