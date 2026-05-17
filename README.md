@@ -17,7 +17,7 @@ Project documentation lives in `docs/`:
 
 Required runtime variables:
 
-- `PASSCODE` - shared app passcode used for entry and session signing. Default fallback is `0000`.
+- `PASSCODE` - shared app passcode used for entry and session signing. Default fallback is `5947`.
 - `DATABASE_URL` - Neon PostgreSQL pooled connection string.
 
 The server also accepts `POSTGRES_URL` as a fallback for Vercel/Neon integrations.
@@ -32,4 +32,4 @@ The server also accepts `POSTGRES_URL` as a fallback for Vercel/Neon integration
 
 ## Deployment
 
-The app is deployed on Vercel as a Vite static frontend plus an Express API exported from `api/[...path].ts`. Static assets, favicon, Apple touch icon, and PWA icons are generated from `public/smeemo.png`.
+The app is deployed on Vercel as a Vite static frontend plus an Express API exported from `api/[...path].ts`. The backend is optimized for serverless environments using the Neon serverless driver. Static assets, favicon, Apple touch icon, and PWA icons are generated from `public/smeemo.png`.
