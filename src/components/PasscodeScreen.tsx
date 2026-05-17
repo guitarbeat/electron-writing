@@ -168,7 +168,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
               placeholder="Enter shared passcode..."
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              className={`input-playful w-full text-center text-2xl tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
+              className={`input-playful w-full text-center text-lg sm:text-2xl tracking-wider sm:tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
               autoFocus
               disabled={isBypassing}
               aria-label="Shared passcode"
