@@ -8,11 +8,7 @@ import { ProgressChart } from './components/ProgressChart';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DailyTimelineLedger } from './components/DailyTimelineLedger';
 
-export interface DashboardProps {
-  tracker: ReturnType<typeof useTracker>;
-}
-
-export function Dashboard({ tracker }: DashboardProps) {
+export function Dashboard() {
   const { 
     entries, 
     settings, 
@@ -23,7 +19,7 @@ export function Dashboard({ tracker }: DashboardProps) {
     deleteEntry, 
     updateSettings,
     importData
-  } = tracker;
+  } = useTracker();
 
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'cumulative'>('daily');
   const [showGuide, setShowGuide] = useState(false);
