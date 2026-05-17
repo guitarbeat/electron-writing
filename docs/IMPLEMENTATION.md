@@ -69,8 +69,6 @@ npm run db:studio
 
 `POST /api/session` compares the submitted passcode to `PASSCODE`. On success, it sets the HTTP-only `clean_writer_session` cookie signed with the same `PASSCODE`.
 
-For convenience in this private app, the frontend reveals the passcode after 3 failed attempts (provided `PASSCODE` was injected at build time).
-
 All entry, settings, import, and export routes require that cookie. `GET /api/session/check` is used by the frontend to restore session state on load.
 
 
@@ -96,27 +94,16 @@ The supplied Smeemo PNG is used as:
 
 The PWA manifest is configured through `vite-plugin-pwa`.
 
-## Deployment / Runbook
+## Vercel Notes
 
-The application expects `PASSCODE` and `DATABASE_URL` (or `POSTGRES_URL`) to be set in the environment.
+After changing Vercel environment variables, redeploy or promote a new deployment so the updated values are available to the running app.
 
-**Environment Variable Changes**
-After modifying environment variables in Vercel, you must trigger a redeployment (or promote a new deployment) so that the updated configuration is applied to the running application. The changes do not take effect dynamically for running instances.
+Required Vercel variables:
 
-**Post-Merge / Post-Deploy Verification**
-To prevent production regressions, run the smoke tests against the live URL after deploying:
+- `PASSCODE`
+- `DATABASE_URL` or `POSTGRES_URL`
 
-```bash
-BASE_URL=https://www.smeemo.com pnpm run test:smoke
-```
-
-These smoke tests perform production-safe checks, ensuring that:
-- The static UI loads.
-- `/api/health` returns 200.
-- Passcode validation succeeds (and does not leak into logs on failure).
-- The PWA manifest and icons are accessible.
-
-Recommended Vercel checks for debugging the environment:
+Recommended Vercel checks:
 
 ```bash
 vercel env ls

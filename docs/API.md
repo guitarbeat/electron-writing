@@ -11,7 +11,7 @@ POSTGRES_URL="postgresql://..." # optional fallback
 DATABASE_POOL_MAX="5"           # optional
 ```
 
-`PASSCODE` controls the private gate and signs session cookies. In this private app, the passcode is revealed in the UI after 3 failed attempts for convenience. `DATABASE_URL` should be the Neon pooled PostgreSQL URL; `POSTGRES_URL` is accepted as a fallback because Vercel/Neon integrations can provide it.
+`PASSCODE` controls the private gate and signs session cookies. `DATABASE_URL` should be the Neon pooled PostgreSQL URL; `POSTGRES_URL` is accepted as a fallback because Vercel/Neon integrations can provide it.
 
 ## Session Routes
 
