@@ -57,14 +57,46 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
               axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
             />
             <Tooltip 
-              contentStyle={{
-                backgroundColor: '#fffafc',
-                border: '4px solid #2b1720',
-                borderRadius: '16px',
-                boxShadow: '4px 4px 0 #2b1720',
-                fontSize: '12px'
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white border-4 border-ink shadow-[4px_4px_0_var(--color-ink)] p-3 rounded-card text-sm font-sans flex flex-col gap-1">
+                      <p className="font-black border-b-2 border-ink pb-1 mb-1">
+                        {format(parseISO(String(label)), 'MMM d, yyyy')}
+                      </p>
+                      {payload.map((entry: any, index: number) => {
+                        const writerName = entry.name;
+                        const words = entry.value;
+                        const isAaron = entry.dataKey === 'Aaron';
+                        const isElectra = entry.dataKey === 'Electra';
+                        const isTeam = entry.dataKey === 'Team';
+
+                        let time = 0;
+                        if (isAaron) time = entry.payload.AaronTime;
+                        else if (isElectra) time = entry.payload.ElectraTime;
+                        else if (isTeam) time = entry.payload.TeamTime;
+
+                        const wpm = time > 0 ? Math.round(words / time) : 0;
+
+                        return (
+                          <div key={index} className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2 font-bold" style={{ color: entry.color }}>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                              {writerName}: {words.toLocaleString()} {settings?.metric || 'words'}
+                            </div>
+                            {time > 0 && (
+                              <div className="text-[10px] text-ink-muted pl-4 font-mono font-bold leading-none mb-1">
+                                {time}m {wpm > 0 && `(${wpm} wpm)`}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                return null;
               }}
-              itemStyle={{ fontWeight: 800, padding: '2px 0' }}
             />
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
             <Line name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
