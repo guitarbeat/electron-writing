@@ -11,7 +11,7 @@ The app should stay intentionally small but feature-rich in its data tracking.
 1. Make logging writing activity and time fast.
 2. Show individual and team writing progress using NaNoWriMo-style metrics.
 3. Support aggressive goal tracking (e.g., 50k words in 30 days).
-4. Make consistency visible through an activity grid and "Achieved/Missed" day tracking.
+4. Make consistency visible through a daily writing ledger and "Achieved/Missed" day tracking.
 5. Provide high-precision speed and deficit analysis.
 6. Avoid login complexity while keeping the site private.
 7. Allow settings/onboarding information to be updated over time.
@@ -81,15 +81,16 @@ Acceptance criteria:
 - I can switch between daily, weekly, and cumulative views.
 - Tooltips show date/period, word counts, and writing speed (WPM).
 
-### Activity Grid
+### Daily Writing Ledger
 
-As a user, I want to see writing consistency.
+As a user, I want to log writing and see consistency in one daily timeline.
 
 Acceptance criteria:
-- Each square represents a date.
-- The grid can show Team, Aaron, or Electra.
-- Intensity changes based on word count.
-- Hover/tap reveals date and word totals.
+- Each row represents a date.
+- Each date shows Aaron and Electra side by side.
+- Empty days remain visible without overwhelming logged days.
+- Tap/click lets me edit the daily values quickly.
+- Notes and delete actions are available from the same date row.
 
 ### Goals
 
@@ -152,11 +153,10 @@ Acceptance criteria:
 ### Tracker Sections
 
 1. Header
-2. Quick Log
+2. Daily Writing Ledger
 3. Summary Stats
 4. Line Chart
-5. Activity Grid
-6. Recent Entries
+5. Recent Entries
 
 ## MVP Scope
 
@@ -164,11 +164,10 @@ Acceptance criteria:
 
 - Shared passcode gate
 - Hosted database persistence (PostgreSQL)
-- Quick log form
+- Daily writing ledger with inline editing
 - Edit/delete entries
 - Line chart with Aaron, Electra, Team
 - Daily / Weekly / Cumulative chart modes
-- Activity grid calendar
 - Settings panel
 - Goals settings
 - Export data
@@ -225,7 +224,7 @@ Because this is a private tool, success is practical:
 
 - Can both people log words without confusion?
 - Does the chart update immediately?
-- Does the activity grid feel motivating?
+- Does the daily ledger feel motivating?
 - Can settings be changed without developer work?
 - Is the site fast enough to use daily?
 - Is the data easy to export?
