@@ -113,6 +113,104 @@ async function runTests() {
     console.error("❌ /api/session/check FAILED for unauthorized user:", checkUnauth.body);
   }
 
+  // 5. Test auth-required routes without session
+  console.log("\n--- Testing Auth-Required Routes ---");
+  const entriesNoAuth = await request(app).get('/api/entries');
+  if (entriesNoAuth.status === 401) {
+    console.log("✅ /api/entries correctly requires auth (401)");
+  } else {
+    console.error(`❌ /api/entries Auth Check FAILED: Expected 401, got ${entriesNoAuth.status}`);
+  }
+
+  // 6. Test /api/entries invalid input
+  console.log("\n--- Testing /api/entries invalid input ---");
+  const badDateRes = await request(app)
+    .post('/api/entries')
+    .set('Cookie', cookie)
+    .send({ date: 'invalid-date', aaronWords: 100, electraWords: 100 });
+
+  if (badDateRes.status === 400 && badDateRes.body.error) {
+    console.log("✅ /api/entries caught invalid date format (400)");
+  } else {
+    console.error(`❌ /api/entries invalid date FAILED: status ${badDateRes.status}`);
+  }
+
+  const badNegativeRes = await request(app)
+    .post('/api/entries')
+    .set('Cookie', cookie)
+    .send({ date: todayStr, aaronWords: -50, electraWords: 100 });
+
+  if (badNegativeRes.status === 400 && badNegativeRes.body.error) {
+    console.log("✅ /api/entries caught negative word count (400)");
+  } else {
+    console.error(`❌ /api/entries negative word count FAILED: status ${badNegativeRes.status}`);
+  }
+
+  // 7. Test /api/entries atomic upsert
+  console.log("\n--- Testing /api/entries atomic upsert ---");
+  const upsertDate = '2099-01-01';
+  await request(app)
+    .post('/api/entries')
+    .set('Cookie', cookie)
+    .send({ date: upsertDate, aaronWords: 100, electraWords: 0 });
+
+  const upsertRes = await request(app)
+    .post('/api/entries')
+    .set('Cookie', cookie)
+    .send({ date: upsertDate, aaronWords: 200, electraWords: 50, note: "upsert test" });
+
+  if (upsertRes.status === 200 && upsertRes.body.aaronWords === 200 && upsertRes.body.electraWords === 50) {
+    console.log("✅ /api/entries atomic upsert successful");
+  } else {
+    console.error(`❌ /api/entries atomic upsert FAILED:`, upsertRes.body);
+  }
+
+  // 8. Test Export / Import behavior
+  console.log("\n--- Testing Import/Export ---");
+  const exportRes = await request(app)
+    .get('/api/export')
+    .set('Cookie', cookie);
+
+  if (exportRes.status === 200 && exportRes.body.settings) {
+    if (exportRes.body.settings.passcode === undefined) {
+      console.log("✅ /api/export successfully stripped passcode from settings");
+    } else {
+      console.error("❌ /api/export FAILED: passcode leaked in export settings");
+    }
+  } else {
+    console.error(`❌ /api/export FAILED: status ${exportRes.status}`);
+  }
+
+  const importRes = await request(app)
+    .post('/api/import')
+    .set('Cookie', cookie)
+    .send({
+      mode: 'append',
+      entries: [
+        { date: 'invalid-date', aaronWords: 100 }, // should skip
+        { date: '2099-01-02', aaronWords: -100 }, // should skip
+        { date: '2099-01-03', aaronWords: 50, electraWords: 50 } // should import
+      ]
+    });
+
+  if (importRes.status === 200) {
+    const checkImport = await request(app)
+      .get('/api/entries')
+      .set('Cookie', cookie);
+
+    const foundInvalid = checkImport.body.find((e: any) => e.date === 'invalid-date');
+    const foundNegative = checkImport.body.find((e: any) => e.date === '2099-01-02');
+    const foundValid = checkImport.body.find((e: any) => e.date === '2099-01-03');
+
+    if (!foundInvalid && !foundNegative && foundValid) {
+      console.log("✅ /api/import successfully validated and skipped invalid entries");
+    } else {
+      console.error("❌ /api/import validation FAILED");
+    }
+  } else {
+    console.error(`❌ /api/import FAILED: status ${importRes.status}`);
+  }
+
   console.log("\n✨ Tests completed.");
   process.exit(0);
 }

@@ -17,6 +17,15 @@ import { eq, desc } from "drizzle-orm";
 
 const COOKIE_NAME = "clean_writer_session";
 
+const ALLOWED_SETTINGS_FIELDS = [
+  "personAName", "personBName", "personAColor", "personBColor",
+  "teamColor", "goalsEnabled", "individualGoalsEnabled",
+  "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
+  "defaultChartView", "defaultGridView", "isSetupComplete",
+  "projectTitle", "metric", "projectGoal", "deadline", "startDate",
+  "passcode"
+];
+
 export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
@@ -153,39 +162,62 @@ export function createApp() {
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
       const { date, aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
-      const parsedAaron = Math.max(0, parseInt(aaronWords) || 0);
-      const parsedElectra = Math.max(0, parseInt(electraWords) || 0);
-      const parsedAaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      const parsedElectraTime = Math.max(0, parseInt(electraTime) || 0);
 
-      if (!date || (parsedAaron === 0 && parsedElectra === 0 && parsedAaronTime === 0 && parsedElectraTime === 0 && !note)) {
-        return res.status(400).json({ error: "Date and at least some content required" });
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: "Valid date in YYYY-MM-DD format required" });
       }
 
-      const existing = await db.select().from(entries).where(eq(entries.id, date)).limit(1);
-      
+      const parsedAaron = parseInt(aaronWords);
+      const parsedElectra = parseInt(electraWords);
+      const parsedAaronTime = parseInt(aaronTime);
+      const parsedElectraTime = parseInt(electraTime);
+
+      if (
+        (aaronWords !== undefined && (isNaN(parsedAaron) || parsedAaron < 0)) ||
+        (electraWords !== undefined && (isNaN(parsedElectra) || parsedElectra < 0)) ||
+        (aaronTime !== undefined && (isNaN(parsedAaronTime) || parsedAaronTime < 0)) ||
+        (electraTime !== undefined && (isNaN(parsedElectraTime) || parsedElectraTime < 0))
+      ) {
+        return res.status(400).json({ error: "Values must be non-negative integers" });
+      }
+
+      const finalAaron = isNaN(parsedAaron) ? 0 : parsedAaron;
+      const finalElectra = isNaN(parsedElectra) ? 0 : parsedElectra;
+      const finalAaronTime = isNaN(parsedAaronTime) ? 0 : parsedAaronTime;
+      const finalElectraTime = isNaN(parsedElectraTime) ? 0 : parsedElectraTime;
+
+      if (finalAaron === 0 && finalElectra === 0 && finalAaronTime === 0 && finalElectraTime === 0 && !note) {
+        return res.status(400).json({ error: "At least some content required" });
+      }
+
       const entryData = {
         id: date,
         date: date,
-        aaronWords: parsedAaron,
-        electraWords: parsedElectra,
-        aaronTime: parsedAaronTime,
-        electraTime: parsedElectraTime,
+        aaronWords: finalAaron,
+        electraWords: finalElectra,
+        aaronTime: finalAaronTime,
+        electraTime: finalElectraTime,
         note: note || "",
         updatedAt: new Date(),
+        createdAt: new Date(), // Used only on insert
       };
 
-      if (existing.length > 0) {
-        await db.update(entries).set(entryData).where(eq(entries.id, date));
-        res.json({ ...entryData, status: "updated" });
-      } else {
-        const newEntry = {
-          ...entryData,
-          createdAt: new Date(),
-        };
-        await db.insert(entries).values(newEntry);
-        res.json({ ...newEntry, status: "created" });
-      }
+      const result = await db.insert(entries)
+        .values(entryData)
+        .onConflictDoUpdate({
+          target: entries.id,
+          set: {
+            aaronWords: finalAaron,
+            electraWords: finalElectra,
+            aaronTime: finalAaronTime,
+            electraTime: finalElectraTime,
+            note: note || "",
+            updatedAt: new Date()
+          }
+        })
+        .returning();
+
+      res.json({ ...result[0], status: "upserted" });
     } catch (err: any) {
       console.error("API Error:", err.message);
       res.status(500).json({ error: "Internal server error" });
@@ -199,14 +231,34 @@ export function createApp() {
       const updateData: any = {
         updatedAt: new Date(),
       };
-      if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
-      if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
-      if (aaronTime !== undefined) updateData.aaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      if (electraTime !== undefined) updateData.electraTime = Math.max(0, parseInt(electraTime) || 0);
+
+      if (aaronWords !== undefined) {
+        const parsed = parseInt(aaronWords);
+        if (isNaN(parsed) || parsed < 0) return res.status(400).json({ error: "Word counts must be non-negative integers" });
+        updateData.aaronWords = parsed;
+      }
+      if (electraWords !== undefined) {
+        const parsed = parseInt(electraWords);
+        if (isNaN(parsed) || parsed < 0) return res.status(400).json({ error: "Word counts must be non-negative integers" });
+        updateData.electraWords = parsed;
+      }
+      if (aaronTime !== undefined) {
+        const parsed = parseInt(aaronTime);
+        if (isNaN(parsed) || parsed < 0) return res.status(400).json({ error: "Time values must be non-negative integers" });
+        updateData.aaronTime = parsed;
+      }
+      if (electraTime !== undefined) {
+        const parsed = parseInt(electraTime);
+        if (isNaN(parsed) || parsed < 0) return res.status(400).json({ error: "Time values must be non-negative integers" });
+        updateData.electraTime = parsed;
+      }
       if (note !== undefined) updateData.note = note;
 
-      await db.update(entries).set(updateData).where(eq(entries.id, id));
-      res.json({ id, ...updateData });
+      const result = await db.update(entries).set(updateData).where(eq(entries.id, id)).returning();
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+      res.json(result[0]);
     } catch (err: any) {
       console.error("API Error:", err.message);
       res.status(500).json({ error: "Internal server error" });
@@ -245,17 +297,8 @@ export function createApp() {
 
   app.patch("/api/settings", authenticate, async (req, res) => {
     try {
-      const allowedFields = [
-        "personAName", "personBName", "personAColor", "personBColor", 
-        "teamColor", "goalsEnabled", "individualGoalsEnabled", 
-        "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
-        "defaultChartView", "defaultGridView", "isSetupComplete",
-        "projectTitle", "metric", "projectGoal", "deadline", "startDate",
-        "passcode"
-      ];
-
       const filteredBody: any = {};
-      for (const field of allowedFields) {
+      for (const field of ALLOWED_SETTINGS_FIELDS) {
         if (req.body[field] !== undefined) {
           filteredBody[field] = req.body[field];
         }
@@ -302,10 +345,16 @@ export function createApp() {
       const allEntries = await db.select().from(entries).orderBy(entries.id);
       const settingsResults = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       
+      let safeSettings = {};
+      if (settingsResults.length > 0) {
+        const { passcode, ...restSettings } = settingsResults[0];
+        safeSettings = restSettings;
+      }
+
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        settings: settingsResults.length > 0 ? settingsResults[0] : {},
+        settings: safeSettings,
         entries: allEntries.map(e => ({
           id: e.id,
           date: e.id,
@@ -337,35 +386,45 @@ export function createApp() {
           await tx.delete(entries);
         }
 
+        let validEntryCount = 0;
         if (importEntries && Array.isArray(importEntries)) {
           for (const entry of importEntries) {
-            if (!entry.date) continue;
+            if (!entry.date || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) continue;
+
+            const parsedAaron = parseInt(entry.aaronWords);
+            const parsedElectra = parseInt(entry.electraWords);
+            const parsedAaronTime = parseInt(entry.aaronTime);
+            const parsedElectraTime = parseInt(entry.electraTime);
+
+            if ((!isNaN(parsedAaron) && parsedAaron < 0) || (!isNaN(parsedElectra) && parsedElectra < 0) || (!isNaN(parsedAaronTime) && parsedAaronTime < 0) || (!isNaN(parsedElectraTime) && parsedElectraTime < 0)) continue;
+
             await tx.insert(entries).values({
               id: entry.date,
               date: entry.date,
-              aaronWords: parseInt(entry.aaronWords) || 0,
-              electraWords: parseInt(entry.electraWords) || 0,
-              aaronTime: parseInt(entry.aaronTime) || 0,
-              electraTime: parseInt(entry.electraTime) || 0,
+              aaronWords: isNaN(parsedAaron) ? 0 : parsedAaron,
+              electraWords: isNaN(parsedElectra) ? 0 : parsedElectra,
+              aaronTime: isNaN(parsedAaronTime) ? 0 : parsedAaronTime,
+              electraTime: isNaN(parsedElectraTime) ? 0 : parsedElectraTime,
               note: entry.note || "",
               createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
               updatedAt: new Date(),
             }).onConflictDoUpdate({
               target: entries.id,
               set: {
-                aaronWords: parseInt(entry.aaronWords) || 0,
-                electraWords: parseInt(entry.electraWords) || 0,
-                aaronTime: parseInt(entry.aaronTime) || 0,
-                electraTime: parseInt(entry.electraTime) || 0,
+                aaronWords: isNaN(parsedAaron) ? 0 : parsedAaron,
+                electraWords: isNaN(parsedElectra) ? 0 : parsedElectra,
+                aaronTime: isNaN(parsedAaronTime) ? 0 : parsedAaronTime,
+                electraTime: isNaN(parsedElectraTime) ? 0 : parsedElectraTime,
                 note: entry.note || "",
                 updatedAt: new Date(),
               }
             });
+            validEntryCount++;
           }
         }
 
         if (importSettings) {
-          const { id, createdAt, updatedAt, ...filteredSettings } = importSettings;
+          const { id, createdAt, updatedAt, passcode, ...filteredSettings } = importSettings;
           await tx.insert(settings).values({
             ...filteredSettings,
             id: "global",
