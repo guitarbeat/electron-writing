@@ -1,6 +1,6 @@
-import { calculateTrackerStats } from '../src/lib/stats';
-import { Entry, Settings } from '../src/types';
-import { createApp } from '../server';
+import { calculateTrackerStats } from '../src/lib/stats.js';
+import { Entry, Settings } from '../src/types.js';
+import { createApp } from '../server.js';
 import request from 'supertest';
 import { format } from 'date-fns';
 
@@ -31,24 +31,59 @@ async function runTests() {
     console.error(`❌ stats.totalTeam FAILED: expected 1800, got ${stats.totalTeam}`);
   }
 
-  // 2. Test /api/passcode/helper
+  // 2. Test /api/passcode/helper (Privacy-Preserving Hint)
   console.log("\n--- Testing /api/passcode/helper ---");
   const app = createApp();
   const res = await request(app).get('/api/passcode/helper');
   
-  if (res.status === 200 && res.body.passcode !== undefined) {
-    console.log(`✅ /api/passcode/helper returned passcode: ${res.body.passcode.replace(/./g, '*')}`);
+  if (res.status === 200 && res.body.hint !== undefined && res.body.passcode === undefined) {
+    console.log(`✅ /api/passcode/helper returned hint safely without exposing passcode: ${res.body.hint}`);
   } else {
-    console.error(`❌ /api/passcode/helper FAILED: status ${res.status}, body:`, res.body);
+    console.error(`❌ /api/passcode/helper FAILED: expected hint, no passcode. Got status ${res.status}, body:`, res.body);
   }
 
-  // 3. Test /api/settings sanitization
-  console.log("\n--- Testing /api/settings sanitization ---");
+  // 3. Test Authentication Logic and Fallbacks
+  console.log("\n--- Testing Authentication Edge Cases ---");
+
+  // Falsy value (0) instead of "0000"
+  const loginFailRes = await request(app).post('/api/session').send({ passcode: 0 });
+  if (loginFailRes.status === 401) {
+    console.log("✅ Correctly rejected numeric 0 instead of passcode string");
+  } else {
+    console.error("❌ FAILED to reject numeric 0:", loginFailRes.body);
+  }
+
+  // Missing passcode
+  const loginMissingRes = await request(app).post('/api/session').send({});
+  if (loginMissingRes.status === 401) {
+    console.log("✅ Correctly rejected missing passcode");
+  } else {
+    console.error("❌ FAILED to reject missing passcode:", loginMissingRes.body);
+  }
+
+  // Proper fallback environment login ("0000")
   const loginRes = await request(app)
     .post('/api/session')
-    .send({ passcode: res.body.passcode });
+    .send({ passcode: "0000" });
   
+  if (loginRes.status === 200) {
+    console.log("✅ Successful login using environment fallback '0000'");
+  } else {
+    console.error("❌ Successful login FAILED:", loginRes.body);
+  }
+
   const cookie = loginRes.header['set-cookie'];
+
+  // Test cookie flags
+  const cookieStr = cookie ? cookie[0] : "";
+  if (cookieStr.includes("HttpOnly") && cookieStr.includes("SameSite=Lax")) {
+    console.log("✅ Cookie has correct HttpOnly and SameSite=Lax flags");
+  } else {
+    console.error("❌ Cookie flags are incorrect:", cookieStr);
+  }
+
+  // 4. Test /api/settings sanitization
+  console.log("\n--- Testing /api/settings sanitization ---");
 
   const patchRes = await request(app)
     .patch('/api/settings')

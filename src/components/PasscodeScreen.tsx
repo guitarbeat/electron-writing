@@ -14,6 +14,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
   const [isTyping, setIsTyping] = useState(false);
 
   const [revealedPasscode, setRevealedPasscode] = useState((import.meta.env.VITE_PASSCODE || '0000').toString().trim());
+  const [hint, setHint] = useState<string | null>(null);
 
   React.useEffect(() => {
     const triggerHelper = async () => {
@@ -21,15 +22,19 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
       if (attempts >= 3 && !isLoading && !isTyping) {
         setIsTyping(true);
         setError(false);
-        setPasscode('');
+        setHint(null);
 
         let activePasscode = revealedPasscode;
+        let receivedHint = null;
 
         // Try to fetch the latest from the server
         try {
           const response = await fetch('/api/passcode/helper');
           const data = await response.json();
-          if (data.passcode) {
+          if (data.hint) {
+            receivedHint = data.hint;
+            setHint(receivedHint);
+          } else if (data.passcode) {
             activePasscode = data.passcode.toString().trim();
             setRevealedPasscode(activePasscode);
           }
@@ -37,6 +42,16 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
           console.warn('SMEEMO_HELPER: Failed to fetch latest passcode, using local fallback.');
         }
 
+        if (receivedHint) {
+          // If we have a hint, just show it
+          setTimeout(() => {
+            setIsTyping(false);
+            setAttempts(0);
+          }, 4000);
+          return null;
+        }
+
+        setPasscode('');
         console.log('SMEEMO_HELPER: Starting auto-type animation...');
         
         let i = 0;
@@ -122,7 +137,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
               placeholder="Enter shared passcode..."
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              className={`input-playful w-full text-center text-2xl tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
+              className={`input-playful w-full text-center text-lg sm:text-2xl tracking-wider sm:tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
               autoFocus
               aria-label="Shared passcode"
             />
@@ -138,7 +153,7 @@ export function PasscodeScreen({ onLogin }: PasscodeScreenProps) {
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="text-primary text-[10px] font-black uppercase mt-2 text-center tracking-tighter"
               >
-                Smeemo is helping you out... ✨
+                {hint ? `Smeemo whispers: ${hint} ✨` : "Smeemo is helping you out... ✨"}
               </motion.p>
             )}
           </div>

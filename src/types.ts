@@ -3,6 +3,8 @@ export interface Entry {
   date: string;
   aaronWords: number;
   electraWords: number;
+  aaronTime: number;
+  electraTime: number;
   note?: string;
   createdAt: any;
   updatedAt: any;

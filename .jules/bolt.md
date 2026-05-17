@@ -1,0 +1,3 @@
+## 2025-05-16 - Optimizing `useTracker` API calls
+**Learning:** The `useTracker` hook currently fetches entries and settings separately, and polls them every 5 seconds. Since both endpoints return somewhat similar sized data and are often needed together, we can reduce the number of requests by either batching them or, if we stick to the 5s interval, we might cause unnecessary re-renders. A better optimization is to avoid polling `settings` every 5 seconds since settings rarely change. The entries might change more frequently, but polling `settings` is redundant.
+**Action:** Remove polling for `settings` every 5 seconds in `useTracker.ts`. Fetch it once on authorization.
