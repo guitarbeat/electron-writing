@@ -10,7 +10,7 @@ Browser
   -> Neon PostgreSQL
 ```
 
-The local development server is `server.ts`. It creates the Express app, attaches Vite middleware outside production, and listens on `PORT` or `3000`.
+The local development server is `server/index.ts`. It creates the Express app, attaches Vite middleware outside production, and listens on `PORT` or `3000`.
 
 The Vercel deployment uses `api/[...path].ts`, which exports the same Express app without starting a long-running server. Vercel serves the Vite build from `dist` and routes `/api/*` requests to the function.
 
@@ -18,13 +18,14 @@ This follows Vercel's current Express guidance: put the Express entrypoint under
 
 ## Important Files
 
-- `server.ts` - Express app factory, API routes, local dev/prod server
+- `server/index.ts` - Express app factory, route mounting, local dev/prod server
+- `server/routes/*.ts` - Modular API routes (session, entries, settings, data)
+- `server/db/index.ts` - Drizzle client and Neon pool
+- `server/db/schema.ts` - entries/settings table definitions
 - `api/[...path].ts` - Vercel function entrypoint
-- `src/db/index.ts` - Drizzle client and Neon pool
-- `src/db/schema.ts` - entries/settings table definitions
-- `src/hooks/useTracker.ts` - session state, polling, API client helpers
-- `src/components/PasscodeScreen.tsx` - shared passcode UI
-- `src/features/dashboard/Dashboard.tsx` - main authenticated dashboard
+- `client/hooks/useTracker.ts` - session state, polling, API client helpers
+- `client/components/PasscodeScreen.tsx` - shared passcode UI
+- `client/features/dashboard/Dashboard.tsx` - main authenticated dashboard
 - `vite.config.ts` - React/Tailwind/PWA config
 - `public/smeemo.png` - source logo image used by the UI
 - `public/favicon-32.png`, `public/apple-touch-icon.png`, `public/pwa-192.png`, `public/pwa-512.png` - generated install/browser icons

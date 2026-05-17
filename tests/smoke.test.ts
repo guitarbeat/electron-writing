@@ -1,4 +1,4 @@
-import { createApp } from '../server';
+import { createApp } from '../server/index';
 import request from 'supertest'; // I'll check if I can use this or just fetch
 
 async function smokeTest() {
