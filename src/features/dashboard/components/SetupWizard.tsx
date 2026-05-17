@@ -19,9 +19,7 @@ export function ProjectSettingsStep({
         {(["words", "pages"] as const).map((metric) => (
           <button
             key={metric}
-            type="button"
             onClick={() => setFormData({ ...formData, metric })}
-            aria-pressed={formData.metric === metric}
             className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-transform hover:scale-[1.02] active:scale-95 ${
               formData.metric === metric
                 ? "bg-ink text-white shadow-sticker"
@@ -59,7 +57,7 @@ export function ProjectSettingsStep({
                 projectGoal: parseInt(event.target.value) || 0,
               })
             }
-            className="number-input-clean bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
+            className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
           />
 
           <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">
@@ -117,7 +115,7 @@ export function DeadlineStep({
         />
 
         <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">
-          The daily ledger will end on this date.
+          The heatmap will end on this date.
         </p>
       </div>
     </div>
@@ -143,7 +141,6 @@ export function SetupWizardActions({
     <div className="flex gap-4">
       {currentStep > 0 && (
         <button
-          type="button"
           onClick={onBack}
           className="button-playful bg-white text-ink flex-1"
           disabled={isSaving}
@@ -153,15 +150,14 @@ export function SetupWizardActions({
       )}
 
       <button
-        type="button"
         onClick={onNext}
-        className="button-playful bg-primary text-ink flex-[2] inline-flex items-center justify-center gap-3"
+        className="button-playful bg-primary text-ink flex-[2] relative"
         disabled={isSaving}
       >
         {isSaving ? "Synching..." : isLastStep ? "Let's Write!" : "Next Step"}
 
         {!isSaving && (
-          <ArrowRight className="w-4 h-4 shrink-0" />
+          <ArrowRight className="w-4 h-4 absolute right-6 top-1/2 -translate-y-1/2" />
         )}
       </button>
     </div>
@@ -269,6 +265,8 @@ export function SetupWizard({
         animate={{ scale: 1, y: 0 }}
         className={`sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-6 sm:gap-8 relative overflow-hidden max-h-[95vh] overflow-y-auto ${errorStep === currentStep ? 'animate-shake border-red-500' : ''}`}
       >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full -translate-y-1/2 translate-x-1/2" />
+
         <div className="p-6 sm:p-8 pb-0">
           <div className="flex flex-col items-center text-center gap-4 relative">
             <div className="w-16 h-16 bg-white border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
@@ -335,13 +333,13 @@ export function SetupWizard({
           />
           
           {currentStep === 0 && (
-            <button type="button" onClick={() => handleSave(true)} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
+            <button onClick={() => handleSave(true)} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
               Skip for now
             </button>
           )}
 
           {settings?.isSetupComplete && (
-             <button type="button" onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
+             <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
                 Close Settings
              </button>
           )}

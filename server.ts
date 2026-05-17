@@ -19,11 +19,9 @@ const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
   const app = express();
-  app.set("trust proxy", 1);
   // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
   const rawPasscode = process.env.PASSCODE || "0000";
   const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
-  const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSCODE || "clean_writer_fallback_secret_12345";
   
   if (!process.env.PASSCODE) {
     console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
@@ -39,7 +37,8 @@ export function createApp() {
       return res.status(401).json({ error: "Unauthorized" });
     }
     try {
-      jwt.verify(token, SESSION_SECRET);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       next();
     } catch (err) {
       res.clearCookie(COOKIE_NAME);
@@ -54,21 +53,18 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Passcode helper (provides a hint for the Smeemo animation)
+  // Passcode helper (reveals passcode for the Smeemo animation)
   // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
-  // We return a privacy-preserving hint rather than the explicit passcode.
+  // In this project context, convenience/support for the shared partner experience
+  // is prioritized over absolute secret isolation.
   app.get("/api/passcode/helper", async (req, res) => {
     try {
       const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
       const passcode = (dbSettings.length > 0 && dbSettings[0].passcode) 
-        ? dbSettings[0].passcode.trim()
+        ? dbSettings[0].passcode
         : APP_PASSCODE;
-      const hint = passcode.length > 0
-        ? `Starts with ${passcode.charAt(0)}... (${passcode.length} chars)`
-        : "No passcode set";
-      res.json({ hint });
+      res.json({ passcode });
     } catch (err) {
-      console.error("API Error fetching helper data:", err);
       res.status(500).json({ error: "Could not fetch helper data" });
     }
   });
@@ -92,29 +88,31 @@ export function createApp() {
     }
     
     // Debug logging for authentication issues
-    const received = passcode !== undefined && passcode !== null ? String(passcode).trim() : "MISSING";
+    const received = passcode ? passcode.toString().trim() : "MISSING";
     
     // MASTER OVERRIDE: The environment passcode always works, regardless of DB.
     // This ensures that if the user gets locked out by a DB change, they can always use the ENV one.
-    const isMasterMatch = received !== "MISSING" && received === APP_PASSCODE;
-    const isDbMatch = received !== "MISSING" && received === expected;
+    const isMasterMatch = passcode && passcode.toString().trim() === APP_PASSCODE.trim();
+    const isDbMatch = passcode && passcode.toString().trim() === expected;
     const isMatch = isMasterMatch || isDbMatch;
 
     console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch} (Master=${isMasterMatch}, DB=${isDbMatch})`);
 
     if (isMatch) {
-      const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
+      const isVercel = !!process.env.VERCEL;
       
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        // Only require secure cookies in production
+        // Only require secure cookies in production or on Vercel
         // This fixes login issues on local http://localhost
-        secure: isProd,
+        secure: isProd || isVercel,
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
-      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
+      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd || isVercel}`);
       return res.json({ status: "ok" });
     }
     return res.status(401).json({ error: "Invalid passcode" });
@@ -130,7 +128,8 @@ export function createApp() {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.json({ authorized: false });
     try {
-      jwt.verify(token, SESSION_SECRET);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       res.json({ authorized: true });
     } catch (err) {
       res.json({ authorized: false });
@@ -143,8 +142,7 @@ export function createApp() {
       const allEntries = await db.select().from(entries).orderBy(desc(entries.id));
       res.json(allEntries);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -181,8 +179,7 @@ export function createApp() {
         res.json({ ...newEntry, status: "created" });
       }
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -200,8 +197,7 @@ export function createApp() {
       await db.update(entries).set(updateData).where(eq(entries.id, id));
       res.json({ id, ...updateData });
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -211,8 +207,7 @@ export function createApp() {
       await db.delete(entries).where(eq(entries.id, id));
       res.json({ status: "deleted" });
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -230,8 +225,7 @@ export function createApp() {
       }
       res.json(results[0]);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -268,8 +262,7 @@ export function createApp() {
       await db.update(settings).set(updateData).where(eq(settings.id, "global"));
       res.json(updateData);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -298,8 +291,7 @@ export function createApp() {
       res.setHeader("Content-Disposition", "attachment; filename=clean_writer_export.json");
       res.send(JSON.stringify(data, null, 2));
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -371,8 +363,7 @@ export function createApp() {
 
       res.json({ status: "ok", count: importEntries?.length || 0 });
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -419,6 +410,6 @@ export async function startServer() {
   });
 }
 
-if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+if (!process.env.VERCEL) {
   startServer();
 }
