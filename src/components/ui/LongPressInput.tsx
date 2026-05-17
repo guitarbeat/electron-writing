@@ -1,5 +1,4 @@
 import React, { useRef, useCallback } from 'react';
-import { Palette } from 'lucide-react';
 
 export function LongPressInput({ 
   value, 
@@ -31,7 +30,7 @@ export function LongPressInput({
   }, []);
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full min-h-[112px] sticker-card border-4 bg-white px-4 py-5" style={{ borderColor: color }}>
+    <div className="relative flex flex-col items-center justify-center w-full min-h-[100px] sticker-card border-4 bg-white" style={{ borderColor: color }}>
       <input
         type="text"
         value={value}
@@ -49,16 +48,6 @@ export function LongPressInput({
         style={{ color: color }}
         placeholder={placeholder}
       />
-      <button
-        type="button"
-        onClick={() => colorInputRef.current?.click()}
-        className="mt-3 inline-flex items-center gap-2 border-2 border-ink bg-bg-paper px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-ink shadow-[2px_2px_0_var(--color-ink)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-        aria-label={`Change ${value || placeholder} color`}
-      >
-        <span className="w-3 h-3 border-2 border-ink" style={{ backgroundColor: color }} />
-        <Palette className="w-3.5 h-3.5" />
-        Color
-      </button>
       <input 
         ref={colorInputRef}
         type="color" 
@@ -72,6 +61,7 @@ export function LongPressInput({
         }}
         className="opacity-0 absolute w-full h-full inset-0 pointer-events-none"
       />
+      <div className="text-[9px] font-bold italic opacity-40 uppercase mt-2 select-none pointer-events-none text-ink">Hold to change color</div>
     </div>
   );
 }

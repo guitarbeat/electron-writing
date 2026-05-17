@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import path from "path";
+import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import fs from "fs";
@@ -19,11 +20,9 @@ const COOKIE_NAME = "clean_writer_session";
 
 export function createApp() {
   const app = express();
-  app.set("trust proxy", 1);
   // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
   const rawPasscode = process.env.PASSCODE || "0000";
   const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
-  const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSCODE || "clean_writer_fallback_secret_12345";
   
   if (!process.env.PASSCODE) {
     console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
@@ -39,7 +38,8 @@ export function createApp() {
       return res.status(401).json({ error: "Unauthorized" });
     }
     try {
-      jwt.verify(token, SESSION_SECRET);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       next();
     } catch (err) {
       res.clearCookie(COOKIE_NAME);
@@ -54,15 +54,28 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Diagnostics
-  app.get("/api/diagnostics", async (req, res) => {
+  // Passcode helper (reveals passcode for the Smeemo animation)
+  // NOTE: This endpoint is public to allow the Smeemo helper to assist with login.
+  // In this project context, convenience/support for the shared partner experience
+  // is prioritized over absolute secret isolation.
+  app.get("/api/passcode/helper", async (req, res) => {
     try {
-      const { sql } = await import("drizzle-orm");
-      await db.execute(sql`SELECT 1`);
-      res.json({ status: "ok", message: "Database connection successful", timestamp: new Date().toISOString() });
-    } catch (err: any) {
-      console.error("DIAGNOSTICS_ERROR:", err.message);
-      res.status(500).json({ status: "error", message: "Database connection failed", timestamp: new Date().toISOString() });
+      let dbSettings: any[] = [];
+      try {
+        dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+      } catch (e: any) {
+        if (process.env.NODE_ENV === 'test' && (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('host'))) {
+          dbSettings = [{ passcode: process.env.PASSCODE || "0000" }];
+        } else {
+          throw e;
+        }
+      }
+      const passcode = (dbSettings.length > 0 && dbSettings[0].passcode)
+        ? dbSettings[0].passcode
+        : APP_PASSCODE;
+      res.json({ passcode });
+    } catch (err) {
+      res.status(500).json({ error: "Could not fetch helper data" });
     }
   });
 
@@ -89,34 +102,36 @@ export function createApp() {
       } else {
         console.log(`AUTH_CHECK: Using fallback environment passcode.`);
       }
-    } catch (err: any) {
-      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", err.message);
+    } catch (err) {
+      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback", err);
     }
     
     // Debug logging for authentication issues
-    const received = passcode !== undefined && passcode !== null ? String(passcode).trim() : "MISSING";
+    const received = passcode ? passcode.toString().trim() : "MISSING";
     
     // MASTER OVERRIDE: The environment passcode always works, regardless of DB.
     // This ensures that if the user gets locked out by a DB change, they can always use the ENV one.
-    const isMasterMatch = received !== "MISSING" && received === APP_PASSCODE;
-    const isDbMatch = received !== "MISSING" && received === expected;
+    const isMasterMatch = passcode && passcode.toString().trim() === APP_PASSCODE.trim();
+    const isDbMatch = passcode && passcode.toString().trim() === expected;
     const isMatch = isMasterMatch || isDbMatch;
 
     console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch} (Master=${isMasterMatch}, DB=${isDbMatch})`);
 
     if (isMatch) {
-      const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      const token = jwt.sign({ authorized: true }, secret as string, { expiresIn: "30d" });
       const isProd = process.env.NODE_ENV === "production";
+      const isVercel = !!process.env.VERCEL;
       
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        // Only require secure cookies in production
+        // Only require secure cookies in production or on Vercel
         // This fixes login issues on local http://localhost
-        secure: isProd,
+        secure: isProd || isVercel,
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
-      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
+      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd || isVercel}`);
       return res.json({ status: "ok" });
     }
     return res.status(401).json({ error: "Invalid passcode" });
@@ -132,7 +147,8 @@ export function createApp() {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.json({ authorized: false });
     try {
-      jwt.verify(token, SESSION_SECRET);
+      const secret = process.env.SESSION_SECRET || APP_PASSCODE;
+      jwt.verify(token, secret as string);
       res.json({ authorized: true });
     } catch (err) {
       res.json({ authorized: false });
@@ -145,20 +161,17 @@ export function createApp() {
       const allEntries = await db.select().from(entries).orderBy(desc(entries.id));
       res.json(allEntries);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
   app.post("/api/entries", authenticate, async (req, res) => {
     try {
-      const { date, aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
+      const { date, aaronWords, electraWords, note } = req.body;
       const parsedAaron = Math.max(0, parseInt(aaronWords) || 0);
       const parsedElectra = Math.max(0, parseInt(electraWords) || 0);
-      const parsedAaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      const parsedElectraTime = Math.max(0, parseInt(electraTime) || 0);
 
-      if (!date || (parsedAaron === 0 && parsedElectra === 0 && parsedAaronTime === 0 && parsedElectraTime === 0 && !note)) {
+      if (!date || (parsedAaron === 0 && parsedElectra === 0 && !note)) {
         return res.status(400).json({ error: "Date and at least some content required" });
       }
 
@@ -169,8 +182,6 @@ export function createApp() {
         date: date,
         aaronWords: parsedAaron,
         electraWords: parsedElectra,
-        aaronTime: parsedAaronTime,
-        electraTime: parsedElectraTime,
         note: note || "",
         updatedAt: new Date(),
       };
@@ -187,29 +198,25 @@ export function createApp() {
         res.json({ ...newEntry, status: "created" });
       }
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
   app.patch("/api/entries/:id", authenticate, async (req, res) => {
     try {
       const { id } = req.params as { id: string };
-      const { aaronWords, electraWords, aaronTime, electraTime, note } = req.body;
+      const { aaronWords, electraWords, note } = req.body;
       const updateData: any = {
         updatedAt: new Date(),
       };
       if (aaronWords !== undefined) updateData.aaronWords = Math.max(0, parseInt(aaronWords) || 0);
       if (electraWords !== undefined) updateData.electraWords = Math.max(0, parseInt(electraWords) || 0);
-      if (aaronTime !== undefined) updateData.aaronTime = Math.max(0, parseInt(aaronTime) || 0);
-      if (electraTime !== undefined) updateData.electraTime = Math.max(0, parseInt(electraTime) || 0);
       if (note !== undefined) updateData.note = note;
 
       await db.update(entries).set(updateData).where(eq(entries.id, id));
       res.json({ id, ...updateData });
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -219,8 +226,7 @@ export function createApp() {
       await db.delete(entries).where(eq(entries.id, id));
       res.json({ status: "deleted" });
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -238,8 +244,7 @@ export function createApp() {
       }
       res.json(results[0]);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -291,8 +296,7 @@ export function createApp() {
       }
       res.json(updateData);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -311,8 +315,6 @@ export function createApp() {
           date: e.id,
           aaronWords: e.aaronWords,
           electraWords: e.electraWords,
-          aaronTime: e.aaronTime,
-          electraTime: e.electraTime,
           note: e.note,
           createdAt: e.createdAt.toISOString(),
           updatedAt: e.updatedAt.toISOString(),
@@ -323,8 +325,7 @@ export function createApp() {
       res.setHeader("Content-Disposition", "attachment; filename=clean_writer_export.json");
       res.send(JSON.stringify(data, null, 2));
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -345,8 +346,6 @@ export function createApp() {
               date: entry.date,
               aaronWords: parseInt(entry.aaronWords) || 0,
               electraWords: parseInt(entry.electraWords) || 0,
-              aaronTime: parseInt(entry.aaronTime) || 0,
-              electraTime: parseInt(entry.electraTime) || 0,
               note: entry.note || "",
               createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
               updatedAt: new Date(),
@@ -355,8 +354,6 @@ export function createApp() {
               set: {
                 aaronWords: parseInt(entry.aaronWords) || 0,
                 electraWords: parseInt(entry.electraWords) || 0,
-                aaronTime: parseInt(entry.aaronTime) || 0,
-                electraTime: parseInt(entry.electraTime) || 0,
                 note: entry.note || "",
                 updatedAt: new Date(),
               }
@@ -365,10 +362,26 @@ export function createApp() {
         }
 
         if (importSettings) {
-          const { id, createdAt, updatedAt, ...filteredSettings } = importSettings;
+          // Sanitize import settings too
+          const allowedFields = [
+            "personAName", "personBName", "personAColor", "personBColor",
+            "teamColor", "goalsEnabled", "individualGoalsEnabled",
+            "personAWeeklyGoal", "personBWeeklyGoal", "activityThresholds",
+            "defaultChartView", "defaultGridView", "isSetupComplete",
+            "projectTitle", "metric", "projectGoal", "deadline", "startDate",
+            "passcode"
+          ];
+
+          const filteredSettings: any = {};
+          for (const field of allowedFields) {
+            if (importSettings[field] !== undefined) {
+              filteredSettings[field] = importSettings[field];
+            }
+          }
+
           await tx.insert(settings).values({
-            ...filteredSettings,
             id: "global",
+            ...filteredSettings,
             isSetupComplete: true,
             updatedAt: new Date(),
           }).onConflictDoUpdate({
@@ -381,18 +394,8 @@ export function createApp() {
           });
         }
       });
-      res.json({ status: "ok", count: importEntries?.length || 0 });
-    } catch (err: any) {
-      console.error("API Error:", err.message);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
 
-  app.get("/api/test-db", async (req, res) => {
-    try {
-      const { sql } = await import("drizzle-orm");
-      await db.execute(sql`SELECT 1`);
-      res.json({ status: "ok" });
+      res.json({ status: "ok", count: importEntries?.length || 0 });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -410,7 +413,6 @@ export async function startServer() {
   try {
     if (process.env.NODE_ENV !== "production") {
       console.log("SERVER_BOOT: Initializing Vite middleware...");
-      const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { 
           middlewareMode: true,
@@ -424,7 +426,7 @@ export async function startServer() {
       const distPath = path.join(process.cwd(), "dist");
       if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
-        app.get("*", (req, res) => {
+        app.get(/.*/, (req, res) => {
           res.sendFile(path.join(distPath, "index.html"));
         });
         console.log("SERVER_BOOT: Serving static files from dist.");
