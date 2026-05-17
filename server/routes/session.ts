@@ -11,54 +11,51 @@ export function createSessionRoutes(APP_PASSCODE: string, SESSION_SECRET: string
 
   // Create session (login)
   router.post("/", async (req, res) => {
-    const { passcode } = req.body;
-    
-    // Fetch dynamic passcode from DB with fallback to env
-    let expected = APP_PASSCODE.trim();
     try {
-      let dbSettings: any[] = [];
-      try {
-        dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
-      } catch (e: any) {
-        if (process.env.NODE_ENV === 'test' && (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('host'))) {
-          dbSettings = [{ passcode: process.env.PASSCODE || "5947" }];
-        } else {
-          throw e;
-        }
-      }
-      if (dbSettings.length > 0 && dbSettings[0].passcode) {
-        expected = dbSettings[0].passcode.trim();
-        console.log(`AUTH_CHECK: Using dynamic passcode from database.`);
-      } else {
-        console.log(`AUTH_CHECK: Using fallback environment passcode.`);
-      }
-    } catch (err: any) {
-      console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", err.message);
-    }
-    
-    const received = passcode !== undefined && passcode !== null ? String(passcode).trim() : "MISSING";
-    
-    // MASTER OVERRIDE: The environment passcode always works
-    const isMasterMatch = received !== "MISSING" && received === APP_PASSCODE;
-    const isDbMatch = received !== "MISSING" && received === expected;
-    const isMatch = isMasterMatch || isDbMatch;
-
-    console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch}`);
-
-    if (isMatch) {
-      const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
-      const isProd = process.env.NODE_ENV === "production";
+      const { passcode } = req.body;
       
-      res.cookie(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
-      console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
-      return res.json({ status: "ok" });
+      // Fetch dynamic passcode from DB with fallback to env
+      let expected = APP_PASSCODE.trim();
+      try {
+        const dbSettings = await db.select().from(settings).where(eq(settings.id, "global")).limit(1);
+        if (dbSettings.length > 0 && dbSettings[0].passcode) {
+          expected = dbSettings[0].passcode.trim();
+          console.log(`AUTH_CHECK: Using dynamic passcode from database.`);
+        } else {
+          console.log(`AUTH_CHECK: No DB passcode found, using environment passcode.`);
+        }
+      } catch (dbErr: any) {
+        // Database query failed - just use environment passcode
+        console.warn("AUTH_DB_CHECK_WARN: Could not fetch from DB, using env fallback.", dbErr.message);
+      }
+      
+      const received = passcode !== undefined && passcode !== null ? String(passcode).trim() : "MISSING";
+      
+      // MASTER OVERRIDE: The environment passcode always works
+      const isMasterMatch = received !== "MISSING" && received === APP_PASSCODE;
+      const isDbMatch = received !== "MISSING" && received === expected;
+      const isMatch = isMasterMatch || isDbMatch;
+
+      console.log(`AUTH_CHECK: Received=[${received}], Expected(DB)=[${expected.replace(/./g, '*')}], Expected(ENV)=[${APP_PASSCODE.replace(/./g, '*')}], Match=${isMatch}`);
+
+      if (isMatch) {
+        const token = jwt.sign({ authorized: true }, SESSION_SECRET, { expiresIn: "30d" });
+        const isProd = process.env.NODE_ENV === "production";
+        
+        res.cookie(COOKIE_NAME, token, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: "lax",
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+        console.log(`AUTH_SUCCESS: Session established for 30 days. Secure=${isProd}`);
+        return res.json({ status: "ok" });
+      }
+      return res.status(401).json({ error: "Invalid passcode" });
+    } catch (err: any) {
+      console.error("AUTH_ERROR: Unexpected error in login endpoint", err.message);
+      return res.status(500).json({ error: "Internal server error" });
     }
-    return res.status(401).json({ error: "Invalid passcode" });
   });
 
   // Delete session (logout)
