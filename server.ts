@@ -30,12 +30,12 @@ export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
   // Hardened passcode loading: handle potential quotes or extra whitespace from env vars
-  const rawPasscode = process.env.PASSCODE || "5947";
+  const rawPasscode = process.env.PASSCODE || "0000";
   const APP_PASSCODE = rawPasscode.toString().trim().replace(/^["']|["']$/g, '');
   const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSCODE || "clean_writer_fallback_secret_12345";
   
   if (!process.env.PASSCODE) {
-    console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '5947'.");
+    console.warn("SERVER_BOOT: PASSCODE environment variable is not set. Falling back to '0000'.");
   }
 
   app.use(express.json());
@@ -146,6 +146,25 @@ export function createApp() {
     } catch (err) {
       res.json({ authorized: false });
     }
+  });
+
+  // Third-failure bypass: Smeemo lets you through after 3 wrong attempts.
+  // This grants a real session without exposing the passcode to the client.
+  app.post("/api/session/bypass", (req, res) => {
+    const { attempts } = req.body;
+    if (typeof attempts !== "number" || attempts < 3) {
+      return res.status(403).json({ error: "Not yet" });
+    }
+    console.log(`AUTH_BYPASS: Smeemo is letting the user through after ${attempts} failed attempts.`);
+    const token = jwt.sign({ authorized: true, bypass: true }, SESSION_SECRET, { expiresIn: "30d" });
+    const isProd = process.env.NODE_ENV === "production";
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+    return res.json({ status: "ok", bypass: true });
   });
 
   // Entries
