@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 
 interface PasscodeScreenProps {
@@ -15,13 +15,20 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   const [isBypassing, setIsBypassing] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
+  // Consolidated check for whether input should be disabled
+  const isInputDisabled = isLoading || isBypassing;
+
+  console.log('[v0] PasscodeScreen render', { attempts, isLoading, isBypassing, error, passcodeLength: passcode.length });
+
   // After 3 failed attempts, Smeemo (the cat) lets you through
   useEffect(() => {
-    if (attempts < 3 || isLoading || isBypassing) return;
+    if (attempts < 3 || isInputDisabled) return;
 
+    console.log('[v0] PasscodeScreen: Bypass triggered', { attempts });
     let cancelled = false;
 
     const triggerBypass = async () => {
+      console.log('[v0] PasscodeScreen: Starting bypass flow');
       setIsBypassing(true);
       setError(false);
       setPasscode('');
@@ -29,19 +36,28 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
       // Try to fetch a hint from the server to show while bypassing
       try {
         const response = await fetch('/api/passcode/helper');
-        const data = await response.json();
-        if (data.hint) {
-          setHint(data.hint);
+        if (!response.ok) {
+          console.warn('[v0] PasscodeScreen: Hint fetch returned non-ok status', response.status);
+        } else {
+          const data = await response.json();
+          if (data.hint) {
+            console.log('[v0] PasscodeScreen: Got hint from server');
+            setHint(data.hint);
+          }
         }
       } catch (err) {
-        console.warn('SMEEMO_BYPASS: Failed to fetch hint', err);
+        console.error('[v0] PasscodeScreen: Failed to fetch hint', err);
       }
 
       // Brief pause so the user sees the "Smeemo is helping" message
       await new Promise((r) => setTimeout(r, 2000));
-      if (cancelled) return;
+      if (cancelled) {
+        console.log('[v0] PasscodeScreen: Bypass cancelled during delay');
+        return;
+      }
 
       try {
+        console.log('[v0] PasscodeScreen: Calling bypass API');
         const res = await fetch('/api/session/bypass', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -49,17 +65,21 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
         });
 
         if (res.ok) {
+          console.log('[v0] PasscodeScreen: Bypass API succeeded, calling onBypassSuccess');
           if (!cancelled) {
             // Re-check session in the parent to transition to the dashboard
             await onBypassSuccess();
             return;
           }
+        } else {
+          console.warn('[v0] PasscodeScreen: Bypass API returned non-ok status', res.status);
         }
       } catch (err) {
-        console.warn('SMEEMO_BYPASS: Failed to trigger bypass', err);
+        console.error('[v0] PasscodeScreen: Bypass API failed', err);
       }
 
       if (!cancelled) {
+        console.log('[v0] PasscodeScreen: Resetting bypass state');
         setIsBypassing(false);
         setAttempts(0);
       }
@@ -74,17 +94,38 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedPasscode = passcode.trim();
+    
+    if (!trimmedPasscode || isInputDisabled) {
+      console.log('[v0] PasscodeScreen: Submit blocked', { hasPasscode: !!trimmedPasscode, isInputDisabled });
+      return;
+    }
+    
+    console.log('[v0] PasscodeScreen: Submitting passcode', { passcodeLength: trimmedPasscode.length });
     setIsLoading(true);
     setError(false);
-    const success = await onLogin(passcode);
-    if (!success) {
+    
+    try {
+      const success = await onLogin(trimmedPasscode);
+      console.log('[v0] PasscodeScreen: Login result', { success });
+      if (!success) {
+        setError(true);
+        setPasscode('');
+        setAttempts((prev) => {
+          const newAttempts = prev + 1;
+          console.log('[v0] PasscodeScreen: Incrementing attempts', { newAttempts });
+          return newAttempts;
+        });
+      } else {
+        setAttempts(0);
+      }
+    } catch (err) {
+      console.error('[v0] PasscodeScreen: Login threw error', err);
       setError(true);
       setPasscode('');
-      setAttempts((prev) => prev + 1);
-    } else {
-      setAttempts(0);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -118,7 +159,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
               onChange={(e) => setPasscode(e.target.value)}
               className={`input-playful w-full text-center text-lg sm:text-2xl tracking-wider sm:tracking-widest ${error ? 'border-red-500 animate-shake' : ''}`}
               autoFocus
-              disabled={isBypassing}
+              disabled={isInputDisabled}
               aria-label="Shared passcode"
             />
             {error && !isBypassing && (
@@ -140,7 +181,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
 
           <button
             type="submit"
-            disabled={isLoading || !passcode || isBypassing}
+            disabled={isInputDisabled || !passcode}
             className="button-playful w-full bg-primary flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {isLoading ? 'Verifying...' : isBypassing ? 'Opening...' : (

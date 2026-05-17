@@ -8,18 +8,27 @@ export function useTracker() {
   const [isLoading, setIsLoading] = useState(true);
 
   const checkSession = useCallback(async () => {
+    console.log('[v0] useTracker: Checking session');
     try {
       const res = await fetch('/api/session/check');
+      if (!res.ok) {
+        console.warn('[v0] useTracker: Session check returned non-ok status', res.status);
+        setIsAuthorized(false);
+        return false;
+      }
       const data = await res.json();
+      console.log('[v0] useTracker: Session check result', { authorized: data.authorized });
       setIsAuthorized(data.authorized);
       return data.authorized;
     } catch (err) {
+      console.error('[v0] useTracker: Session check failed', err);
       setIsAuthorized(false);
       return false;
     }
   }, []);
 
   const login = async (passcode: string) => {
+    console.log('[v0] useTracker: Login attempt', { passcodeLength: passcode.length });
     try {
       const res = await fetch('/api/session', {
         method: 'POST',
@@ -27,17 +36,21 @@ export function useTracker() {
         body: JSON.stringify({ passcode }),
       });
       
+      console.log('[v0] useTracker: Login response status', res.status);
       if (res.ok) {
         // Double-check the session to ensure the cookie was accepted by the browser
         const authorized = await checkSession();
         if (!authorized) {
-          console.warn('LOGIN_WARNING: Passcode accepted but session cookie was not established.');
+          console.warn('[v0] useTracker: Passcode accepted but session cookie was not established.');
           return false;
         }
+        console.log('[v0] useTracker: Login successful');
         return true;
+      } else {
+        console.warn('[v0] useTracker: Login returned non-ok status', res.status);
       }
     } catch (err) {
-      console.error('Login request failed', err);
+      console.error('[v0] useTracker: Login request failed', err);
     }
     return false;
   };
