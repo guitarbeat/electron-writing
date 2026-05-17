@@ -7,6 +7,10 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 
 // Standardize environment loading to match Vite's behavior
+// Load v0/Vercel environment first (if running in that context)
+if (fs.existsSync("/vercel/share/.env.project")) {
+  dotenv.config({ path: "/vercel/share/.env.project" });
+}
 dotenv.config();
 if (fs.existsSync(".env.local")) {
   dotenv.config({ path: ".env.local", override: true });
@@ -486,7 +490,10 @@ export async function startServer() {
   // --- Vite Middleware / Static Assets ---
 
   try {
-    if (process.env.NODE_ENV !== "production") {
+    // Skip Vite middleware if NO_VITE is set (backend-only mode for v0)
+    if (process.env.NO_VITE) {
+      console.log("SERVER_BOOT: Running in backend-only mode (NO_VITE=true)");
+    } else if (process.env.NODE_ENV !== "production") {
       console.log("SERVER_BOOT: Initializing Vite middleware...");
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -497,12 +504,30 @@ export async function startServer() {
         appType: "spa",
       });
       app.use(vite.middlewares);
+      
+      // Serve index.html for all non-API routes (SPA fallback)
+      app.get("/{*path}", async (req, res, next) => {
+        // Skip API routes
+        if (req.originalUrl.startsWith("/api/")) {
+          return next();
+        }
+        try {
+          const url = req.originalUrl;
+          let template = fs.readFileSync(path.resolve("index.html"), "utf-8");
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          vite.ssrFixStacktrace(e as Error);
+          next(e);
+        }
+      });
+      
       console.log("SERVER_BOOT: Vite middleware attached.");
     } else {
       const distPath = path.join(process.cwd(), "dist");
       if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
-        app.get("*", (req, res) => {
+        app.get("/{*path}", (req, res) => {
           res.sendFile(path.join(distPath, "index.html"));
         });
         console.log("SERVER_BOOT: Serving static files from dist.");

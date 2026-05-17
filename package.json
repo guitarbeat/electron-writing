@@ -4,7 +4,9 @@
   "version": "5.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "vite",
+    "dev:server": "tsx server.ts",
+    "dev:full": "concurrently \"vite\" \"PORT=3001 NO_VITE=true tsx server.ts\"",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
