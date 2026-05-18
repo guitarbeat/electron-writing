@@ -5,16 +5,14 @@
 ```text
 Browser
   -> Vite React app
-  -> /api Express routes
+  -> Individual Vercel API handlers
   -> Drizzle ORM
   -> Neon PostgreSQL
 ```
 
-The local development server is `server/index.ts`. It creates the Express app, attaches Vite middleware outside production, and listens on `PORT` or `3000`.
+For local development, Vite serves the frontend React application and handles development mock API endpoints internally using custom dynamic middlewares configured in `vite.config.ts`. Alternatively, you can use the Vercel CLI locally to simulate the full serverless runtime.
 
-The Vercel deployment uses `api/[...path].ts`, which exports the same Express app without starting a long-running server. Vercel serves the Vite build from `dist` and routes `/api/*` requests to the function.
-
-This follows Vercel's current Express guidance: put the Express entrypoint under `/api` and let Vercel run it as a serverless function.
+In production, Vercel hosts Smeemo as a fully serverless deployment, serving static front-end assets directly and executing discrete serverless TypeScript functions under `api/` to respond to back-end routes.
 
 ## Important Files
 
@@ -50,11 +48,15 @@ DATABASE_POOL_MAX="5"
 ## Local Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-The dev server runs on `http://localhost:3000`.
+The dev server runs on `http://localhost:5173`. Alternatively, to run the serverless backend functions alongside the client locally, run:
+
+```bash
+vercel dev
+```
 
 Useful commands:
 
@@ -80,9 +82,7 @@ The database client uses:
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 ```
 
-This makes the app work with either the app-specific `DATABASE_URL` or Vercel's Neon integration variables. 
-
-**Note on CJS Build:** In the CommonJS build (used for production), `dotenv.config()` must be called before importing the database module to ensure `process.env.DATABASE_URL` is available during initialization. Keep database secrets server-side only.
+This makes the app work with either the app-specific `DATABASE_URL` or Vercel's Neon integration variables. Keep database secrets server-side only.
 
 ## PWA and Branding
 
@@ -103,18 +103,17 @@ The application expects `PASSCODE` and `DATABASE_URL` (or `POSTGRES_URL`) to be 
 **Environment Variable Changes**
 After modifying environment variables in Vercel, you must trigger a redeployment (or promote a new deployment) so that the updated configuration is applied to the running application. The changes do not take effect dynamically for running instances.
 
-**Post-Merge / Post-Deploy Verification**
-To prevent production regressions, run the smoke tests against the live URL after deploying:
+**Local Verification & Testing**
+To prevent regressions before deploying or merging, run Smeemo's automated suite to verify authentication state machine logic, security sanitization, and weekly timeline calculations:
 
 ```bash
-BASE_URL=https://www.smeemo.com pnpm run test:smoke
+pnpm test
 ```
 
-These smoke tests perform production-safe checks, ensuring that:
-- The static UI loads.
-- `/api/health` returns 200.
-- Passcode validation succeeds (and does not leak into logs on failure).
-- The PWA manifest and icons are accessible.
+These tests perform robust local checks, ensuring that:
+- Passcode checks and authentication state transitions behave correctly.
+- Settings modifications, color updates, and weekly targets calculate correctly.
+- Import/export handlers serialize data consistently.
 
 Recommended Vercel checks for debugging the environment:
 
