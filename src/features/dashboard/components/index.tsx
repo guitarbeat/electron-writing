@@ -262,8 +262,8 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
           ))}
         </div>
       </div>
-      <div className="w-full flex-1 min-h-[250px]">
-        <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={100}>
+      <div className="w-full h-[250px] sm:h-[300px] mt-2">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
             <XAxis 

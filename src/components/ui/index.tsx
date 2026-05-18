@@ -182,8 +182,8 @@ interface CalendarPickerProps {
 }
 
 export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: CalendarPickerProps) {
-  const selectedDate = parseISO(value);
-  const [viewDate, setViewDate] = useState(selectedDate);
+  const selectedDate = value ? parseISO(value) : new Date();
+  const [viewDate, setViewDate] = useState(selectedDate || new Date());
   
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(viewDate)),
