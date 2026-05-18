@@ -17,7 +17,9 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend
+  Legend,
+  ComposedChart,
+  Bar
 } from 'recharts';
 import { format, parseISO, addDays } from 'date-fns';
 import { Settings } from '../../../types';
@@ -227,40 +229,82 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 }
 
 // ==========================================
-// 3. ProgressChart Component
+// 3. OverallProgressChart Component
 // ==========================================
-interface ProgressChartProps {
-  chartView: 'daily' | 'weekly' | 'cumulative';
-  setChartView: (view: 'daily' | 'weekly' | 'cumulative') => void;
+interface OverallProgressChartProps {
   chartData: ChartDatum[];
   settings: Settings | null;
 }
 
-export function ProgressChart({ chartView, setChartView, chartData, settings }: ProgressChartProps) {
-  const goalLabel =
-    chartView === 'cumulative'
-      ? 'Target Trajectory'
-      : chartView === 'weekly'
-        ? 'Required Weekly Pace'
-        : 'Required Daily Pace';
-
+export function OverallProgressChart({ chartData, settings }: OverallProgressChartProps) {
   return (
     <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" /> Progress
+          <TrendingUp className="w-5 h-5 text-primary" /> My Overall Progress
         </h3>
-        <div className="flex bg-bg-paper p-1 border-2 border-ink rounded-lg gap-1">
-          {(['daily', 'weekly', 'cumulative'] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setChartView(v)}
-              className={`text-[9px] sm:text-[10px] font-black uppercase px-2 sm:px-3 py-1 rounded transition-colors ${chartView === v ? 'bg-ink text-white' : 'hover:bg-primary/10'}`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
+      </div>
+      <div className="w-full h-[250px] sm:h-[300px] mt-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+              tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
+            />
+            <YAxis 
+              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+              tickFormatter={(v) => v.toLocaleString()}
+            />
+            <Tooltip 
+              formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name]}
+              labelFormatter={(value) => format(parseISO(value), 'MMM d, yyyy')}
+              contentStyle={{
+                backgroundColor: '#fffafc',
+                border: '4px solid #2b1720',
+                borderRadius: '16px',
+                boxShadow: '4px 4px 0 #2b1720',
+                fontSize: '12px'
+              }}
+              itemStyle={{ fontWeight: 800, padding: '2px 0' }}
+            />
+            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
+            <Bar name="Total Progress" dataKey="Team" fill="#4B778D" />
+            <Line
+              name="Target Trajectory"
+              type="monotone"
+              dataKey="Goal"
+              stroke="#2b1720"
+              strokeWidth={2}
+              strokeDasharray="8 6"
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 4. DailyWordCountChart Component
+// ==========================================
+interface DailyWordCountChartProps {
+  chartData: ChartDatum[];
+  settings: Settings | null;
+}
+
+export function DailyWordCountChart({ chartData, settings }: DailyWordCountChartProps) {
+  return (
+    <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-primary" /> My Daily Word Count
+        </h3>
       </div>
       <div className="w-full h-[250px] sm:h-[300px] mt-2">
         <ResponsiveContainer width="100%" height="100%">
@@ -294,7 +338,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <Line name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             <Line
-              name={goalLabel}
+              name="Required Daily Pace"
               type="monotone"
               dataKey="Goal"
               stroke="#2b1720"
@@ -311,7 +355,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
 }
 
 // ==========================================
-// 4. Sub-System Exports
+// 5. Sub-System Exports
 // ==========================================
 export { SetupWizard } from './SetupWizard';
 export { DailyTimelineLedger } from './DailyTimelineLedger';

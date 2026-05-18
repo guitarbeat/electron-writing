@@ -17,7 +17,10 @@ let devSettings: any = {
   weeklyGoal: 3500,
   passcode: DEV_PASSCODE,
   isSetupComplete: true,
-  defaultChartView: 'daily'
+  defaultChartView: 'daily',
+  lastVisitIp: null,
+  lastVisitTime: null,
+  lastVisitDevice: null
 };
 
 function devApiPlugin(): any {
@@ -64,6 +67,15 @@ function devApiPlugin(): any {
             const envPasscode = process.env.PASSCODE || DEV_PASSCODE;
             if (passcode === envPasscode || passcode === DEV_PASSCODE) {
               setSession(res, true);
+              
+              const lastVisitIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+              const lastVisitDevice = req.headers['user-agent'] || 'Mock Browser';
+              const lastVisitTime = new Date().toISOString();
+              
+              devSettings.lastVisitIp = lastVisitIp;
+              devSettings.lastVisitTime = lastVisitTime;
+              devSettings.lastVisitDevice = lastVisitDevice;
+
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ status: 'ok' }));
             } else {
@@ -71,6 +83,17 @@ function devApiPlugin(): any {
               res.end(JSON.stringify({ error: 'Invalid passcode' }));
             }
           });
+          return;
+        }
+
+        // GET /api/session/recent
+        if (url === '/api/session/recent' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            lastVisitIp: devSettings.lastVisitIp,
+            lastVisitTime: devSettings.lastVisitTime,
+            lastVisitDevice: devSettings.lastVisitDevice
+          }));
           return;
         }
 

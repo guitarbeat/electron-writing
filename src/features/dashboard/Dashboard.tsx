@@ -6,7 +6,8 @@ import { Entry, Settings } from '../../types';
 import {
   SetupWizard,
   GoalSummaryCard,
-  ProgressChart,
+  OverallProgressChart,
+  DailyWordCountChart,
   DashboardHeader,
   DailyTimelineLedger
 } from './components';
@@ -27,7 +28,6 @@ export function Dashboard(_props: DashboardProps) {
     importData
   } = useTracker();
 
-  const [chartView, setChartView] = useState<'daily' | 'weekly' | 'cumulative'>('daily');
   const [showGuide, setShowGuide] = useState(false);
   const [visibleWriters, setVisibleWriters] = useState<('personA' | 'personB')[]>(['personA', 'personB']);
 
@@ -43,16 +43,8 @@ export function Dashboard(_props: DashboardProps) {
   };
 
   const stats = useMemo(() => calculateTrackerStats(entries, settings), [entries, settings]);
-  const chartData = useMemo(() => getChartData(entries, chartView, settings), [entries, chartView, settings]);
-
-  const initializedRef = React.useRef(false);
-
-  useEffect(() => {
-    if (settings && !initializedRef.current) {
-      if (settings.defaultChartView) setChartView(settings.defaultChartView as any);
-      initializedRef.current = true;
-    }
-  }, [settings]);
+  const cumulativeChartData = useMemo(() => getChartData(entries, 'cumulative', settings), [entries, settings]);
+  const dailyChartData = useMemo(() => getChartData(entries, 'daily', settings), [entries, settings]);
 
   useEffect(() => {
     if (settings && !isLoading && isAuthorized) {
@@ -100,10 +92,13 @@ export function Dashboard(_props: DashboardProps) {
           </div>
 
           <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 flex flex-col gap-8">
-            <ProgressChart
-              chartView={chartView}
-              setChartView={setChartView}
-              chartData={chartData}
+            <OverallProgressChart
+              chartData={cumulativeChartData}
+              settings={settings}
+            />
+
+            <DailyWordCountChart
+              chartData={dailyChartData}
               settings={settings}
             />
 

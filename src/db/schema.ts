@@ -36,6 +36,9 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastModifiedBy: text("last_modified_by").notNull().default("System"),
   passcode: text("passcode").notNull().default(""),
+  lastVisitIp: text("last_visit_ip"),
+  lastVisitTime: text("last_visit_time"),
+  lastVisitDevice: text("last_visit_device"),
 });
 
 export type Entry = typeof entries.$inferSelect;
@@ -64,4 +67,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "updatedAt"> = {
   setupUpdateCount: 0,
   lastModifiedBy: "System",
   passcode: "",
+  lastVisitIp: null,
+  lastVisitTime: null,
+  lastVisitDevice: null
 };

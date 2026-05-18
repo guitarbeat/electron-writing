@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Lock } from 'lucide-react';
+import { Lock, Info } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 interface PasscodeScreenProps {
   onLogin: (passcode: string) => Promise<boolean>;
@@ -13,6 +14,23 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   const [isLoading, setIsLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [isBypassing, setIsBypassing] = useState(false);
+  
+  const [recentVisit, setRecentVisit] = useState<{ ip?: string, time?: string, device?: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/session/recent')
+      .then(res => res.json())
+      .then(data => {
+        if (data.lastVisitTime) {
+          setRecentVisit({
+            ip: data.lastVisitIp,
+            time: data.lastVisitTime,
+            device: data.lastVisitDevice
+          });
+        }
+      })
+      .catch(() => console.error("Could not fetch recent visit"));
+  }, []);
 
   // Consolidated check for whether input should be disabled
   const isInputDisabled = isLoading || isBypassing;
@@ -179,6 +197,19 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
             )}
           </button>
         </form>
+
+        {recentVisit && (
+          <div className="w-full mt-2 text-center pt-6 border-t-2 border-ink/10">
+            <div className="inline-flex items-center justify-center w-full gap-1.5 text-ink-muted text-xs font-black uppercase mb-3">
+              <Info className="w-3 h-3" /> Last Successful Unlock
+            </div>
+            <div className="flex flex-col gap-1 text-ink bg-white/50 px-4 py-3 rounded-xl border-2 border-ink/10 shadow-sm text-sm">
+              <p className="font-bold">{format(parseISO(recentVisit.time!), 'MMM d, yyyy \u00B7 h:mm a')}</p>
+              {recentVisit.ip && <p className="text-xs font-mono opacity-80 mt-1">IP: {recentVisit.ip}</p>}
+              {recentVisit.device && <p className="text-[10px] sm:text-xs opacity-60 mt-1 truncate max-w-full" title={recentVisit.device}>{recentVisit.device.split(' ').slice(0, 5).join(' ')}...</p>}
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

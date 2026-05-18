@@ -48,13 +48,14 @@ export function ProjectSettingsStep({
         <div className="flex flex-col items-center gap-1">
           <input
             type="number"
-            value={formData.projectGoal}
-            onChange={(event) =>
+            value={Number.isNaN(formData.projectGoal) ? '' : (formData.projectGoal ?? '')}
+            onChange={(event) => {
+              const val = parseInt(event.target.value, 10);
               setFormData({
                 ...formData,
-                projectGoal: parseInt(event.target.value) || 0,
-              })
-            }
+                projectGoal: Number.isNaN(val) ? 0 : val,
+              });
+            }}
             className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
           />
 

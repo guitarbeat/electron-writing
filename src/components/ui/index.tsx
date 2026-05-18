@@ -40,8 +40,11 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
   const totalRotations = 20;
   const totalDegrees = 360 * totalRotations;
   
+  // Fallbacks for NaN or undefined
+  const safeValue = (value === undefined || Number.isNaN(value)) ? min : value;
+  
   // Display angle based on value
-  const fraction = max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const fraction = max === min ? 0 : Math.max(0, Math.min(1, (safeValue - min) / (max - min)));
   const angle = fraction * totalDegrees;
   
   const handleMouseMove = (e: MouseEvent | TouchEvent) => {
@@ -76,10 +79,10 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
     
     const valuePerDegree = (max - min) / totalDegrees;
     
-    const newValue = value + delta * valuePerDegree;
+    const newValue = safeValue + delta * valuePerDegree;
     const steppedValue = Math.round(newValue / step) * step;
     
-    if (steppedValue !== value) {
+    if (steppedValue !== safeValue) {
       onChange(Math.min(max, Math.max(min, steppedValue)));
     }
   };
@@ -160,7 +163,7 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
            {/* Value display */}
            <div className="flex flex-col items-center pointer-events-none" style={{ transform: `rotate(${-angle}deg)` }}>
               <span className="text-xl font-black font-mono leading-none flex tracking-tighter">
-                 {value >= 1000 ? (value % 1000 === 0 ? `${value/1000}k` : `${(value/1000).toFixed(1)}k`) : value}
+                 {safeValue >= 1000 ? (safeValue % 1000 === 0 ? `${safeValue/1000}k` : `${(safeValue/1000).toFixed(1)}k`) : safeValue}
               </span>
               {unit && <span className="text-[8px] font-black uppercase opacity-30">{unit}</span>}
            </div>

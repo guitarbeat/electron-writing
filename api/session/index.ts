@@ -29,6 +29,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const isMatch = isMasterMatch || isDbMatch;
 
       if (isMatch) {
+        // Save the last visit metadata for the next visit to display
+        const lastVisitIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0];
+        const lastVisitDevice = req.headers['user-agent'] || '';
+        const lastVisitTime = new Date().toISOString();
+        
+        try {
+          await db.update(settings)
+            .set({
+              lastVisitIp: lastVisitIp || null,
+              lastVisitTime: lastVisitTime || null,
+              lastVisitDevice: lastVisitDevice || null
+            })
+            .where(eq(settings.id, "global"));
+        } catch (updateErr: any) {
+          console.error("Failed to update last visit metadata", updateErr.message);
+        }
+
         const token = createSessionToken({ authorized: true });
         const cookie = setCookieHeader(token);
         console.log(`[AUTH] Setting cookie: ${cookie}`);
