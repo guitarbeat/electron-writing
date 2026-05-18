@@ -2,11 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTracker } from '../../hooks/useTracker';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
-import { SetupWizard } from './components/SetupWizard';
-import { GoalSummaryCard } from './components/GoalSummaryCard';
-import { ProgressChart } from './components/ProgressChart';
-import { DashboardHeader } from './components/DashboardHeader';
-import { DailyTimelineLedger } from './components/DailyTimelineLedger';
+import {
+  SetupWizard,
+  GoalSummaryCard,
+  ProgressChart,
+  DashboardHeader,
+  DailyTimelineLedger
+} from './components';
+
 
 export interface DashboardProps {}
 
