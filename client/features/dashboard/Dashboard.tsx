@@ -27,7 +27,7 @@ export function Dashboard(_props: DashboardProps) {
   const [showGuide, setShowGuide] = useState(false);
 
   const stats = useMemo(() => calculateTrackerStats(entries, settings), [entries, settings]);
-  const chartData = useMemo(() => getChartData(entries, chartView), [entries, chartView]);
+  const chartData = useMemo(() => getChartData(entries, chartView, settings), [entries, chartView, settings]);
 
   const initializedRef = React.useRef(false);
 
@@ -62,7 +62,7 @@ export function Dashboard(_props: DashboardProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-4">
-            <GoalSummaryCard settings={settings} totalTeam={stats.totalTeam} />
+            <GoalSummaryCard settings={settings} stats={stats} />
           </div>
 
           <div className="lg:col-span-8">

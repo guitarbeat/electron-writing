@@ -1,5 +1,5 @@
 import { Entry, Settings } from '../types';
-import { isSameDay, isSameWeek, parseISO, startOfWeek, format } from 'date-fns';
+import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek } from 'date-fns';
 
 export interface TrackerStats {
   todayAaron: number;
@@ -8,11 +8,27 @@ export interface TrackerStats {
   weekTeam: number;
   activeDays: number;
   totalTeam: number;
+  goal: number;
+  remainingGoal: number;
+  daysLeft: number;
+  requiredPerDay: number;
+  requiredPerWeek: number;
+  expectedCumulativeToday: number;
+  deficit: number;
+}
+
+export interface ChartDatum {
+  date: string;
+  Aaron: number;
+  Electra: number;
+  Team: number;
+  Goal: number;
 }
 
 export function calculateTrackerStats(entries: Entry[], settings: Settings | null): TrackerStats {
   const now = new Date();
   const todayStr = format(now, 'yyyy-MM-dd');
+  const goal = settings?.projectGoal || 50000;
   
   let todayAaron = 0;
   let todayElectra = 0;
@@ -45,6 +61,18 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
     }
   });
 
+  const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const startDate = sortedEntries.length > 0 ? parseISO(sortedEntries[0].date) : now;
+  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : now;
+  const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
+  const elapsedDays = Math.min(totalDays, Math.max(1, differenceInCalendarDays(now, startDate) + 1));
+  const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
+  const remainingGoal = Math.max(0, goal - totalTeam);
+  const requiredPerDay = remainingGoal / daysLeft;
+  const requiredPerWeek = requiredPerDay * 7;
+  const expectedCumulativeToday = Math.min(goal, (goal / totalDays) * elapsedDays);
+  const deficit = totalTeam - expectedCumulativeToday;
+
   return {
     todayAaron,
     todayElectra,
@@ -52,17 +80,37 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
     weekTeam,
     activeDays,
     totalTeam,
+    goal,
+    remainingGoal,
+    daysLeft,
+    requiredPerDay,
+    requiredPerWeek,
+    expectedCumulativeToday,
+    deficit,
   };
 }
 
-export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumulative') {
+export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumulative', settings: Settings | null): ChartDatum[] {
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const goal = settings?.projectGoal || 50000;
+  const totalTeam = sorted.reduce((sum, entry) => sum + (entry.aaronWords || 0) + (entry.electraWords || 0), 0);
+  const now = new Date();
+  const startDate = sorted.length > 0 ? parseISO(sorted[0].date) : new Date();
+  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : new Date();
+  const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
+  const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
+  const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
+  const remainingGoal = Math.max(0, goal - totalTeam);
+  const totalPerDay = goal / totalDays;
+  const requiredPerDay = remainingGoal / daysLeft;
+  const requiredPerWeek = requiredPerDay * 7;
   
   if (view === 'cumulative') {
     let sumAaron = 0;
     let sumElectra = 0;
     let sumTeam = 0;
     return sorted.map(e => {
+      const elapsedDays = Math.min(totalDays, Math.max(1, differenceInCalendarDays(parseISO(e.date), startDate) + 1));
       sumAaron += e.aaronWords || 0;
       sumElectra += e.electraWords || 0;
       sumTeam += (e.aaronWords || 0) + (e.electraWords || 0);
@@ -71,6 +119,7 @@ export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumul
         Aaron: sumAaron,
         Electra: sumElectra,
         Team: sumTeam,
+        Goal: Math.min(goal, totalPerDay * elapsedDays),
       };
     });
   }
@@ -91,6 +140,7 @@ export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumul
       Aaron: counts.aaron,
       Electra: counts.electra,
       Team: counts.team,
+      Goal: requiredPerWeek,
     })).sort((a, b) => a.date.localeCompare(b.date));
   }
 
@@ -100,5 +150,6 @@ export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumul
     Aaron: e.aaronWords || 0,
     Electra: e.electraWords || 0,
     Team: (e.aaronWords || 0) + (e.electraWords || 0),
+    Goal: requiredPerDay,
   }));
 }

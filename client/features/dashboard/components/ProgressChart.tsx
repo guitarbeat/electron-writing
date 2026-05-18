@@ -12,15 +12,23 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { Settings } from '../../../types';
+import { ChartDatum } from '../../../lib/stats';
 
 interface ProgressChartProps {
   chartView: 'daily' | 'weekly' | 'cumulative';
   setChartView: (view: 'daily' | 'weekly' | 'cumulative') => void;
-  chartData: any[];
+  chartData: ChartDatum[];
   settings: Settings | null;
 }
 
 export function ProgressChart({ chartView, setChartView, chartData, settings }: ProgressChartProps) {
+  const goalLabel =
+    chartView === 'cumulative'
+      ? 'Target Trajectory'
+      : chartView === 'weekly'
+        ? 'Required Weekly Pace'
+        : 'Required Daily Pace';
+
   return (
     <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -54,6 +62,8 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
               axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
             />
             <Tooltip 
+              formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name]}
+              labelFormatter={(value) => format(parseISO(value), 'MMM d, yyyy')}
               contentStyle={{
                 backgroundColor: '#fffafc',
                 border: '4px solid #2b1720',
@@ -67,6 +77,16 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <Line name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             <Line name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             <Line name="Team" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line
+              name={goalLabel}
+              type="monotone"
+              dataKey="Goal"
+              stroke="#2b1720"
+              strokeWidth={2}
+              strokeDasharray="8 6"
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
