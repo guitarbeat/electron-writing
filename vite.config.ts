@@ -39,7 +39,7 @@ function devApiPlugin(): any {
       const setSession = (res: ServerResponse, authorized: boolean, bypass = false) => {
         const id = Math.random().toString(36).slice(2);
         devSessions.set(id, { authorized, bypass });
-        res.setHeader('Set-Cookie', `smeemo_session=${id}; Path=/; HttpOnly; SameSite=Lax`);
+        res.setHeader('Set-Cookie', `smeemo_session=${id}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`);
         return id;
       };
 
@@ -88,7 +88,7 @@ function devApiPlugin(): any {
 
         // DELETE /api/session - Logout
         if (url === '/api/session' && req.method === 'DELETE') {
-          res.setHeader('Set-Cookie', 'smeemo_session=; Path=/; HttpOnly; Max-Age=0');
+          res.setHeader('Set-Cookie', 'smeemo_session=; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=0');
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'ok' }));
           return;
@@ -97,27 +97,34 @@ function devApiPlugin(): any {
         // GET /api/passcode/helper
         if (url === '/api/passcode/helper' && req.method === 'GET') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ hint: 'Smeemo knows the way...' }));
+          const envPasscode = process.env.PASSCODE || DEV_PASSCODE;
+          res.end(JSON.stringify({ hint: envPasscode }));
           return;
         }
 
         // Mock other API endpoints for development
-        if (url.startsWith('/api/')) {
-          // Default mock response for unhandled API routes
+        if (url.startsWith('/api/entries')) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ 
-            _dev: true, 
-            _note: 'This is a dev mock. Real API runs on Vercel.',
-            entries: [],
-            settings: {
-              id: 'global',
-              dailyGoal: 500,
-              weeklyGoal: 3500,
-              passcode: DEV_PASSCODE,
-              isSetupComplete: true,
-              defaultChartView: 'daily'
-            }
+          res.end(JSON.stringify([]));
+          return;
+        }
+
+        if (url.startsWith('/api/settings')) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            id: 'global',
+            dailyGoal: 500,
+            weeklyGoal: 3500,
+            passcode: DEV_PASSCODE,
+            isSetupComplete: true,
+            defaultChartView: 'daily'
           }));
+          return;
+        }
+
+        if (url.startsWith('/api/')) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'mock' }));
           return;
         }
 
@@ -168,7 +175,7 @@ export default defineConfig(({mode}) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}']
         },
         devOptions: {
-          enabled: true
+          enabled: process.env.DISABLE_HMR !== 'true'
         }
       })
     ],

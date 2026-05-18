@@ -11,6 +11,7 @@ interface DailyTimelineLedgerProps {
   settings: Settings | null;
   saveEntry: (entry: Partial<Entry>) => Promise<boolean>;
   deleteEntry: (date: string) => Promise<boolean>;
+  visibleWriters: ('personA' | 'personB')[];
 }
 
 interface LedgerDay {
@@ -108,12 +109,13 @@ function buildPastLedgerDays(entries: Entry[], settings: Settings | null): Ledge
     });
 }
 
-export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry }: DailyTimelineLedgerProps) {
+export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry, visibleWriters }: DailyTimelineLedgerProps) {
   const [editingTile, setEditingTile] = useState<EditingTile | null>(null);
   const [tileDraft, setTileDraft] = useState('');
   const [editingNoteDate, setEditingNoteDate] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [showPastEntries, setShowPastEntries] = useState(false);
+  const [showAllFutureDays, setShowAllFutureDays] = useState(false);
   const skipNextTileBlurSave = useRef(false);
 
   const metric = settings?.metric === 'pages' ? 'pages' : 'words';
@@ -128,6 +130,10 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
 
   const days = useMemo(() => buildFutureLedgerDays(entries, settings), [entries, settings]);
   const pastDays = useMemo(() => buildPastLedgerDays(entries, settings), [entries, settings]);
+  
+  const displayedDays = useMemo(() => {
+    return showAllFutureDays ? days : days.slice(0, 14);
+  }, [days, showAllFutureDays]);
 
   const getEntryForDate = (date: string) => entries.find(entry => entry.date === date);
 
@@ -219,23 +225,10 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
     }
   };
 
+  const gridColsClass = 'grid-cols-[4.25rem_minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_4rem]';
+
   return (
-    <section className="sticker-card p-4 sm:p-6 md:p-8 flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-4 border-ink pb-5">
-        <div>
-          <h2 className="text-heading text-3xl md:text-4xl">Daily Writing Ledger</h2>
-          <p className="text-body text-sm md:text-base font-bold text-ink-muted mt-2">
-            Track the ink from today through deadline.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 bg-bg-paper border-4 border-ink px-3 sm:px-4 py-2 sm:py-3 shadow-sticker">
-          <HeaderPill label="Unit" value={metricLabel} />
-          <HeaderPill label="Days Left" value={daysLeft.toString()} />
-          {pastDays.length > 0 && <HeaderPill label="Past Logs" value={pastDays.length.toString()} />}
-        </div>
-      </div>
-
+    <section className="sticker-card p-4 sm:p-6 flex flex-col gap-6">
       {pastDays.length > 0 && (
         <button
           type="button"
@@ -257,14 +250,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
 
       {showPastEntries && pastDays.length > 0 && (
         <div className="border-4 border-ink bg-white p-4 sm:p-5 shadow-sticker flex flex-col gap-4">
-          <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_4rem] gap-3 items-end">
-            <div className="text-label text-[9px] text-ink-muted">Date</div>
-            <ColumnHeader color={personAColor} label={personAName} />
-            <ColumnHeader color={personBColor} label={personBName} />
-            <div className="text-label text-[9px] text-ink-muted text-center pb-2">Notes</div>
-          </div>
-
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 pl-3 sm:pl-4">
             {pastDays.map(day => (
               <LedgerDayRow
                 key={day.date}
@@ -287,28 +273,20 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                 onCancelNoteEdit={cancelNoteEdit}
                 onSaveNoteEdit={saveNoteEdit}
                 onDeleteDay={handleDeleteDay}
+                visibleWriters={visibleWriters}
               />
             ))}
           </div>
         </div>
       )}
 
-      <div className="border-t-4 border-ink pt-5" />
 
-      <div className="sticky top-0 z-20 -mx-1 px-1 bg-bg-surface/95 backdrop-blur-sm">
-        <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_4rem] gap-3 items-end">
-          <div />
-          <ColumnHeader color={personAColor} label={personAName} />
-          <ColumnHeader color={personBColor} label={personBName} />
-          <div className="text-label text-[9px] text-ink-muted text-center pb-2">Notes</div>
-        </div>
-      </div>
 
-      <div className="max-h-[760px] overflow-y-auto hide-scrollbar pr-1 md:pr-3">
+      <div className="lg:max-h-[760px] lg:overflow-y-auto lg:hide-scrollbar pl-3 sm:pl-4 pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
           <div className="absolute left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
 
-          {days.map(day => (
+          {displayedDays.map(day => (
             <LedgerDayRow
               key={day.date}
               day={day}
@@ -330,8 +308,20 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
               onCancelNoteEdit={cancelNoteEdit}
               onSaveNoteEdit={saveNoteEdit}
               onDeleteDay={handleDeleteDay}
+              visibleWriters={visibleWriters}
             />
           ))}
+
+          {!showAllFutureDays && days.length > 14 && (
+            <div className="relative z-10 flex justify-center mt-4">
+              <button
+                onClick={() => setShowAllFutureDays(true)}
+                className="button-playful bg-primary text-white border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+              >
+                Load All to Deadline ({days.length - 14} more)
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -408,7 +398,7 @@ function WriterTile({
           inputMode="numeric"
           min="0"
           type="number"
-          className="w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white"
+          className="w-full min-w-0 appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white hide-spin-button"
           aria-label={`${name} ${metric} for ${date}`}
         />
         <span className="text-label text-[9px] text-ink-muted">{metric}</span>
@@ -422,11 +412,11 @@ function WriterTile({
       onClick={onBeginEdit}
       title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group min-h-[8.75rem] sm:min-h-[9.5rem] p-3',
+        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group min-h-[8.75rem] sm:min-h-[9.5rem] p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
         'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
-        hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
+        hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
       )}
-      style={hasValue ? { backgroundColor: color, color: textColor } : undefined}
+      style={hasValue ? { backgroundColor: color, color: textColor } : { borderColor: color, color: color, opacity: 0.6 }}
     >
       {hasValue ? (
         <>
@@ -465,6 +455,7 @@ function LedgerDayRow({
   onCancelNoteEdit,
   onSaveNoteEdit,
   onDeleteDay,
+  visibleWriters,
 }: {
   day: LedgerDay;
   personAName: string;
@@ -485,25 +476,32 @@ function LedgerDayRow({
   onCancelNoteEdit: () => void;
   onSaveNoteEdit: (day: LedgerDay) => void;
   onDeleteDay: (day: LedgerDay) => void;
+  visibleWriters: ('personA' | 'personB')[];
 }) {
+  const visibleCount = visibleWriters.length;
+  const gridColsClass = visibleCount === 2 
+    ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4rem]' 
+    : visibleCount === 1 
+      ? 'grid-cols-[minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_4rem]'
+      : 'grid-cols-[3.5rem] sm:grid-cols-[4rem]';
+
   return (
     <div className="relative flex flex-col gap-3">
-      {day.showMonthLabel && (
-        <div className="ml-[4.5rem] md:ml-24 py-2">
-          <span className="inline-flex bg-bg-paper border-2 border-ink px-3 py-1 text-label text-[9px] sm:text-[10px] text-ink-muted">
-            {day.monthLabel}
-          </span>
-        </div>
-      )}
-
       <div className={cn('flex items-start gap-3 sm:gap-4 md:gap-6', day.isDeadlineDay && 'mt-2')}>
         <div
           className={cn(
-            'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-lg sm:text-xl md:text-2xl font-black',
+            'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-lg sm:text-xl md:text-2xl font-black relative',
             day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)]' : day.hasAnyWriting || day.hasNote ? 'bg-white text-ink' : 'bg-bg-paper text-ink-muted'
           )}
         >
           {day.dayNumber}
+          {day.showMonthLabel && (
+            <div className="absolute right-[100%] mr-2 sm:mr-3 top-0 md:top-2 flex flex-col items-center opacity-40 text-ink">
+              {format(parseISO(day.date), 'MMM').toUpperCase().split('').map((char, i) => (
+                <span key={i} className="text-[9px] sm:text-[10px] md:text-xs font-black leading-[1.1]">{char}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div
@@ -512,41 +510,38 @@ function LedgerDayRow({
             day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)] p-3 sm:p-4 md:p-6 rounded-card'
           )}
         >
-          {day.isDeadlineDay && (
-            <div className="flex items-center gap-2 self-start bg-ink text-white px-3 py-2 text-label text-[10px] rotate-[-1deg]">
-              <Flag className="w-4 h-4" />
-              Deadline
-            </div>
-          )}
+          <div className={`grid ${gridColsClass} gap-3 md:gap-4 items-stretch`}>
+              {visibleWriters.includes('personA') && (
+                <WriterTile
+                  date={day.date}
+                  name={personAName}
+                  value={day.personAValue}
+                  color={personAColor}
+                  metric={metric}
+                  isEditing={editingTile?.date === day.date && editingTile.writer === 'personA'}
+                  draft={tileDraft}
+                  onDraftChange={onTileDraftChange}
+                  onBeginEdit={() => onBeginTileEdit(day, 'personA')}
+                  onCancel={() => onCancelTileEdit(true)}
+                  onBlur={onTileBlur}
+                />
+              )}
 
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4rem] gap-3 md:gap-4 items-stretch">
-            <WriterTile
-              date={day.date}
-              name={personAName}
-              value={day.personAValue}
-              color={personAColor}
-              metric={metric}
-              isEditing={editingTile?.date === day.date && editingTile.writer === 'personA'}
-              draft={tileDraft}
-              onDraftChange={onTileDraftChange}
-              onBeginEdit={() => onBeginTileEdit(day, 'personA')}
-              onCancel={() => onCancelTileEdit(true)}
-              onBlur={onTileBlur}
-            />
-
-            <WriterTile
-              date={day.date}
-              name={personBName}
-              value={day.personBValue}
-              color={personBColor}
-              metric={metric}
-              isEditing={editingTile?.date === day.date && editingTile.writer === 'personB'}
-              draft={tileDraft}
-              onDraftChange={onTileDraftChange}
-              onBeginEdit={() => onBeginTileEdit(day, 'personB')}
-              onCancel={() => onCancelTileEdit(true)}
-              onBlur={onTileBlur}
-            />
+              {visibleWriters.includes('personB') && (
+                <WriterTile
+                  date={day.date}
+                  name={personBName}
+                  value={day.personBValue}
+                  color={personBColor}
+                  metric={metric}
+                  isEditing={editingTile?.date === day.date && editingTile.writer === 'personB'}
+                  draft={tileDraft}
+                  onDraftChange={onTileDraftChange}
+                  onBeginEdit={() => onBeginTileEdit(day, 'personB')}
+                  onCancel={() => onCancelTileEdit(true)}
+                  onBlur={onTileBlur}
+                />
+              )}
 
             <div className="flex flex-col items-center justify-start gap-2">
               <button
@@ -587,7 +582,7 @@ function LedgerDayRow({
                       if (event.key === 'Escape') onCancelNoteEdit();
                     }}
                     placeholder="What did you work on?"
-                    className="input-playful min-w-0 flex-1 py-2"
+                    className="input-playful min-w-0 flex-1 py-2 appearance-none shadow-none rounded-none"
                   />
                   <div className="flex gap-2">
                     <button

@@ -25,7 +25,8 @@ export interface ChartDatum {
   Goal: number;
 }
 
-export function calculateTrackerStats(entries: Entry[], settings: Settings | null): TrackerStats {
+export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | null): TrackerStats {
+  const entries = Array.isArray(rawEntries) ? rawEntries : [];
   const now = new Date();
   const todayStr = format(now, 'yyyy-MM-dd');
   const goal = settings?.projectGoal || 50000;
@@ -90,7 +91,8 @@ export function calculateTrackerStats(entries: Entry[], settings: Settings | nul
   };
 }
 
-export function getChartData(entries: Entry[], view: 'daily' | 'weekly' | 'cumulative', settings: Settings | null): ChartDatum[] {
+export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cumulative', settings: Settings | null): ChartDatum[] {
+  const entries = Array.isArray(rawEntries) ? rawEntries : [];
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   const goal = settings?.projectGoal || 50000;
   const totalTeam = sorted.reduce((sum, entry) => sum + (entry.aaronWords || 0) + (entry.electraWords || 0), 0);

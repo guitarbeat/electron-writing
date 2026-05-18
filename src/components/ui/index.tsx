@@ -262,10 +262,10 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
 }
 
 // ==========================================
-// 3. LongPressInput Component
+// 3. UserSettingsInput Component
 // ==========================================
 
-interface LongPressInputProps {
+interface UserSettingsInputProps {
   value: string;
   onChangeName: (v: string) => void;
   color: string;
@@ -273,62 +273,34 @@ interface LongPressInputProps {
   placeholder: string;
 }
 
-export function LongPressInput({ 
+export function UserSettingsInput({ 
   value, 
   onChangeName, 
   color, 
   onChangeColor, 
   placeholder 
-}: LongPressInputProps) {
-  const colorInputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<any>(null);
-
-  const startPress = useCallback(() => {
-    timerRef.current = setTimeout(() => {
-      if (colorInputRef.current) {
-         colorInputRef.current.style.pointerEvents = 'auto';
-         colorInputRef.current.click();
-      }
-    }, 600);
-  }, []);
-
-  const endPress = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
-
+}: UserSettingsInputProps) {
   return (
-    <div className="relative flex flex-col items-center justify-center w-full min-h-[100px] sticker-card border-4 bg-white" style={{ borderColor: color }}>
+    <div className="flex flex-row items-center justify-between w-full sticker-card border-4 bg-white p-3 sm:p-4" style={{ borderColor: color }}>
       <input
         type="text"
         value={value}
         onChange={e => onChangeName(e.target.value)}
-        onMouseDown={startPress}
-        onMouseUp={endPress}
-        onMouseLeave={endPress}
-        onTouchStart={startPress}
-        onTouchEnd={endPress}
-        onContextMenu={(e) => {
-           e.preventDefault();
-           if (colorInputRef.current) colorInputRef.current.click();
-        }}
-        className="w-full border-none outline-none bg-transparent text-center font-black uppercase text-2xl tracking-wider"
+        className="flex-1 border-none outline-none bg-transparent font-black uppercase text-xl sm:text-2xl tracking-wider w-0"
         style={{ color: color }}
         placeholder={placeholder}
       />
-      <input 
-        ref={colorInputRef}
-        type="color" 
-        value={color}
-        onChange={e => {
-            onChangeColor(e.target.value);
-            if (colorInputRef.current) colorInputRef.current.style.pointerEvents = 'none';
-        }}
-        onBlur={() => {
-            if (colorInputRef.current) colorInputRef.current.style.pointerEvents = 'none';
-        }}
-        className="opacity-0 absolute w-full h-full inset-0 pointer-events-none"
-      />
-      <div className="text-[9px] font-bold italic opacity-40 uppercase mt-2 select-none pointer-events-none text-ink">Hold to change color</div>
+      <div className="relative shrink-0 ml-4 flex items-center justify-center">
+        <label className="text-xs font-black uppercase tracking-widest text-ink/50 mr-2">Color</label>
+        <div className="w-10 h-10 rounded-full border-4 border-ink overflow-hidden cursor-pointer" style={{ backgroundColor: color }}>
+          <input 
+            type="color" 
+            value={color}
+            onChange={e => onChangeColor(e.target.value)}
+            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+          />
+        </div>
+      </div>
     </div>
   );
 }

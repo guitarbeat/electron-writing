@@ -30,7 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (isMatch) {
         const token = createSessionToken({ authorized: true });
-        res.setHeader("Set-Cookie", setCookieHeader(token));
+        const cookie = setCookieHeader(token);
+        console.log(`[AUTH] Setting cookie: ${cookie}`);
+        res.setHeader("Set-Cookie", cookie);
         return res.status(200).json({ status: "ok" });
       }
       return res.status(401).json({ error: "Invalid passcode" });

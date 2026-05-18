@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Toaster } from 'sonner';
 import { useTracker } from './hooks/useTracker';
 import { PasscodeScreen } from './components/PasscodeScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <>
+      <Toaster position="top-center" richColors theme="light" />
       {import.meta.env.PROD && !isLocal && <Analytics />}
       {isLoading && !shouldBypassAuth ? (
         <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">

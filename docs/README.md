@@ -1,6 +1,6 @@
-# Smeemo Project Overview
+# Aaron and Electra's private space... Project Overview
 
-Smeemo is a private writing tracker for Aaron and Electra. It uses a shared passcode gate, stores writing entries and settings in Neon PostgreSQL, and presents progress through a quick log form, goal summary, line chart, consistency grid, onboarding/setup wizard, and import/export tools.
+Aaron and Electra's private space... is a private writing tracker for Aaron and Electra. It uses a shared passcode gate, stores writing entries and settings in Neon PostgreSQL, and presents progress through a quick log form, goal summary, line chart, consistency grid, onboarding/setup wizard, and import/export tools.
 
 ## Current Stack
 

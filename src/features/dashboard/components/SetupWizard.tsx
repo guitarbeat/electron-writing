@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight, Lock, NotebookPen, ChartSpline, Target } from 'lucide-react';
+import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target } from 'lucide-react';
 import { Settings } from '../../../types';
-import { LongPressInput, Knob, CalendarPicker } from '../../../components/ui';
+import { UserSettingsInput, Knob, CalendarPicker } from '../../../components/ui';
 
 export function ProjectSettingsStep({
   formData,
@@ -162,49 +162,7 @@ export function SetupWizardActions({
   );
 }
 
-function WelcomeOverview() {
-  const cards = [
-    {
-      icon: <NotebookPen className="w-5 h-5 text-primary" />,
-      title: 'Log each day fast',
-      body: 'Each day has two square cells. Aaron and Electra stay side by side so you can edit either writer without moving around the page.',
-    },
-    {
-      icon: <ChartSpline className="w-5 h-5 text-secondary" />,
-      title: 'Read the trend instantly',
-      body: 'The chart keeps daily, weekly, and cumulative views so you can see pace, streaks, and whether the project is drifting.',
-    },
-    {
-      icon: <Target className="w-5 h-5 text-accent" />,
-      title: 'Aim at one deadline',
-      body: 'Your ledger starts at today and runs through the deadline, so the board stays focused on the days still in play.',
-    }
-  ];
-
-  return (
-    <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-4">
-      <div className="bg-white border-4 border-ink rounded-[28px] p-5 sm:p-6 shadow-sticker">
-        <p className="text-sm font-bold text-ink leading-7">
-          Smeemo is a private two-writer tracker. Use the ledger to log each day, use the chart to judge pace, and use the settings here to name the writers, set the target, pick the deadline, and choose the shared passcode.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3">
-        {cards.map((card) => (
-          <div key={card.title} className="bg-white border-4 border-ink rounded-[24px] p-4 shadow-sticker flex gap-3 items-start">
-            <div className="w-10 h-10 shrink-0 rounded-xl border-4 border-ink bg-bg-paper flex items-center justify-center">
-              {card.icon}
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-heading text-lg">{card.title}</h3>
-              <p className="text-sm font-bold text-ink/70 leading-6">{card.body}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Removed WelcomeOverview
 
 export function SetupWizard({ 
   settings, 
@@ -245,11 +203,6 @@ export function SetupWizard({
   const [isSaving, setIsSaving] = useState(false);
 
   const steps = [
-    {
-      title: "Welcome to Smeemo",
-      description: "Here is how the app works before you set it up.",
-      icon: <History className="w-8 h-8 text-primary" />
-    },
     {
       title: "The Writers",
       description: "Configure your team.",
@@ -323,20 +276,16 @@ export function SetupWizard({
 
         <div className="px-6 sm:px-8 flex-1">
           {currentStep === 0 && (
-            <WelcomeOverview />
-          )}
-
-          {currentStep === 1 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <LongPressInput
+                  <UserSettingsInput
                      value={formData.personAName}
                      onChangeName={(v) => setFormData({...formData, personAName: v})}
                      color={formData.personAColor}
                      onChangeColor={(c) => setFormData({...formData, personAColor: c})}
                      placeholder="Aaron"
                   />
-                  <LongPressInput
+                  <UserSettingsInput
                      value={formData.personBName}
                      onChangeName={(v) => setFormData({...formData, personBName: v})}
                      color={formData.personBColor}
@@ -347,15 +296,15 @@ export function SetupWizard({
             </div>
           )}
 
-          {currentStep === 2 && (
+          {currentStep === 1 && (
              <ProjectSettingsStep formData={formData} setFormData={setFormData} />
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 2 && (
              <DeadlineStep formData={formData} setFormData={setFormData} />
           )}
           
-          {currentStep === 4 && (
+          {currentStep === 3 && (
              <SecurityStep formData={formData} setFormData={setFormData} />
           )}
         </div>
@@ -378,17 +327,11 @@ export function SetupWizard({
              onNext={() => handleSave(false)}
           />
           
-          {currentStep === 0 && (
-            <button onClick={() => handleSave(true)} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center">
-              Skip for now
-            </button>
-          )}
-
-          {settings?.isSetupComplete && (
-             <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
-                Close Settings
-             </button>
-          )}
+           {settings?.isSetupComplete && (
+              <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
+                 Close Settings
+              </button>
+           )}
         </div>
       </motion.div>
     </motion.div>

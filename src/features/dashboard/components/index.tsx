@@ -5,7 +5,8 @@ import {
   Target, 
   CalendarDays, 
   Gauge, 
-  TrendingUp, 
+  TrendingUp,
+  TrendingDown,
   BarChart3 
 } from 'lucide-react';
 import { 
@@ -29,38 +30,82 @@ interface DashboardHeaderProps {
   settings: Settings | null;
   setShowGuide: (show: boolean) => void;
   logout: () => void;
+  visibleWriters: ('personA' | 'personB')[];
+  toggleWriter: (writer: 'personA' | 'personB') => void;
 }
 
-export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHeaderProps) {
+export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters, toggleWriter }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-2 sm:mb-4">
-      <div className="flex flex-col gap-1 w-full md:w-auto">
-        <div className="flex items-center justify-between md:justify-start gap-3">
-          <h1 className="text-display text-4xl sm:text-5xl md:text-6xl">Smeemo</h1>
+      <div className="flex flex-col gap-3 sm:gap-4 w-full md:w-auto">
+        <div className="flex items-start justify-between md:justify-start gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl text-ink font-black tracking-[-0.05em]">
+              Smeemo
+            </h1>
+            <p className="text-sm sm:text-base font-bold italic text-ink/80 leading-snug">
+              {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Writing Sanctuary
+            </p>
+          </div>
           
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-2 shrink-0">
             <button
               onClick={() => setShowGuide(true)}
-              className="w-10 h-10 rounded-button border-4 border-ink bg-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-button border-[3px] border-ink bg-primary text-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
               title="Settings"
             >
-              <SettingsIcon className="w-5 h-5" />
+              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
               onClick={logout}
-              className="w-10 h-10 rounded-button border-4 border-red-500 bg-red-100 text-red-600 flex items-center justify-center shadow-[4px_4px_0_#ef4444] active:shadow-[1px_1px_0_#ef4444] active:translate-x-1 active:translate-y-1"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-button border-[3px] border-ink bg-primary text-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
               title="Logout"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>
-        <p className="text-xs sm:text-sm font-bold italic opacity-60">
-          {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Writing Sanctuary
-        </p>
+
+        <div className="flex md:hidden items-center flex-wrap gap-2">
+          <button 
+            type="button"
+            onClick={() => toggleWriter('personA')}
+            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-all ${visibleWriters.includes('personA') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
+          >
+            <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
+            <span className="text-label text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
+          </button>
+          <button 
+            type="button"
+            onClick={() => toggleWriter('personB')}
+            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-all ${visibleWriters.includes('personB') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
+          >
+            <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
+            <span className="text-label text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="hidden md:flex items-center gap-4">
+        <div className="flex items-center gap-2 mr-2">
+          <button 
+            type="button"
+            onClick={() => toggleWriter('personA')}
+            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-opacity ${visibleWriters.includes('personA') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
+          >
+            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
+            <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
+          </button>
+          <button 
+            type="button"
+            onClick={() => toggleWriter('personB')}
+            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-opacity ${visibleWriters.includes('personB') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
+          >
+            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
+            <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
+          </button>
+        </div>
+        
         {settings?.updatedAt && (
           <div className="text-[10px] font-black uppercase text-ink/40 tracking-widest text-right">
             LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}:<br/>
@@ -69,14 +114,14 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
         )}
         <button
           onClick={() => setShowGuide(true)}
-          className="button-playful bg-white text-ink text-xs px-5 py-3 flex items-center gap-2"
+          className="button-playful uppercase font-black tracking-widest bg-primary text-white border-4 border-ink shadow-sticker text-xs px-5 py-3 flex items-center gap-2 active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
         >
           <SettingsIcon className="w-4 h-4" />
           Writing Setup
         </button>
         <button
           onClick={logout}
-          className="button-playful bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] border-red-500 hover:bg-red-200 p-3"
+          className="button-playful bg-primary text-white border-4 border-ink shadow-sticker p-3 active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
         >
           <LogOut className="w-5 h-5" />
         </button>
@@ -84,7 +129,7 @@ export function DashboardHeader({ settings, setShowGuide, logout }: DashboardHea
       
       {settings?.updatedAt && (
         <div className="md:hidden text-[8px] font-black uppercase text-ink/40 tracking-widest">
-          LAST MODIFIED {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}: {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       )}
     </header>
@@ -107,66 +152,74 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
   const pacePerDay = Math.ceil(stats.requiredPerDay);
   const pacePerWeek = Math.ceil(stats.requiredPerWeek);
   const deficitLabel = Math.round(Math.abs(stats.deficit)).toLocaleString();
-  const statusText = stats.deficit >= 0 ? `Ahead by ${deficitLabel}` : `Behind by ${deficitLabel}`;
-  const statusTone = stats.deficit >= 0 ? 'text-mint' : 'text-primary';
   const metricUnit = metric.toLowerCase();
 
+  let statusHeading = 'On Track';
+  let statusMessage = "You're right on schedule.";
+  let statusTone = 'text-green-600';
+  let StatusIcon = TrendingUp;
+  
+  if (stats.deficit > 0) {
+    statusHeading = 'Ahead of Schedule';
+    statusMessage = `You're safely ahead by ${deficitLabel} ${metricUnit}.`;
+    statusTone = 'text-green-600';
+    StatusIcon = TrendingUp;
+  } else if (stats.deficit < 0) {
+    statusHeading = 'Falling Behind';
+    statusMessage = `Need ${deficitLabel} more ${metricUnit} to catch up.`;
+    statusTone = 'text-primary';
+    StatusIcon = TrendingDown;
+  }
+
   return (
-    <div className="sticker-card p-6 bg-ink text-bg-paper flex flex-col gap-6 shadow-[8px_8px_0px_#2b1720]">
+    <div className="sticker-card p-6 flex flex-col gap-6 shadow-[8px_8px_0px_#2b1720]">
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-black uppercase tracking-widest lg:text-base opacity-70 flex items-center gap-2">
+        <h3 className="text-sm font-black uppercase tracking-widest lg:text-base opacity-70 flex items-center gap-2 text-ink">
           <Target className="w-5 h-5" /> Project Goal
         </h3>
         <p className="text-2xl sm:text-3xl md:text-4xl text-primary font-display mt-2 break-words">
           {goal.toLocaleString()} {metric}
         </p>
-        <p className="text-sm font-bold opacity-80 flex items-center gap-1 mt-1">
-          <CalendarDays className="w-4 h-4" /> {deadline}
+        <p className="text-sm font-bold text-ink-muted flex items-center gap-1 mt-1">
+          <CalendarDays className="w-4 h-4" /> {deadline} <span className="opacity-50 mx-1">&bull;</span> {stats.daysLeft} days left
         </p>
       </div>
 
       <div className="flex flex-col gap-2 mt-4">
-        <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden border-2 border-bg-paper">
+        <div className="w-full bg-ink/5 rounded-full h-4 overflow-hidden border-2 border-ink/10">
           <div 
-            className="h-full transition-all duration-1000 border-r-2 border-bg-paper" 
+            className="h-full transition-all duration-1000 border-r-2 border-ink/10" 
             style={{ width: `${progressPercent}%`, backgroundColor: settings?.teamColor || '#10b981' }}
           />
         </div>
 
-        <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest opacity-80">
+        <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-ink-muted">
           <span>{stats.totalTeam.toLocaleString()} Completed</span>
           <span>{progressPercent}%</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white/10 border-2 border-white/20 rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-widest opacity-70 flex items-center gap-2">
+        <div className="bg-ink/5 border-2 border-ink/10 rounded-2xl p-4 flex flex-col gap-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-ink/70 flex items-center gap-2">
             <Gauge className="w-4 h-4" /> Required Pace
           </span>
           <span className="text-xl font-display text-primary">
             {pacePerDay.toLocaleString()} {metricUnit}/day
           </span>
-          <span className="text-[11px] font-bold opacity-75">
+          <span className="text-[11px] font-bold text-ink-muted">
             {pacePerWeek.toLocaleString()} {metricUnit}/week
           </span>
         </div>
 
-        <div className="bg-white/10 border-2 border-white/20 rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-widest opacity-70 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" /> Remaining
+        <div className="bg-ink/5 border-2 border-ink/10 rounded-2xl p-4 flex flex-col gap-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-ink/70 flex items-center gap-2">
+            <StatusIcon className="w-4 h-4" /> {statusHeading}
           </span>
-          <span className="text-xl font-display text-primary">
-            {stats.remainingGoal.toLocaleString()} {metric}
-          </span>
-          <span className="text-[11px] font-bold opacity-75">
-            {stats.daysLeft} days left
+          <span className={`text-lg font-display leading-tight ${statusTone}`}>
+            {statusMessage}
           </span>
         </div>
-      </div>
-
-      <div className="text-xs font-black uppercase tracking-widest opacity-85">
-        <span className={statusTone}>{statusText}</span>
       </div>
     </div>
   );
@@ -208,8 +261,8 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
           ))}
         </div>
       </div>
-      <div className="w-full flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full flex-1 min-h-[250px]">
+        <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={100}>
           <LineChart data={chartData} margin={{ bottom: 5, left: -20, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
             <XAxis 
@@ -237,7 +290,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
             <Line name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             <Line name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-            <Line name="Team" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             <Line
               name={goalLabel}
               type="monotone"

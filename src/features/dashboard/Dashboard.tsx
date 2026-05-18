@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTracker } from '../../hooks/useTracker';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
+import { Entry, Settings } from '../../types';
 import {
   SetupWizard,
   GoalSummaryCard,
@@ -28,6 +29,18 @@ export function Dashboard(_props: DashboardProps) {
 
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'cumulative'>('daily');
   const [showGuide, setShowGuide] = useState(false);
+  const [visibleWriters, setVisibleWriters] = useState<('personA' | 'personB')[]>(['personA', 'personB']);
+
+  const toggleWriter = (writer: 'personA' | 'personB') => {
+    setVisibleWriters(prev => {
+      if (prev.includes(writer)) {
+        if (prev.length === 1) return ['personA', 'personB'];
+        return prev.filter(w => w !== writer);
+      } else {
+        return [...prev, writer];
+      }
+    });
+  };
 
   const stats = useMemo(() => calculateTrackerStats(entries, settings), [entries, settings]);
   const chartData = useMemo(() => getChartData(entries, chartView, settings), [entries, chartView, settings]);
@@ -50,6 +63,16 @@ export function Dashboard(_props: DashboardProps) {
     }
   }, [settings?.isSetupComplete, isLoading, isAuthorized]);
 
+  const wrappedSaveEntry = async (entry: Partial<Entry>) => {
+    await saveEntry(entry);
+    return true;
+  };
+
+  const wrappedUpdateSettings = async (newSettings: Partial<Settings>) => {
+    await updateSettings(newSettings);
+    return true;
+  };
+
   if (isLoading) return <div className="min-h-screen bg-bg-paper flex items-center justify-center font-black uppercase tracking-widest text-ink">Loading...</div>;
 
   return (
@@ -61,36 +84,39 @@ export function Dashboard(_props: DashboardProps) {
           settings={settings}
           setShowGuide={setShowGuide}
           logout={logout}
+          visibleWriters={visibleWriters}
+          toggleWriter={toggleWriter}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-4">
-            <GoalSummaryCard settings={settings} stats={stats} />
+          <div className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4">
+            <DailyTimelineLedger
+              entries={entries}
+              settings={settings}
+              saveEntry={wrappedSaveEntry}
+              deleteEntry={deleteEntry}
+              visibleWriters={visibleWriters}
+            />
           </div>
 
-          <div className="lg:col-span-8">
+          <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 flex flex-col gap-8">
             <ProgressChart
               chartView={chartView}
               setChartView={setChartView}
               chartData={chartData}
               settings={settings}
             />
+
+            <GoalSummaryCard settings={settings} stats={stats} />
           </div>
         </div>
-
-        <DailyTimelineLedger
-          entries={entries}
-          settings={settings}
-          saveEntry={saveEntry}
-          deleteEntry={deleteEntry}
-        />
 
         <AnimatePresence>
           {showGuide && (
             <SetupWizard 
               settings={settings} 
               onClose={() => setShowGuide(false)} 
-              onSave={updateSettings} 
+              onSave={wrappedUpdateSettings} 
               onImport={importData}
             />
           )}

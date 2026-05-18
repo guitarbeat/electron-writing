@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Entry, Settings } from '../types';
 
 export function useTracker() {
@@ -8,62 +9,57 @@ export function useTracker() {
   const [isLoading, setIsLoading] = useState(true);
 
   const checkSession = useCallback(async () => {
-    console.log('[v0] useTracker: Checking session');
     try {
-      const res = await fetch('/api/session/check');
+      const res = await fetch('/api/session/check', { credentials: 'include' });
       if (!res.ok) {
-        console.warn('[v0] useTracker: Session check returned non-ok status', res.status);
+        console.warn('[useTracker] Session check failed', res.status);
         setIsAuthorized(false);
         return false;
       }
       const data = await res.json();
-      console.log('[v0] useTracker: Session check result', { authorized: data.authorized });
       setIsAuthorized(data.authorized);
       return data.authorized;
     } catch (err) {
-      console.error('[v0] useTracker: Session check failed', err);
+      console.error('[useTracker] Session check error', err);
       setIsAuthorized(false);
       return false;
     }
   }, []);
 
   const login = async (passcode: string) => {
-    console.log('[v0] useTracker: Login attempt', { passcodeLength: passcode.length });
     try {
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passcode }),
+        credentials: 'include',
       });
       
-      console.log('[v0] useTracker: Login response status', res.status);
       if (res.ok) {
-        // Double-check the session to ensure the cookie was accepted by the browser
         const authorized = await checkSession();
         if (!authorized) {
-          console.warn('[v0] useTracker: Passcode accepted but session cookie was not established.');
+          console.warn('[useTracker] Passcode accepted but session cookie failed.');
           return false;
         }
-        console.log('[v0] useTracker: Login successful');
         return true;
       } else {
-        console.warn('[v0] useTracker: Login returned non-ok status', res.status);
+        console.warn('[useTracker] Login failed', res.status);
       }
     } catch (err) {
-      console.error('[v0] useTracker: Login request failed', err);
+      console.error('[useTracker] Login error', err);
     }
     return false;
   };
 
   const logout = async () => {
-    await fetch('/api/session', { method: 'DELETE' });
+    await fetch('/api/session', { method: 'DELETE', credentials: 'include' });
     setIsAuthorized(false);
   };
 
   const fetchEntries = useCallback(async () => {
     if (!isAuthorized) return;
     try {
-      const res = await fetch('/api/entries');
+      const res = await fetch('/api/entries', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setEntries(data);
@@ -77,7 +73,7 @@ export function useTracker() {
   const fetchSettings = useCallback(async () => {
     if (!isAuthorized) return;
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('/api/settings', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
@@ -94,26 +90,31 @@ export function useTracker() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
+        credentials: 'include',
       });
       if (res.ok) {
         await fetchEntries();
+        toast.success(`Entry saved successfully`);
         return true;
       }
     } catch (err) {
       console.error('Failed to save entry', err);
+      toast.error('Failed to save entry');
     }
     return false;
   };
 
   const deleteEntry = async (id: string) => {
     try {
-      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE', credentials: 'include' });
       if (res.ok) {
         await fetchEntries();
+        toast.success('Entry deleted');
         return true;
       }
     } catch (err) {
       console.error('Failed to delete entry', err);
+      toast.error('Failed to delete entry');
     }
     return false;
   };
@@ -124,14 +125,17 @@ export function useTracker() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings),
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
         setSettings(prev => prev ? { ...prev, ...data } : data);
+        toast.success('Settings updated');
         return true;
       }
     } catch (err) {
       console.error('Failed to update settings', err);
+      toast.error('Failed to update settings');
     }
     return false;
   };
@@ -142,14 +146,17 @@ export function useTracker() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, mode }),
+        credentials: 'include',
       });
       if (res.ok) {
         await fetchEntries();
         await fetchSettings();
+        toast.success('Data imported successfully');
         return true;
       }
     } catch (err) {
       console.error('Failed to import data', err);
+      toast.error('Failed to import data');
     }
     return false;
   };

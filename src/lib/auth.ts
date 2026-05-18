@@ -38,11 +38,10 @@ export function isAuthenticated(req: VercelRequest): boolean {
 }
 
 export function setCookieHeader(token: string): string {
-  const isProd = process.env.NODE_ENV === "production";
   const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
-  return `${COOKIE_NAME}=${token}; HttpOnly; ${isProd ? "Secure; " : ""}SameSite=Lax; Max-Age=${maxAge}; Path=/`;
+  return `${COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}; Path=/`;
 }
 
 export function clearCookieHeader(): string {
-  return `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`;
+  return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=0; Path=/`;
 }

@@ -102,10 +102,10 @@ motion:
     transition: { duration: 0.3 }
 ---
 
-# Smeemo: The Collaborative Writing Persona
+# Aaron and Electra's private space...: The Collaborative Writing Persona
 
 ## Concept: "The Shared Desk"
-Smeemo is not a dashboard. It's a **Shared Writing Suite**. It is where writing partners (Aaron & Electra) analyze their rough ideas, track individual and collective progress with high-precision (tactile) tools, and celebrate consistency with juicy visual rewards.
+Aaron and Electra's private space... is not a dashboard. It's a **Shared Writing Suite**. It is where writing partners (Aaron & Electra) analyze their rough ideas, track individual and collective progress with high-precision (tactile) tools, and celebrate consistency with juicy visual rewards.
 
 The aesthetic remains **"Sticker Pop"** — a collision of high-end editorial typography and high-gravity graphic elements, now shifted to support duo-author data visualization.
 

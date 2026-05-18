@@ -1,4 +1,4 @@
-# Smeemo
+# Aaron and Electra's private space...
 
 A private two-person writing tracker for logging writing progress, viewing charts, and syncing entries through a Neon PostgreSQL database.
 
