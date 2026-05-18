@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, 
   LogOut, 
@@ -7,7 +7,9 @@ import {
   Gauge, 
   TrendingUp,
   TrendingDown,
-  BarChart3 
+  BarChart3,
+  Maximize2,
+  X
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -108,12 +110,12 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
           </button>
         </div>
         
-        {settings?.updatedAt && (
+        {/* {settings?.updatedAt && (
           <div className="text-[10px] font-black uppercase text-ink/40 tracking-widest text-right">
             LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}:<br/>
             {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
-        )}
+        )} */}
         <button
           onClick={() => setShowGuide(true)}
           className="button-playful uppercase font-black tracking-widest bg-primary text-white border-4 border-ink shadow-sticker text-xs px-5 py-3 flex items-center gap-2 active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
@@ -129,11 +131,11 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
         </button>
       </div>
       
-      {settings?.updatedAt && (
+      {/* {settings?.updatedAt && (
         <div className="md:hidden text-[8px] font-black uppercase text-ink/40 tracking-widest">
           LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}: {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
-      )}
+      )} */}
     </header>
   );
 }
@@ -229,7 +231,84 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 }
 
 // ==========================================
-// 3. OverallProgressChart Component
+// 3. CustomChartTooltip
+// ==========================================
+const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, isCumulative }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const showTeam = visibleWriters.length === 2;
+    const metric = settings?.metric === 'pages' ? 'Pages' : 'Words';
+
+    return (
+      <div className="bg-[#fffafc] border-[4px] border-ink rounded-2xl p-4 shadow-[4px_4px_0_#2b1720] text-ink z-50">
+        <p className="font-bold border-b-2 border-ink/10 pb-2 mb-2 text-xs uppercase tracking-widest">{format(parseISO(label), 'MMM d, yyyy')}</p>
+        
+        <div className="flex flex-col gap-2">
+          {showTeam ? (
+            <>
+              {data.Team !== undefined && (
+                <div className="flex justify-between items-center gap-6">
+                  <span className="font-bold flex items-center gap-2 text-sm">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.teamColor || '#2b1720' }} /> Team Total
+                  </span>
+                  <span className="font-display text-lg">{Math.round(data.Team).toLocaleString()}</span>
+                </div>
+              )}
+              {data.Aaron !== undefined && (
+                <div className="flex justify-between items-center gap-6 opacity-80 pl-2">
+                  <span className="font-bold flex items-center gap-2 text-xs">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
+                  </span>
+                  <span className="font-display">{Math.round(data.Aaron).toLocaleString()}</span>
+                </div>
+              )}
+              {data.Electra !== undefined && (
+                <div className="flex justify-between items-center gap-6 opacity-80 pl-2">
+                  <span className="font-bold flex items-center gap-2 text-xs">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
+                  </span>
+                  <span className="font-display">{Math.round(data.Electra).toLocaleString()}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+               {visibleWriters.includes('personA') && data.Aaron !== undefined && (
+                 <div className="flex justify-between items-center gap-6">
+                    <span className="font-bold flex items-center gap-2 text-sm">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
+                    </span>
+                    <span className="font-display text-lg">{Math.round(data.Aaron).toLocaleString()}</span>
+                 </div>
+               )}
+               {visibleWriters.includes('personB') && data.Electra !== undefined && (
+                 <div className="flex justify-between items-center gap-6">
+                    <span className="font-bold flex items-center gap-2 text-sm">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
+                    </span>
+                    <span className="font-display text-lg">{Math.round(data.Electra).toLocaleString()}</span>
+                 </div>
+               )}
+            </>
+          )}
+
+          {data.Goal !== undefined && (
+            <div className="flex justify-between items-center gap-6 mt-1 pt-2 border-t-2 border-ink/10">
+              <span className="font-bold flex items-center gap-2 text-sm">
+                <span className="w-3 h-3 rounded-full bg-ink/30 border-2 border-ink border-dashed" /> {isCumulative ? 'Target Trajectory' : 'Daily Target'}
+              </span>
+              <span className="font-display text-lg text-ink/70">{Math.round(data.Goal).toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// ==========================================
+// 4. OverallProgressChart Component
 // ==========================================
 interface OverallProgressChartProps {
   chartData: ChartDatum[];
@@ -238,6 +317,8 @@ interface OverallProgressChartProps {
 }
 
 export function OverallProgressChart({ chartData, settings, visibleWriters }: OverallProgressChartProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   let barDataKey = "Team";
   let barName = "Total Progress";
   let barColor = "#4B778D";
@@ -254,56 +335,78 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
     }
   }
 
+  const renderChart = () => (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+      <ComposedChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
+        <XAxis 
+          dataKey="date" 
+          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
+        />
+        <YAxis 
+          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tickFormatter={(v) => v.toLocaleString()}
+        />
+        <Tooltip content={<CustomChartTooltip settings={settings} visibleWriters={visibleWriters} isCumulative={true} />} />
+        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
+        <Bar name={barName} dataKey={barDataKey} fill={barColor} />
+        <Line
+          name="Target Trajectory"
+          type="monotone"
+          dataKey="Goal"
+          stroke="#2b1720"
+          strokeWidth={2}
+          strokeDasharray="8 6"
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+
   return (
-    <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" /> My Overall Progress
-        </h3>
+    <>
+      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" /> My Overall Progress
+          </h3>
+          <button 
+            onClick={() => setIsExpanded(true)}
+            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:translate-y-[2px] transition-transform"
+          >
+            <Maximize2 className="w-4 h-4 text-ink" />
+          </button>
+        </div>
+        <div className="w-full flex-grow mt-2">
+          {renderChart()}
+        </div>
       </div>
-      <div className="w-full h-[250px] sm:h-[300px] mt-2">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-          <ComposedChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-              tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
-            />
-            <YAxis 
-              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-              tickFormatter={(v) => v.toLocaleString()}
-            />
-            <Tooltip 
-              formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name]}
-              labelFormatter={(value) => format(parseISO(value), 'MMM d, yyyy')}
-              contentStyle={{
-                backgroundColor: '#fffafc',
-                border: '4px solid #2b1720',
-                borderRadius: '16px',
-                boxShadow: '4px 4px 0 #2b1720',
-                fontSize: '12px'
-              }}
-              itemStyle={{ fontWeight: 800, padding: '2px 0' }}
-            />
-            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-            <Bar name={barName} dataKey={barDataKey} fill={barColor} />
-            <Line
-              name="Target Trajectory"
-              type="monotone"
-              dataKey="Goal"
-              stroke="#2b1720"
-              strokeWidth={2}
-              strokeDasharray="8 6"
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+
+      {isExpanded && (
+        <div className="fixed inset-0 z-[100] bg-ink/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-7xl h-[80vh] rounded-[48px] border-[8px] border-ink flex flex-col pt-8 pb-8 px-6 sm:px-12 shadow-[16px_16px_0_#000] overflow-hidden">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-display text-4xl flex items-center gap-4">
+                <TrendingUp className="w-10 h-10 text-primary" /> My Overall Progress
+              </h3>
+              <button 
+                onClick={() => setIsExpanded(false)}
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all flex items-center justify-center"
+              >
+                <X className="w-8 h-8 text-ink" />
+              </button>
+            </div>
+            <div className="w-full flex-grow">
+              {renderChart()}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -317,68 +420,92 @@ interface DailyWordCountChartProps {
 }
 
 export function DailyWordCountChart({ chartData, settings, visibleWriters }: DailyWordCountChartProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const showPersonA = visibleWriters.includes('personA');
   const showPersonB = visibleWriters.includes('personB');
   const showTeam = visibleWriters.length === 2;
 
+  const renderChart = () => (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+      <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
+        <XAxis 
+          dataKey="date" 
+          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
+        />
+        <YAxis 
+          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
+          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tickFormatter={(v) => v.toLocaleString()}
+        />
+        <Tooltip content={<CustomChartTooltip settings={settings} visibleWriters={visibleWriters} isCumulative={false} />} />
+        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
+        {showPersonA && (
+          <Line legendType="none" name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+        )}
+        {showPersonB && (
+          <Line legendType="none" name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+        )}
+        {showTeam && (
+          <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+        )}
+        <Line
+          name="Required Daily Pace"
+          type="monotone"
+          dataKey="Goal"
+          stroke="#2b1720"
+          strokeWidth={2}
+          strokeDasharray="8 6"
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+
   return (
-    <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" /> My Daily Word Count
-        </h3>
+    <>
+      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" /> My Daily Word Count
+          </h3>
+          <button 
+            onClick={() => setIsExpanded(true)}
+            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:translate-y-[2px] transition-transform"
+          >
+            <Maximize2 className="w-4 h-4 text-ink" />
+          </button>
+        </div>
+        <div className="w-full flex-grow mt-2">
+          {renderChart()}
+        </div>
       </div>
-      <div className="w-full h-[250px] sm:h-[300px] mt-2">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-          <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-              tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
-            />
-            <YAxis 
-              tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-              axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-              tickFormatter={(v) => v.toLocaleString()}
-            />
-            <Tooltip 
-              formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name]}
-              labelFormatter={(value) => format(parseISO(value), 'MMM d, yyyy')}
-              contentStyle={{
-                backgroundColor: '#fffafc',
-                border: '4px solid #2b1720',
-                borderRadius: '16px',
-                boxShadow: '4px 4px 0 #2b1720',
-                fontSize: '12px'
-              }}
-              itemStyle={{ fontWeight: 800, padding: '2px 0' }}
-            />
-            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-            {showPersonA && (
-              <Line legendType="none" name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-            )}
-            {showPersonB && (
-              <Line legendType="none" name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-            )}
-            {showTeam && (
-              <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-            )}
-            <Line
-              name="Required Daily Pace"
-              type="monotone"
-              dataKey="Goal"
-              stroke="#2b1720"
-              strokeWidth={2}
-              strokeDasharray="8 6"
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+
+      {isExpanded && (
+        <div className="fixed inset-0 z-[100] bg-ink/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-7xl h-[80vh] rounded-[48px] border-[8px] border-ink flex flex-col pt-8 pb-8 px-6 sm:px-12 shadow-[16px_16px_0_#000] overflow-hidden">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-display text-4xl flex items-center gap-4">
+                <BarChart3 className="w-10 h-10 text-primary" /> My Daily Word Count
+              </h3>
+              <button 
+                onClick={() => setIsExpanded(false)}
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all flex items-center justify-center"
+              >
+                <X className="w-8 h-8 text-ink" />
+              </button>
+            </div>
+            <div className="w-full flex-grow">
+              {renderChart()}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

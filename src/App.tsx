@@ -4,8 +4,6 @@ import { Toaster } from 'sonner';
 import { useTracker } from './hooks/useTracker';
 import { PasscodeScreen } from './components/PasscodeScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
-import { Analytics } from "@vercel/analytics/react"
-
 export default function App() {
   const tracker = useTracker();
   const { isAuthorized, isLoading, login, checkSession } = tracker;
@@ -21,7 +19,6 @@ export default function App() {
   return (
     <>
       <Toaster position="top-center" richColors theme="light" />
-      {import.meta.env.PROD && !isLocal && <Analytics />}
       {isLoading && !shouldBypassAuth ? (
         <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
           <img
