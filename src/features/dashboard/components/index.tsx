@@ -440,7 +440,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
             <Maximize2 className="w-4 h-4 text-ink" />
           </button>
         </div>
-        <div className="w-full flex-grow mt-2">
+        <div className="w-full flex-grow min-h-0 min-w-0 mt-2">
           {renderChart()}
         </div>
       </div>
@@ -459,7 +459,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
                 <X className="w-8 h-8 text-ink" />
               </button>
             </div>
-            <div className="w-full flex-grow">
+            <div className="w-full flex-grow min-h-0 min-w-0">
               {renderChart()}
             </div>
           </div>
@@ -539,7 +539,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
             <Maximize2 className="w-4 h-4 text-ink" />
           </button>
         </div>
-        <div className="w-full flex-grow mt-2">
+        <div className="w-full flex-grow min-h-0 min-w-0 mt-2">
           {renderChart()}
         </div>
       </div>
@@ -558,7 +558,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
                 <X className="w-8 h-8 text-ink" />
               </button>
             </div>
-            <div className="w-full flex-grow">
+            <div className="w-full flex-grow min-h-0 min-w-0">
               {renderChart()}
             </div>
           </div>
