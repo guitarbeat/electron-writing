@@ -115,7 +115,7 @@ export function DeadlineStep({
         />
 
         <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">
-          The heatmap will end on this date.
+          The ledger and pace chart will aim at this date.
         </p>
       </div>
     </div>
@@ -179,7 +179,7 @@ function WelcomeOverview() {
     {
       icon: <Target className="w-5 h-5 text-accent" />,
       title: 'Aim at one deadline',
-      body: 'Your ledger starts at the first log and runs through the deadline, so the whole project reads like one writing board instead of a scattered calendar.',
+      body: 'Your ledger starts at today and runs through the deadline, so the board stays focused on the days still in play.',
     }
   ];
 

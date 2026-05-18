@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { eachDayOfInterval, endOfMonth, format, isValid, parseISO, startOfMonth } from 'date-fns';
+import { eachDayOfInterval, format, isValid, parseISO } from 'date-fns';
 import { Check, Flag, Minus, NotebookPen, StickyNote, Trash2, X } from 'lucide-react';
 import { Entry, Settings } from '../../../types';
 import { cn } from '../../../lib/utils';
@@ -61,14 +61,11 @@ function parseNonNegativeInteger(value: string) {
 
 function buildLedgerDays(entries: Entry[], settings: Settings | null): LedgerDay[] {
   const entriesByDate = new Map(entries.map(entry => [entry.date, entry]));
-  const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const start = sortedEntries.length > 0
-    ? startOfMonth(parseISO(sortedEntries[0].date))
-    : startOfMonth(new Date());
+  const start = new Date();
 
   const parsedDeadline = settings?.deadline ? parseISO(settings.deadline) : null;
-  const deadline = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : endOfMonth(new Date());
-  const end = deadline >= start ? deadline : endOfMonth(start);
+  const deadline = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : start;
+  const end = deadline >= start ? deadline : start;
   const deadlineStr = format(deadline, 'yyyy-MM-dd');
 
   return eachDayOfInterval({ start, end }).map((day, index, allDays) => {
@@ -201,7 +198,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
         <div>
           <h2 className="text-heading text-3xl md:text-4xl">Daily Writing Ledger</h2>
           <p className="text-body text-sm md:text-base font-bold text-ink-muted mt-2">
-            Track the ink from first log through deadline.
+            Track the ink from today through deadline.
           </p>
         </div>
 
