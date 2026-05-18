@@ -216,6 +216,17 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
         </div>
       </div>
 
+      <div className="border-t-4 border-ink pt-5" />
+
+      <div className="sticky top-0 z-20 -mx-1 px-1 bg-bg-surface/95 backdrop-blur-sm">
+        <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_4rem] gap-3 items-end">
+          <div />
+          <ColumnHeader color={personAColor} label={personAName} />
+          <ColumnHeader color={personBColor} label={personBName} />
+          <div className="text-label text-[9px] text-ink-muted text-center pb-2">Notes</div>
+        </div>
+      </div>
+
       <div className="max-h-[760px] overflow-y-auto hide-scrollbar pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
           <div className="absolute left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
@@ -246,7 +257,6 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                     day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)] p-3 sm:p-4 md:p-6 rounded-card'
                   )}
                 >
-
                   {day.isDeadlineDay && (
                     <div className="flex items-center gap-2 self-start bg-ink text-white px-3 py-2 text-label text-[10px] rotate-[-1deg]">
                       <Flag className="w-4 h-4" />
@@ -254,7 +264,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                     </div>
                   )}
 
-                  <div className="flex flex-row flex-wrap sm:flex-nowrap items-start gap-3 md:gap-4">
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4rem] gap-3 md:gap-4 items-stretch">
                     <WriterTile
                       date={day.date}
                       name={personAName}
@@ -283,13 +293,13 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                       onBlur={handleTileBlur}
                     />
 
-                    <div className="flex items-center gap-2 min-h-24 md:min-h-28">
+                    <div className="flex flex-col items-center justify-start gap-2">
                       <button
                         type="button"
                         onClick={() => beginNoteEdit(day)}
                         title={`Edit note for ${format(parseISO(day.date), 'MMM d')}`}
                         className={cn(
-                          'w-11 h-11 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
+                          'w-11 h-11 sm:w-12 sm:h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
                           day.entry?.note && 'bg-accent'
                         )}
                       >
@@ -301,7 +311,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                           type="button"
                           onClick={() => handleDeleteDay(day)}
                           title={`Delete ${format(parseISO(day.date), 'MMM d')} entry`}
-                          className="w-11 h-11 border-4 border-red-500 bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-all active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0_#ef4444]"
+                          className="w-11 h-11 sm:w-12 sm:h-12 border-4 border-red-500 bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-all active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0_#ef4444]"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -310,7 +320,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry 
                   </div>
 
                   {(day.entry?.note || editingNoteDate === day.date) && (
-                    <div className="max-w-2xl">
+                    <div className="max-w-3xl">
                       {editingNoteDate === day.date ? (
                         <div className="flex flex-col sm:flex-row gap-2">
                           <input
@@ -374,6 +384,15 @@ function LegendSwatch({ color, label }: { color: string; label: string }) {
   );
 }
 
+function ColumnHeader({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="bg-bg-paper border-4 border-ink shadow-sticker px-3 py-2 flex items-center gap-2 min-w-0">
+      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{label}</span>
+    </div>
+  );
+}
+
 function WriterTile({
   date,
   name,
@@ -404,7 +423,7 @@ function WriterTile({
 
   if (isEditing) {
     return (
-      <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 bg-white border-4 border-ink shadow-sticker p-3 flex flex-col justify-between">
+      <div className="aspect-square w-full bg-white border-4 border-ink shadow-sticker p-3 flex flex-col justify-between min-h-[8.75rem] sm:min-h-[9.5rem]">
         <label className="text-label text-[10px] text-ink-muted truncate">{name}</label>
         <input
           autoFocus
@@ -425,9 +444,10 @@ function WriterTile({
           inputMode="numeric"
           min="0"
           type="number"
-          className="w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl font-black text-ink outline-none focus:bg-white"
+          className="w-full min-w-0 bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white"
           aria-label={`${name} ${metric} for ${date}`}
         />
+        <span className="text-label text-[9px] text-ink-muted">{metric}</span>
       </div>
     );
   }
@@ -438,7 +458,7 @@ function WriterTile({
       onClick={onBeginEdit}
       title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'w-full sm:w-[calc(50%-0.375rem)] md:w-36 h-20 sm:h-24 md:h-28 border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group',
+        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group min-h-[8.75rem] sm:min-h-[9.5rem] p-3',
         'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
         hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed border-ink/25 text-ink-faint'
       )}
@@ -447,7 +467,7 @@ function WriterTile({
       {hasValue ? (
         <>
           <NotebookPen className="w-6 h-6 shrink-0" />
-          <span className="font-mono text-[13px] font-black leading-tight px-2 break-words">
+          <span className="font-mono text-sm sm:text-base font-black leading-tight px-2 break-words">
             {formatCount(value, metric)}
           </span>
         </>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight, Lock } from 'lucide-react';
+import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight, Lock, NotebookPen, ChartSpline, Target } from 'lucide-react';
 import { Settings } from '../../../types';
 import { LongPressInput } from '../../../components/ui/LongPressInput';
 import { Knob } from '../../../components/ui/Knob';
@@ -164,6 +164,50 @@ export function SetupWizardActions({
   );
 }
 
+function WelcomeOverview() {
+  const cards = [
+    {
+      icon: <NotebookPen className="w-5 h-5 text-primary" />,
+      title: 'Log each day fast',
+      body: 'Each day has two square cells. Aaron and Electra stay side by side so you can edit either writer without moving around the page.',
+    },
+    {
+      icon: <ChartSpline className="w-5 h-5 text-secondary" />,
+      title: 'Read the trend instantly',
+      body: 'The chart keeps daily, weekly, and cumulative views so you can see pace, streaks, and whether the project is drifting.',
+    },
+    {
+      icon: <Target className="w-5 h-5 text-accent" />,
+      title: 'Aim at one deadline',
+      body: 'Your ledger starts at the first log and runs through the deadline, so the whole project reads like one writing board instead of a scattered calendar.',
+    }
+  ];
+
+  return (
+    <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-4">
+      <div className="bg-white border-4 border-ink rounded-[28px] p-5 sm:p-6 shadow-sticker">
+        <p className="text-sm font-bold text-ink leading-7">
+          Smeemo is a private two-writer tracker. Use the ledger to log each day, use the chart to judge pace, and use the settings here to name the writers, set the target, pick the deadline, and choose the shared passcode.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        {cards.map((card) => (
+          <div key={card.title} className="bg-white border-4 border-ink rounded-[24px] p-4 shadow-sticker flex gap-3 items-start">
+            <div className="w-10 h-10 shrink-0 rounded-xl border-4 border-ink bg-bg-paper flex items-center justify-center">
+              {card.icon}
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-heading text-lg">{card.title}</h3>
+              <p className="text-sm font-bold text-ink/70 leading-6">{card.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SetupWizard({ 
   settings, 
   onClose, 
@@ -205,7 +249,7 @@ export function SetupWizard({
   const steps = [
     {
       title: "Welcome to Smeemo",
-      description: "A private tracker for you and your writing partner.",
+      description: "Here is how the app works before you set it up.",
       icon: <History className="w-8 h-8 text-primary" />
     },
     {
@@ -280,6 +324,10 @@ export function SetupWizard({
         </div>
 
         <div className="px-6 sm:px-8 flex-1">
+          {currentStep === 0 && (
+            <WelcomeOverview />
+          )}
+
           {currentStep === 1 && (
             <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
