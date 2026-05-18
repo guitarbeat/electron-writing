@@ -20,7 +20,7 @@ export default function App() {
     <>
       <Toaster position="top-center" richColors theme="light" />
       {isLoading && !shouldBypassAuth ? (
-        <div className="min-h-screen bg-bg-paper flex items-center justify-center flex-col gap-4">
+        <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center flex-col gap-4">
           <img
             src="/smeemo.png"
             alt="Smeemo"

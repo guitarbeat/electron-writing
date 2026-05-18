@@ -69,7 +69,7 @@ export function Dashboard({ tracker }: DashboardProps) {
   if (!settings) return null;
 
   return (
-    <div className="min-h-screen bg-bg-paper text-ink font-sans p-4 md:p-8 selection:bg-primary/20 bg-[url('https://www.transparenttextures.com/patterns/felt.png')]">
+    <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-ink font-sans p-4 md:p-8 selection:bg-primary/20">
       <div className="max-w-6xl mx-auto flex flex-col gap-8">
         
         {/* Header */}
