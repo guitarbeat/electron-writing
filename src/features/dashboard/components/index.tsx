@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import { 
   Settings as SettingsIcon, 
   LogOut, 
@@ -141,6 +142,21 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
 }
 
 // ==========================================
+// 1.5. AnimatedNumber Component
+// ==========================================
+function AnimatedNumber({ value }: { value: number }) {
+  const rounded = useMotionValue(0);
+  const display = useTransform(rounded, Math.round);
+
+  useEffect(() => {
+    const animation = animate(rounded, value, { duration: 1.5, ease: "easeOut" });
+    return animation.stop;
+  }, [value, rounded]);
+
+  return <motion.span>{display}</motion.span>;
+}
+
+// ==========================================
 // 2. GoalSummaryCard Component
 // ==========================================
 interface GoalSummaryCardProps {
@@ -167,64 +183,101 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
       
       {/* 1. Total Words/Pages to Goal */}
-      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+      >
         <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-            <circle cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
-              strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * progressPercent) / 100} 
-              strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+            <motion.circle 
+              cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
+              strokeDasharray="251.2" 
+              initial={{ strokeDashoffset: 251.2 }}
+              animate={{ strokeDashoffset: 251.2 - (251.2 * progressPercent) / 100 }}
+              transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
+              strokeLinecap="round" 
+            />
           </svg>
         </div>
         <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
           <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.totalTeam.toLocaleString()}</span>
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
+              <AnimatedNumber value={stats.totalTeam} />
+            </span>
             <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {goal.toLocaleString()}</span>
           </div>
           <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
             Total<br className="hidden xl:block" /> {metric}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 2. Words needed today */}
-      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+      >
         <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-            <circle cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
-              strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * todayPercent) / 100} 
-              strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+            <motion.circle 
+              cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
+              strokeDasharray="251.2" 
+              initial={{ strokeDashoffset: 251.2 }}
+              animate={{ strokeDashoffset: 251.2 - (251.2 * todayPercent) / 100 }}
+              transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
+              strokeLinecap="round" 
+            />
           </svg>
         </div>
         <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
           <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.todayTeam.toLocaleString()}</span>
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
+              <AnimatedNumber value={stats.todayTeam} />
+            </span>
             <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {todayGoal.toLocaleString()}</span>
           </div>
           <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
             Needed<br className="hidden xl:block" /> Today
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 3. Streak */}
-      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+      >
         <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
           <svg className="absolute inset-0 w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
           </svg>
-          <CalendarDays className="w-8 h-8 text-ink/80 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+          <motion.div 
+             initial={{ scale: 0 }}
+             animate={{ scale: 1 }}
+             transition={{ type: 'spring', delay: 0.5, bounce: 0.5 }}
+          >
+            <CalendarDays className="w-8 h-8 text-ink/80 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+          </motion.div>
         </div>
         <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
           <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.currentStreak.toLocaleString()}</span>
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
+              <AnimatedNumber value={stats.currentStreak} />
+            </span>
           </div>
           <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
             Days In<br className="hidden xl:block" /> A Row
           </div>
         </div>
-      </div>
+      </motion.div>
       
     </div>
   );
