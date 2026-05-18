@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Settings as SettingsIcon, History, Trophy, Calendar, ArrowRight, Lock, NotebookPen, ChartSpline, Target } from 'lucide-react';
 import { Settings } from '../../../types';
-import { LongPressInput } from '../../../components/ui/LongPressInput';
-import { Knob } from '../../../components/ui/Knob';
-import { CalendarPicker } from '../../../components/ui/CalendarPicker';
+import { LongPressInput, Knob, CalendarPicker } from '../../../components/ui';
 
 export function ProjectSettingsStep({
   formData,

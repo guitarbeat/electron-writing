@@ -9,7 +9,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 const devSessions = new Map<string, { authorized: boolean; bypass?: boolean }>();
 const DEV_PASSCODE = '5947';
 
-function devApiPlugin(): Plugin {
+function devApiPlugin(): any {
   return {
     name: 'dev-api',
     configureServer(server) {
