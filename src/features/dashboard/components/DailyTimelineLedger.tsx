@@ -384,9 +384,9 @@ function WriterTile({
 
   if (isEditing) {
     return (
-      <div className="relative z-50">
-        <div className="aspect-square w-full min-w-[7rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col justify-between absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-110 sm:scale-125 origin-center">
-          <label className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight">{name}</label>
+      <div className="relative w-full aspect-square z-50">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] min-w-[7rem] bg-white border-4 border-ink shadow-sticker-hover p-3 flex flex-col gap-2 origin-center">
+          <label className="text-label text-[10px] text-ink-muted text-center leading-tight truncate">{name}</label>
           <input
             autoFocus
             value={draft}
@@ -406,42 +406,43 @@ function WriterTile({
             inputMode="numeric"
             min="0"
             type="number"
-            className="w-full min-w-0 appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-1 text-center font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white hide-spin-button"
+            className="w-full appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-2 text-center font-mono text-xl sm:text-2xl font-black text-ink outline-none focus:bg-white hide-spin-button"
             aria-label={`${name} ${metric} for ${date}`}
           />
-          <span className="text-label text-[9px] text-ink-muted text-center leading-tight uppercase">{metric}</span>
+          <span className="text-label text-[10px] text-ink-muted text-center leading-tight uppercase font-black">{metric}</span>
         </div>
-        <div className="aspect-square w-full invisible" />
       </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onBeginEdit}
-      title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
-      className={cn(
-        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
-        'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
-        hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
-      )}
-      style={hasValue ? { backgroundColor: color, color: textColor } : { borderColor: color, color: color, opacity: 0.6 }}
-    >
-      {hasValue ? (
-        <>
-          <NotebookPen className="w-6 h-6 shrink-0" />
-          <span className="font-mono text-sm sm:text-base font-black leading-tight px-2 break-words">
-            {formatCount(value, metric)}
-          </span>
-        </>
-      ) : (
-        <>
-          <Minus className="w-7 h-7 shrink-0" />
-          <span className="text-label text-[10px] uppercase">Log</span>
-        </>
-      )}
-    </button>
+    <div className="relative w-full aspect-square">
+      <button
+        type="button"
+        onClick={onBeginEdit}
+        title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
+        className={cn(
+          'absolute inset-0 w-full h-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
+          'hover:-translate-y-1 hover:shadow-sticker-hover active:translate-y-0 active:shadow-sticker-active',
+          hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
+        )}
+        style={hasValue ? { backgroundColor: color, color: textColor } : { borderColor: color, color: color, opacity: 0.6 }}
+      >
+        {hasValue ? (
+          <>
+            <NotebookPen className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+            <span className="font-mono text-sm sm:text-base font-black leading-tight px-1 break-words">
+              {formatCount(value, metric)}
+            </span>
+          </>
+        ) : (
+          <>
+            <Minus className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+            <span className="text-label text-[9px] sm:text-[10px] uppercase">Log</span>
+          </>
+        )}
+      </button>
+    </div>
   );
 }
 

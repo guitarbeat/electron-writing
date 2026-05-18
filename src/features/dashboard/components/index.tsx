@@ -160,70 +160,64 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
   const todayPercent = todayGoal > 0 ? Math.min(100, Math.round((stats.todayTeam / todayGoal) * 100)) : 100;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 xl:gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
       
       {/* 1. Total Words/Pages to Goal */}
-      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
-        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
-            <circle cx="50" cy="50" r="38" stroke="var(--color-primary)" strokeWidth="12" fill="none" 
-              strokeDasharray="238.76" strokeDashoffset={238.76 - (238.76 * progressPercent) / 100} 
-              strokeLinecap="round" className="transition-all duration-1000" />
+      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+            <circle cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
+              strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * progressPercent) / 100} 
+              strokeLinecap="round" className="transition-all duration-1000 ease-out" />
           </svg>
         </div>
-        <div className="flex flex-col min-w-0 pr-4">
-          <div className="flex items-start">
-            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.totalTeam.toLocaleString()}</span>
-            <div className="flex flex-col ml-2 items-start justify-start pt-1">
-              <span className="text-2xl text-ink font-black leading-none">/</span>
-              <span className="text-lg font-bold font-sans text-ink/70 leading-none mt-1">{goal.toLocaleString()}</span>
-            </div>
+        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
+          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.totalTeam.toLocaleString()}</span>
+            <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {goal.toLocaleString()}</span>
           </div>
-          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
-            TOTAL<br/>{metric.toUpperCase()}
+          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
+            Total<br className="hidden xl:block" /> {metric}
           </div>
         </div>
       </div>
 
       {/* 2. Words needed today */}
-      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
-        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
-            <circle cx="50" cy="50" r="38" stroke="var(--color-accent)" strokeWidth="12" fill="none" 
-              strokeDasharray="238.76" strokeDashoffset={238.76 - (238.76 * todayPercent) / 100} 
-              strokeLinecap="round" className="transition-all duration-1000" />
+      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+            <circle cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
+              strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * todayPercent) / 100} 
+              strokeLinecap="round" className="transition-all duration-1000 ease-out" />
           </svg>
         </div>
-        <div className="flex flex-col min-w-0 pr-4">
-          <div className="flex items-start">
-            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.todayTeam.toLocaleString()}</span>
-            <div className="flex flex-col ml-2 items-start justify-start pt-1">
-              <span className="text-2xl text-ink font-black leading-none">/</span>
-              <span className="text-lg font-bold font-sans text-ink/70 leading-none mt-1">{todayGoal.toLocaleString()}</span>
-            </div>
+        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
+          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.todayTeam.toLocaleString()}</span>
+            <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {todayGoal.toLocaleString()}</span>
           </div>
-          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
-            {metric.toUpperCase()}<br/>NEEDED<br/>TODAY
+          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
+            Needed<br className="hidden xl:block" /> Today
           </div>
         </div>
       </div>
 
       {/* 3. Streak */}
-      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
-        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
+      <div className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group">
+        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
           </svg>
-          <CalendarDays className="w-8 h-8 xl:w-10 xl:h-10 text-ink/80 relative z-10" />
+          <CalendarDays className="w-8 h-8 text-ink/80 relative z-10 group-hover:scale-110 transition-transform duration-500" />
         </div>
-        <div className="flex flex-col min-w-0 flex-1 pl-2">
-          <div className="flex items-start">
-            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.currentStreak.toLocaleString()}</span>
+        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
+          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
+            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">{stats.currentStreak.toLocaleString()}</span>
           </div>
-          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
-            DAYS<br/>IN A<br/>ROW
+          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
+            Days In<br className="hidden xl:block" /> A Row
           </div>
         </div>
       </div>
