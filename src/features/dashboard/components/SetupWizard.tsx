@@ -306,7 +306,7 @@ export function SetupWizard({
                   <ArrowRight className="w-5 h-5 rotate-180" />
                 </button>
               )}
-              <h1 className="text-display text-3xl font-black truncate">
+              <h1 className="text-display text-3xl font-black pb-1">
                 {activeTab === 'menu' ? 'Settings' 
                   : activeTab === 'co-authors' ? 'Co-Authors' 
                   : activeTab === 'goal' ? 'The Goal'
