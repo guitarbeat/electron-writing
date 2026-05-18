@@ -32,8 +32,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       return res.status(200).json(results[0]);
     } catch (err: any) {
-      console.error("API Error:", err.message);
-      return res.status(500).json({ error: "Internal server error" });
+      console.warn("API Error (Settings GET):", err.message);
+      // Fallback if db is not setup
+      const defaults = {
+        ...DEFAULT_SETTINGS,
+        updatedAt: new Date(),
+      };
+      return res.status(200).json(defaults);
     }
   }
 

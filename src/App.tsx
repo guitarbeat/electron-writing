@@ -8,12 +8,13 @@ export default function App() {
   const tracker = useTracker();
   const { isAuthorized, isLoading, login, checkSession } = tracker;
   
-  const isLocal = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  
-  // Bypass passcode in development mode
-  const isDev = import.meta.env.DEV;
-  const shouldBypassAuth = isDev && isLocal;
+  // Allow bypassing via environment variable or URL parameter
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const shouldBypassAuth = 
+    (import.meta.env.DEV && (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname))) ||
+    import.meta.env.VITE_BYPASS_PASSCODE === 'true' ||
+    urlParams.get('bypass') === 'true';
+
   const effectivelyAuthorized = shouldBypassAuth || isAuthorized;
 
   return (

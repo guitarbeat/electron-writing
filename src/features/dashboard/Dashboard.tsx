@@ -66,7 +66,18 @@ export function Dashboard({ tracker }: DashboardProps) {
     return true;
   };
 
-  if (!settings) return null;
+  if (!settings) {
+    return (
+      <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center flex-col gap-4 text-ink">
+        <img
+          src="/smeemo.png"
+          alt="Smeemo"
+          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
+        />
+        <div className="text-display text-2xl animate-pulse">Smeemo is waking up...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-ink font-sans p-4 md:p-8 selection:bg-primary/20">
