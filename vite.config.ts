@@ -9,6 +9,17 @@ import type { IncomingMessage, ServerResponse } from 'http';
 const devSessions = new Map<string, { authorized: boolean; bypass?: boolean }>();
 const DEV_PASSCODE = '5947';
 
+// Mock data stores for development
+let devEntries: any[] = [];
+let devSettings: any = {
+  id: 'global',
+  dailyGoal: 500,
+  weeklyGoal: 3500,
+  passcode: DEV_PASSCODE,
+  isSetupComplete: true,
+  defaultChartView: 'daily'
+};
+
 function devApiPlugin(): any {
   return {
     name: 'dev-api',
@@ -102,24 +113,58 @@ function devApiPlugin(): any {
           return;
         }
 
-        // Mock other API endpoints for development
+        // Mock API endpoints for development
         if (url.startsWith('/api/entries')) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify([]));
-          return;
+          if (req.method === 'GET') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(devEntries.sort((a, b) => b.date.localeCompare(a.date))));
+            return;
+          }
+          if (req.method === 'POST') {
+            parseBody(req).then(body => {
+              const existingIndex = devEntries.findIndex(e => e.date === body.date);
+              const newEntry = { 
+                id: body.date, 
+                date: body.date,
+                aaronWords: parseInt(body.aaronWords) || 0,
+                electraWords: parseInt(body.electraWords) || 0,
+                aaronTime: parseInt(body.aaronTime) || 0,
+                electraTime: parseInt(body.electraTime) || 0,
+                note: body.note || ''
+              };
+              if (existingIndex >= 0) {
+                devEntries[existingIndex] = { ...devEntries[existingIndex], ...newEntry };
+              } else {
+                devEntries.push(newEntry);
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(newEntry));
+            });
+            return;
+          }
+          if (req.method === 'DELETE' && url.match(/\/api\/entries\/([^/]+)/)) {
+            const dateId = url.split('/').pop();
+            devEntries = devEntries.filter(e => e.date !== dateId);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'deleted' }));
+            return;
+          }
         }
 
         if (url.startsWith('/api/settings')) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            id: 'global',
-            dailyGoal: 500,
-            weeklyGoal: 3500,
-            passcode: DEV_PASSCODE,
-            isSetupComplete: true,
-            defaultChartView: 'daily'
-          }));
-          return;
+          if (req.method === 'GET') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(devSettings));
+            return;
+          }
+          if (req.method === 'PATCH') {
+            parseBody(req).then(body => {
+              devSettings = { ...devSettings, ...body };
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(devSettings));
+            });
+            return;
+          }
         }
 
         if (url.startsWith('/api/')) {

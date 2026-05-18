@@ -1,5 +1,5 @@
 import { Entry, Settings } from '../types';
-import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek } from 'date-fns';
+import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek, addDays } from 'date-fns';
 
 export interface TrackerStats {
   todayAaron: number;
@@ -15,6 +15,7 @@ export interface TrackerStats {
   requiredPerWeek: number;
   expectedCumulativeToday: number;
   deficit: number;
+  currentStreak: number;
 }
 
 export interface ChartDatum {
@@ -62,9 +63,40 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     }
   });
 
-  const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const startDate = sortedEntries.length > 0 ? parseISO(sortedEntries[0].date) : now;
-  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : now;
+  const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date)); // Sort descending for streak
+  
+  let currentStreak = 0;
+  const yesterday = addDays(now, -1);
+  const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+  
+  let checkingDateStr = todayStr;
+  
+  // If today has 0 words, start checking from yesterday
+  const todayEntry = sortedEntries.find(e => e.date === todayStr);
+  if (!todayEntry || ((todayEntry.aaronWords || 0) + (todayEntry.electraWords || 0)) === 0) {
+    checkingDateStr = yesterdayStr;
+  }
+
+  for (let i = 0; i < sortedEntries.length; i++) {
+    // skip dates in the future
+    if (sortedEntries[i].date > todayStr) continue;
+    
+    // We only care about consecutive days backward
+    if (sortedEntries[i].date === checkingDateStr) {
+      if (((sortedEntries[i].aaronWords || 0) + (sortedEntries[i].electraWords || 0)) > 0) {
+        currentStreak++;
+        checkingDateStr = format(addDays(parseISO(checkingDateStr), -1), 'yyyy-MM-dd');
+      } else {
+        break; // Streak broken
+      }
+    } else if (sortedEntries[i].date < checkingDateStr) {
+      break; // Gap in days, streak broken
+    }
+  }
+
+  const ascendingEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const startDate = ascendingEntries.length > 0 ? parseISO(ascendingEntries[0].date) : now;
+  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : addDays(now, 10);
   const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
   const elapsedDays = Math.min(totalDays, Math.max(1, differenceInCalendarDays(now, startDate) + 1));
   const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
@@ -88,6 +120,7 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     requiredPerWeek,
     expectedCumulativeToday,
     deficit,
+    currentStreak,
   };
 }
 
@@ -98,7 +131,7 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
   const totalTeam = sorted.reduce((sum, entry) => sum + (entry.aaronWords || 0) + (entry.electraWords || 0), 0);
   const now = new Date();
   const startDate = sorted.length > 0 ? parseISO(sorted[0].date) : new Date();
-  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : new Date();
+  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : addDays(now, 10);
   const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
   const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
   const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
@@ -155,3 +188,4 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
     Goal: requiredPerDay,
   }));
 }
+

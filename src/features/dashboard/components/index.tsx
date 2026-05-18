@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 import { Settings } from '../../../types';
 import { TrackerStats, ChartDatum } from '../../../lib/stats';
 
@@ -144,83 +144,90 @@ interface GoalSummaryCardProps {
   stats: TrackerStats;
 }
 
+
+
 export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
   const goal = stats.goal;
   const metric = settings?.metric === 'pages' ? 'Pages' : 'Words';
-  const deadline = settings?.deadline ? format(parseISO(settings.deadline), 'MMMM d, yyyy') : 'No deadline';
+  const defaultDeadline = addDays(new Date(), 10);
+  const deadline = settings?.deadline ? format(parseISO(settings.deadline), 'MMMM d, yyyy') : format(defaultDeadline, 'MMMM d, yyyy');
   const progressPercent = Math.min(100, Math.round((stats.totalTeam / goal) * 100)) || 0;
   const pacePerDay = Math.ceil(stats.requiredPerDay);
-  const pacePerWeek = Math.ceil(stats.requiredPerWeek);
-  const deficitLabel = Math.round(Math.abs(stats.deficit)).toLocaleString();
   const metricUnit = metric.toLowerCase();
-
-  let statusHeading = 'On Track';
-  let statusMessage = "You're right on schedule.";
-  let statusTone = 'text-green-600';
-  let StatusIcon = TrendingUp;
   
-  if (stats.deficit > 0) {
-    statusHeading = 'Ahead of Schedule';
-    statusMessage = `You're safely ahead by ${deficitLabel} ${metricUnit}.`;
-    statusTone = 'text-green-600';
-    StatusIcon = TrendingUp;
-  } else if (stats.deficit < 0) {
-    statusHeading = 'Falling Behind';
-    statusMessage = `Need ${deficitLabel} more ${metricUnit} to catch up.`;
-    statusTone = 'text-primary';
-    StatusIcon = TrendingDown;
-  }
+  // To avoid dividing by zero today if goal is met
+  const todayGoal = pacePerDay; 
+  const todayPercent = todayGoal > 0 ? Math.min(100, Math.round((stats.todayTeam / todayGoal) * 100)) : 100;
 
   return (
-    <div className="sticker-card p-6 flex flex-col gap-6 shadow-[8px_8px_0px_#2b1720]">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-black uppercase tracking-widest lg:text-base opacity-70 flex items-center gap-2 text-ink">
-          <Target className="w-5 h-5" /> Project Goal
-        </h3>
-        <p className="text-2xl sm:text-3xl md:text-4xl text-primary font-display mt-2 break-words">
-          {goal.toLocaleString()} {metric}
-        </p>
-        <p className="text-sm font-bold text-ink-muted flex items-center gap-1 mt-1">
-          <CalendarDays className="w-4 h-4" /> {deadline} <span className="opacity-50 mx-1">&bull;</span> {stats.daysLeft} days left
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2 mt-4">
-        <div className="w-full bg-ink/5 rounded-full h-4 overflow-hidden border-2 border-ink/10">
-          <div 
-            className="h-full transition-all duration-1000 border-r-2 border-ink/10" 
-            style={{ width: `${progressPercent}%`, backgroundColor: settings?.teamColor || '#10b981' }}
-          />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 xl:gap-8">
+      
+      {/* 1. Total Words/Pages to Goal */}
+      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
+        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
+            <circle cx="50" cy="50" r="38" stroke="var(--color-primary)" strokeWidth="12" fill="none" 
+              strokeDasharray="238.76" strokeDashoffset={238.76 - (238.76 * progressPercent) / 100} 
+              strokeLinecap="round" className="transition-all duration-1000" />
+          </svg>
         </div>
-
-        <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-ink-muted">
-          <span>{stats.totalTeam.toLocaleString()} Completed</span>
-          <span>{progressPercent}%</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-ink/5 border-2 border-ink/10 rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-widest text-ink/70 flex items-center gap-2">
-            <Gauge className="w-4 h-4" /> Required Pace
-          </span>
-          <span className="text-xl font-display text-primary">
-            {pacePerDay.toLocaleString()} {metricUnit}/day
-          </span>
-          <span className="text-[11px] font-bold text-ink-muted">
-            {pacePerWeek.toLocaleString()} {metricUnit}/week
-          </span>
-        </div>
-
-        <div className="bg-ink/5 border-2 border-ink/10 rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-widest text-ink/70 flex items-center gap-2">
-            <StatusIcon className="w-4 h-4" /> {statusHeading}
-          </span>
-          <span className={`text-lg font-display leading-tight ${statusTone}`}>
-            {statusMessage}
-          </span>
+        <div className="flex flex-col min-w-0 pr-4">
+          <div className="flex items-start">
+            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.totalTeam.toLocaleString()}</span>
+            <div className="flex flex-col ml-2 items-start justify-start pt-1">
+              <span className="text-2xl text-ink font-black leading-none">/</span>
+              <span className="text-lg font-bold font-sans text-ink/70 leading-none mt-1">{goal.toLocaleString()}</span>
+            </div>
+          </div>
+          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
+            TOTAL<br/>{metric.toUpperCase()}
+          </div>
         </div>
       </div>
+
+      {/* 2. Words needed today */}
+      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
+        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
+            <circle cx="50" cy="50" r="38" stroke="var(--color-accent)" strokeWidth="12" fill="none" 
+              strokeDasharray="238.76" strokeDashoffset={238.76 - (238.76 * todayPercent) / 100} 
+              strokeLinecap="round" className="transition-all duration-1000" />
+          </svg>
+        </div>
+        <div className="flex flex-col min-w-0 pr-4">
+          <div className="flex items-start">
+            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.todayTeam.toLocaleString()}</span>
+            <div className="flex flex-col ml-2 items-start justify-start pt-1">
+              <span className="text-2xl text-ink font-black leading-none">/</span>
+              <span className="text-lg font-bold font-sans text-ink/70 leading-none mt-1">{todayGoal.toLocaleString()}</span>
+            </div>
+          </div>
+          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
+            {metric.toUpperCase()}<br/>NEEDED<br/>TODAY
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Streak */}
+      <div className="bg-white border-[6px] border-ink rounded-[2.5rem] lg:rounded-[3rem] p-6 lg:p-8 flex items-center justify-center gap-4 lg:gap-6 shadow-[10px_10px_0px_#2b1720]">
+        <div className="relative w-24 h-24 lg:w-28 lg:h-28 shrink-0 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="38" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="12" fill="none" />
+          </svg>
+          <CalendarDays className="w-8 h-8 xl:w-10 xl:h-10 text-ink/80 relative z-10" />
+        </div>
+        <div className="flex flex-col min-w-0 flex-1 pl-2">
+          <div className="flex items-start">
+            <span className="text-5xl xl:text-6xl font-display text-ink leading-none">{stats.currentStreak.toLocaleString()}</span>
+          </div>
+          <div className="text-[13px] xl:text-sm font-black uppercase tracking-[0.2em] text-ink/80 leading-[1.4] mt-3">
+            DAYS<br/>IN A<br/>ROW
+          </div>
+        </div>
+      </div>
+      
     </div>
   );
 }
@@ -263,7 +270,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
       </div>
       <div className="w-full flex-1 min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={100}>
-          <LineChart data={chartData} margin={{ bottom: 5, left: -20, top: 10, right: 10 }}>
+          <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
             <XAxis 
               dataKey="date" 
@@ -274,6 +281,7 @@ export function ProgressChart({ chartView, setChartView, chartData, settings }: 
             <YAxis 
               tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
               axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+              tickFormatter={(v) => v.toLocaleString()}
             />
             <Tooltip 
               formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name]}

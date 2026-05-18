@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { differenceInCalendarDays, eachDayOfInterval, format, isValid, parseISO } from 'date-fns';
+import { differenceInCalendarDays, eachDayOfInterval, format, isValid, parseISO, addDays } from 'date-fns';
 import { Check, ChevronDown, ChevronUp, Flag, History, Minus, NotebookPen, StickyNote, Trash2, X } from 'lucide-react';
 import { Entry, Settings } from '../../../types';
 import { cn } from '../../../lib/utils';
@@ -81,7 +81,7 @@ function buildFutureLedgerDays(entries: Entry[], settings: Settings | null): Led
   const start = new Date();
 
   const parsedDeadline = settings?.deadline ? parseISO(settings.deadline) : null;
-  const deadline = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : start;
+  const deadline = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : addDays(start, 10);
   const end = deadline >= start ? deadline : start;
   const deadlineStr = format(deadline, 'yyyy-MM-dd');
 
@@ -125,7 +125,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
   const personAColor = settings?.personAColor || '#ff4d8d';
   const personBColor = settings?.personBColor || '#7c3aed';
   const today = new Date();
-  const deadlineDate = settings?.deadline && isValid(parseISO(settings.deadline)) ? parseISO(settings.deadline) : today;
+  const deadlineDate = settings?.deadline && isValid(parseISO(settings.deadline)) ? parseISO(settings.deadline) : addDays(today, 10);
   const daysLeft = Math.max(0, differenceInCalendarDays(deadlineDate, today) + 1);
 
   const days = useMemo(() => buildFutureLedgerDays(entries, settings), [entries, settings]);
@@ -159,20 +159,27 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
     const nextElectra = editingTile.writer === 'personB' ? nextValue : currentEntry?.electraWords || 0;
     const nextNote = currentEntry?.note || '';
 
+    const capturedDate = editingTile.date;
+
     setEditingTile(null);
     setTileDraft('');
 
     if (nextAaron === 0 && nextElectra === 0 && !nextNote.trim()) {
-      if (currentEntry) await deleteEntry(editingTile.date);
+      if (currentEntry) await deleteEntry(capturedDate);
       return;
     }
 
     await saveEntry({
-      date: editingTile.date,
+      date: capturedDate,
       aaronWords: nextAaron,
       electraWords: nextElectra,
       note: nextNote,
     });
+
+    if (nextValue > 0 && !nextNote.trim()) {
+      setEditingNoteDate(capturedDate);
+      setNoteDraft('');
+    }
   };
 
   const handleTileBlur = () => {
@@ -228,7 +235,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
   const gridColsClass = 'grid-cols-[4.25rem_minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_4rem]';
 
   return (
-    <section className="sticker-card p-4 sm:p-6 flex flex-col gap-6">
+    <section className="flex flex-col gap-6">
       {pastDays.length > 0 && (
         <button
           type="button"
@@ -282,7 +289,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
 
 
 
-      <div className="lg:max-h-[760px] lg:overflow-y-auto lg:hide-scrollbar pl-3 sm:pl-4 pr-1 md:pr-3">
+      <div className="pl-10 sm:pl-14 lg:pl-16 pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
           <div className="absolute left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
 
@@ -377,31 +384,34 @@ function WriterTile({
 
   if (isEditing) {
     return (
-      <div className="aspect-square w-full bg-white border-4 border-ink shadow-sticker p-3 flex flex-col justify-between min-h-[8.75rem] sm:min-h-[9.5rem]">
-        <label className="text-label text-[10px] text-ink-muted truncate">{name}</label>
-        <input
-          autoFocus
-          value={draft}
-          onChange={event => onDraftChange(event.target.value)}
-          onFocus={event => event.target.select()}
-          onBlur={onBlur}
-          onKeyDown={event => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              event.currentTarget.blur();
-            }
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              onCancel();
-            }
-          }}
-          inputMode="numeric"
-          min="0"
-          type="number"
-          className="w-full min-w-0 appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-1 font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white hide-spin-button"
-          aria-label={`${name} ${metric} for ${date}`}
-        />
-        <span className="text-label text-[9px] text-ink-muted">{metric}</span>
+      <div className="relative z-50">
+        <div className="aspect-square w-full min-w-[7rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col justify-between absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-110 sm:scale-125 origin-center">
+          <label className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight">{name}</label>
+          <input
+            autoFocus
+            value={draft}
+            onChange={event => onDraftChange(event.target.value)}
+            onFocus={event => event.target.select()}
+            onBlur={onBlur}
+            onKeyDown={event => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                onCancel();
+              }
+            }}
+            inputMode="numeric"
+            min="0"
+            type="number"
+            className="w-full min-w-0 appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-1 text-center font-mono text-2xl sm:text-3xl font-black text-ink outline-none focus:bg-white hide-spin-button"
+            aria-label={`${name} ${metric} for ${date}`}
+          />
+          <span className="text-label text-[9px] text-ink-muted text-center leading-tight uppercase">{metric}</span>
+        </div>
+        <div className="aspect-square w-full invisible" />
       </div>
     );
   }
@@ -412,7 +422,7 @@ function WriterTile({
       onClick={onBeginEdit}
       title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
       className={cn(
-        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group min-h-[8.75rem] sm:min-h-[9.5rem] p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
+        'aspect-square w-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
         'hover:-translate-x-1 hover:-translate-y-1 hover:shadow-sticker-hover active:translate-x-1 active:translate-y-1 active:shadow-sticker-active',
         hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
       )}
@@ -504,13 +514,8 @@ function LedgerDayRow({
           )}
         </div>
 
-        <div
-          className={cn(
-            'flex-1 min-w-0 flex flex-col gap-3',
-            day.isDeadlineDay && 'bg-bg-pop border-4 border-ink shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)] p-3 sm:p-4 md:p-6 rounded-card'
-          )}
-        >
-          <div className={`grid ${gridColsClass} gap-3 md:gap-4 items-stretch`}>
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
+          <div className={`grid ${gridColsClass} gap-3 md:gap-4 items-start`}>
               {visibleWriters.includes('personA') && (
                 <WriterTile
                   date={day.date}
@@ -544,18 +549,6 @@ function LedgerDayRow({
               )}
 
             <div className="flex flex-col items-center justify-start gap-2">
-              <button
-                type="button"
-                onClick={() => onBeginNoteEdit(day)}
-                title={`Edit note for ${format(parseISO(day.date), 'MMM d')}`}
-                className={cn(
-                  'w-11 h-11 sm:w-12 sm:h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center transition-all active:shadow-sticker-active active:translate-x-1 active:translate-y-1',
-                  day.entry?.note && 'bg-accent'
-                )}
-              >
-                <StickyNote className="w-5 h-5" />
-              </button>
-
               {day.entry && (
                 <button
                   type="button"
