@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'motion/react';
+import { motion, animate } from 'motion/react';
 import { 
   Settings as SettingsIcon, 
   LogOut, 
@@ -145,15 +145,21 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
 // 1.5. AnimatedNumber Component
 // ==========================================
 function AnimatedNumber({ value }: { value: number }) {
-  const rounded = useMotionValue(0);
-  const display = useTransform(rounded, Math.round);
+  const [display, setDisplay] = useState(0);
+  const prevValue = React.useRef(0);
 
   useEffect(() => {
-    const animation = animate(rounded, value, { duration: 1.5, ease: "easeOut" });
-    return animation.stop;
-  }, [value, rounded]);
+    setDisplay(value); // fallback initially if animate fails
+    const controls = animate(prevValue.current, value, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (latest) => setDisplay(Math.round(latest))
+    });
+    prevValue.current = value;
+    return () => controls.stop();
+  }, [value]);
 
-  return <motion.span>{display}</motion.span>;
+  return <span>{display}</span>;
 }
 
 // ==========================================
