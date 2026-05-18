@@ -123,3 +123,8 @@ vercel env ls
 vercel env pull .env.local --yes
 vercel dev
 ```
+
+## Tricky Logic Notes
+
+*   **Date Handling**: Always use string-based comparisons (`YYYY-MM-DD`) for daily stats to avoid timezone mismatches between the serverless backend and the client browser.
+*   **Database Transactions**: The database import endpoint uses transactional operations to ensure atomicity, preventing partial data updates if an import payload is malformed.
