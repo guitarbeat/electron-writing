@@ -18,14 +18,13 @@ This follows Vercel's current Express guidance: put the Express entrypoint under
 
 ## Important Files
 
-- `server/index.ts` - Express app factory, route mounting, local dev/prod server
-- `server/routes/*.ts` - Modular API routes (session, entries, settings, data)
-- `server/db/index.ts` - Drizzle client and Neon pool
-- `server/db/schema.ts` - entries/settings table definitions
-- `api/[...path].ts` - Vercel function entrypoint
-- `client/hooks/useTracker.ts` - session state, polling, API client helpers
-- `client/components/PasscodeScreen.tsx` - shared passcode UI
-- `client/features/dashboard/Dashboard.tsx` - main authenticated dashboard
+- `api/` - Serverless Vercel function endpoints
+- `src/db/schema.ts` - Database tables and Drizzle schema
+- `src/db/db.ts` - Database pool and client connection
+- `src/lib/auth.ts` - JSON Web Token authentication and session helpers
+- `src/hooks/useTracker.ts` - Session state, polling, and API client hooks
+- `src/components/PasscodeScreen.tsx` - Passcode validation visual screen
+- `src/features/dashboard/Dashboard.tsx` - Main authenticated dashboard layout
 - `vite.config.ts` - React/Tailwind/PWA config
 - `public/smeemo.png` - source logo image used by the UI
 - `public/favicon-32.png`, `public/apple-touch-icon.png`, `public/pwa-192.png`, `public/pwa-512.png` - generated install/browser icons

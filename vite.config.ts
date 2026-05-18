@@ -174,7 +174,7 @@ export default defineConfig(({mode}) => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './client'),
+        '@': path.resolve(__dirname, './src'),
       },
     },
     build: {
