@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { differenceInCalendarDays, eachDayOfInterval, format, isValid, parseISO, addDays } from 'date-fns';
-import { Check, ChevronDown, ChevronUp, Flag, History, Minus, NotebookPen, StickyNote, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Flag, History, Minus, NotebookPen, StickyNote, Trash2, X, Plus } from 'lucide-react';
 import { Entry, Settings } from '../../../types';
 import { cn } from '../../../lib/utils';
 
@@ -436,10 +436,7 @@ function WriterTile({
             </span>
           </>
         ) : (
-          <>
-            <Minus className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
-            <span className="text-label text-[9px] sm:text-[10px] uppercase">Log</span>
-          </>
+          <Plus className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 opacity-50 relative top-[1px]" />
         )}
       </button>
     </div>

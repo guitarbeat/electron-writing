@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target } from 'lucide-react';
+import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target, X } from 'lucide-react';
 import { Settings } from '../../../types';
 import { UserSettingsInput, Knob, CalendarPicker } from '../../../components/ui';
 
@@ -261,6 +261,16 @@ export function SetupWizard({
         className={`sticker-card max-w-xl w-full bg-bg-paper flex flex-col gap-6 sm:gap-8 relative overflow-hidden max-h-[95vh] overflow-y-auto ${errorStep === currentStep ? 'animate-shake border-red-500' : ''}`}
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full -translate-y-1/2 translate-x-1/2" />
+        
+        {settings?.isSetupComplete && (
+          <button 
+            onClick={onClose}
+            title="Close Settings"
+            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white border-[3px] border-ink shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 hover:-translate-x-1 active:translate-y-[2px] active:translate-x-[2px] active:shadow-sticker-active transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
+          >
+            <X className="w-5 h-5 text-ink" />
+          </button>
+        )}
 
         <div className="p-6 sm:p-8 pb-0">
           <div className="flex flex-col items-center text-center gap-4 relative">
@@ -326,12 +336,6 @@ export function SetupWizard({
              onBack={() => setCurrentStep(prev => prev - 1)}
              onNext={() => handleSave(false)}
           />
-          
-           {settings?.isSetupComplete && (
-              <button onClick={onClose} className="text-[10px] font-black uppercase text-ink/20 hover:text-ink transition-colors text-center mt-[-1rem]">
-                 Close Settings
-              </button>
-           )}
         </div>
       </motion.div>
     </motion.div>
