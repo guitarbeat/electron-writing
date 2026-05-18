@@ -94,18 +94,42 @@ function buildFutureLedgerDays(entries: Entry[], settings: Settings | null): Led
 }
 
 function buildPastLedgerDays(entries: Entry[], settings: Settings | null): LedgerDay[] {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const today = new Date();
+  const yesterday = addDays(today, -1);
+  const todayStr = format(today, 'yyyy-MM-dd');
   const parsedDeadline = settings?.deadline ? parseISO(settings.deadline) : null;
-  const deadlineDate = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : new Date();
+  const deadlineDate = parsedDeadline && isValid(parsedDeadline) ? parsedDeadline : today;
   const deadlineStr = format(deadlineDate, 'yyyy-MM-dd');
 
-  return [...entries]
-    .filter(entry => entry.date < todayStr && ((entry.aaronWords || 0) + (entry.electraWords || 0) > 0 || Boolean(entry.note?.trim())))
+  // Find the earliest date to show
+  let startDate = addDays(today, -14); // default: 14 days back
+  if (entries.length > 0) {
+    const oldestEntryDate = parseISO(
+      entries.map(e => e.date).reduce((a, b) => (a < b ? a : b))
+    );
+    if (oldestEntryDate < startDate) {
+      startDate = oldestEntryDate;
+    }
+  }
+
+  // Ensure start date doesn't exceed yesterday
+  if (startDate > yesterday) {
+    startDate = yesterday;
+  }
+
+  const entriesByDate = new Map(entries.map(entry => [entry.date, entry]));
+
+  return eachDayOfInterval({ start: startDate, end: yesterday })
+    .map(day => {
+      const date = format(day, 'yyyy-MM-dd');
+      const entry = entriesByDate.get(date);
+      return toLedgerDay(entry, date, deadlineStr, false); // fix month label later
+    })
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map((entry, index, allEntries) => {
-      const previousEntry = allEntries[index - 1];
-      const showMonthLabel = index === 0 || previousEntry.date.slice(0, 7) !== entry.date.slice(0, 7);
-      return toLedgerDay(entry, entry.date, deadlineStr, showMonthLabel);
+    .map((day, index, allDays) => {
+      const previousDay = allDays[index - 1];
+      day.showMonthLabel = index === 0 || previousDay.date.slice(0, 7) !== day.date.slice(0, 7);
+      return day;
     });
 }
 
@@ -116,6 +140,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
   const [noteDraft, setNoteDraft] = useState('');
   const [showPastEntries, setShowPastEntries] = useState(false);
   const [showAllFutureDays, setShowAllFutureDays] = useState(false);
+  const [extraDays, setExtraDays] = useState(0);
   const skipNextTileBlurSave = useRef(false);
 
   const metric = settings?.metric === 'pages' ? 'pages' : 'words';
@@ -128,12 +153,51 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
   const deadlineDate = settings?.deadline && isValid(parseISO(settings.deadline)) ? parseISO(settings.deadline) : addDays(today, 10);
   const daysLeft = Math.max(0, differenceInCalendarDays(deadlineDate, today) + 1);
 
-  const days = useMemo(() => buildFutureLedgerDays(entries, settings), [entries, settings]);
+  const days = useMemo(() => {
+    const entriesByDate = new Map(entries.map(entry => [entry.date, entry]));
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+
+    const deadline = new Date(deadlineDate);
+    deadline.setHours(0, 0, 0, 0);
+    
+    // We want to generate days from `start` up to the furthest of:
+    // 1. The deadline
+    // 2. start + 14 days + extraDays
+    // 3. Or maybe just strictly: `deadline` + `extraDays` 
+    // Wait; `days` array should be large enough to hold all possible future days.
+    
+    let end = deadline >= start ? deadline : start;
+    end = addDays(end, extraDays);
+
+    const deadlineStr = format(deadlineDate, 'yyyy-MM-dd');
+
+    return eachDayOfInterval({ start, end }).map((day, index, allDays) => {
+      const date = format(day, 'yyyy-MM-dd');
+      const entry = entriesByDate.get(date);
+      const previousDay = allDays[index - 1];
+      const isFirstOfNewMonth = index === 0 || format(previousDay, 'yyyy-MM') !== format(day, 'yyyy-MM');
+      
+      return {
+        date,
+        dayNumber: format(parseISO(date), 'dd'),
+        monthLabel: format(parseISO(date), 'MMMM yyyy'),
+        showMonthLabel: isFirstOfNewMonth,
+        entry,
+        personAValue: entry?.aaronWords || 0,
+        personBValue: entry?.electraWords || 0,
+        isDeadlineDay: date === deadlineStr,
+        hasAnyWriting: Boolean((entry?.aaronWords || 0) + (entry?.electraWords || 0)),
+        hasNote: Boolean(entry?.note?.trim()),
+      };
+    });
+  }, [entries, settings, extraDays, deadlineDate]);
+
   const pastDays = useMemo(() => buildPastLedgerDays(entries, settings), [entries, settings]);
   
   const displayedDays = useMemo(() => {
-    return showAllFutureDays ? days : days.slice(0, 14);
-  }, [days, showAllFutureDays]);
+    return showAllFutureDays || extraDays > 0 ? days : days.slice(0, 14);
+  }, [days, showAllFutureDays, extraDays]);
 
   const getEntryForDate = (date: string) => entries.find(entry => entry.date === date);
 
@@ -319,13 +383,35 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
             />
           ))}
 
-          {!showAllFutureDays && days.length > 14 && (
-            <div className="relative z-10 flex justify-center mt-4">
+          {!showAllFutureDays && days.length > 14 && extraDays === 0 ? (
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 mt-6 mb-2">
               <button
                 onClick={() => setShowAllFutureDays(true)}
-                className="button-playful bg-primary text-white border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                className="button-playful bg-primary text-white border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm w-full sm:w-auto uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
               >
                 Load All to Deadline ({days.length - 14} more)
+              </button>
+              <button
+                onClick={() => {
+                  setShowAllFutureDays(true);
+                  setExtraDays(prev => prev + 14);
+                }}
+                className="button-playful bg-white text-ink border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm w-full sm:w-auto uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+              >
+                Go Past Deadline
+              </button>
+            </div>
+          ) : (
+            <div className="relative z-10 flex justify-center mt-6 mb-2">
+              <button
+                onClick={() => {
+                  setShowAllFutureDays(true);
+                  setExtraDays(prev => prev + 14);
+                }}
+                className="button-playful bg-white text-ink border-4 border-ink shadow-sticker px-6 py-3 gap-2 flex items-center font-black tracking-widest text-sm uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+              >
+                <Plus className="w-5 h-5 shrink-0" />
+                Load 14 More Days
               </button>
             </div>
           )}

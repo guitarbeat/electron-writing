@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useTracker } from '../../hooks/useTracker';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
 import { Entry, Settings } from '../../types';
 import {
@@ -13,9 +12,11 @@ import {
 } from './components';
 
 
-export interface DashboardProps {}
+export interface DashboardProps {
+  tracker: ReturnType<typeof import('../../hooks/useTracker').useTracker>;
+}
 
-export function Dashboard(_props: DashboardProps) {
+export function Dashboard({ tracker }: DashboardProps) {
   const { 
     entries, 
     settings, 
@@ -26,7 +27,7 @@ export function Dashboard(_props: DashboardProps) {
     deleteEntry, 
     updateSettings,
     importData
-  } = useTracker();
+  } = tracker;
 
   const [showGuide, setShowGuide] = useState(false);
   const [visibleWriters, setVisibleWriters] = useState<('personA' | 'personB')[]>(['personA', 'personB']);
@@ -65,7 +66,7 @@ export function Dashboard(_props: DashboardProps) {
     return true;
   };
 
-  if (isLoading) return <div className="min-h-screen bg-bg-paper flex items-center justify-center font-black uppercase tracking-widest text-ink">Loading...</div>;
+  if (!settings) return null;
 
   return (
     <div className="min-h-screen bg-bg-paper text-ink font-sans p-4 md:p-8 selection:bg-primary/20 bg-[url('https://www.transparenttextures.com/patterns/felt.png')]">
@@ -92,17 +93,19 @@ export function Dashboard(_props: DashboardProps) {
           </div>
 
           <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 flex flex-col gap-8">
+            <GoalSummaryCard settings={settings} stats={stats} />
+
             <OverallProgressChart
               chartData={cumulativeChartData}
               settings={settings}
+              visibleWriters={visibleWriters}
             />
 
             <DailyWordCountChart
               chartData={dailyChartData}
               settings={settings}
+              visibleWriters={visibleWriters}
             />
-
-            <GoalSummaryCard settings={settings} stats={stats} />
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { Entry, Settings } from '../types';
-import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek, addDays } from 'date-fns';
+import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek, addDays, eachDayOfInterval } from 'date-fns';
 
 export interface TrackerStats {
   todayAaron: number;
@@ -144,16 +144,34 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
     let sumAaron = 0;
     let sumElectra = 0;
     let sumTeam = 0;
-    return sorted.map(e => {
-      const elapsedDays = Math.min(totalDays, Math.max(1, differenceInCalendarDays(parseISO(e.date), startDate) + 1));
-      sumAaron += e.aaronWords || 0;
-      sumElectra += e.electraWords || 0;
-      sumTeam += (e.aaronWords || 0) + (e.electraWords || 0);
+    
+    // Create a map of existing entries
+    const entriesByDate = new Map(sorted.map(e => [e.date, e]));
+    
+    // Generate every day from start to deadline
+    const allDays = eachDayOfInterval({ start: startDate, end: deadlineDate });
+    
+    return allDays.map((dateObj, index) => {
+      const dateStr = format(dateObj, 'yyyy-MM-dd');
+      const e = entriesByDate.get(dateStr);
+      
+      if (e) {
+        sumAaron += e.aaronWords || 0;
+        sumElectra += e.electraWords || 0;
+        sumTeam += (e.aaronWords || 0) + (e.electraWords || 0);
+      }
+      
+      const elapsedDays = index + 1;
+      
+      // Determine if this date is in the future
+      const isFuture = dateObj > now && dateStr !== format(now, 'yyyy-MM-dd');
+      
       return {
-        date: e.date,
-        Aaron: sumAaron,
-        Electra: sumElectra,
-        Team: sumTeam,
+        date: dateStr,
+        // For future dates, we don't plot the progress bar (or we can return null if types allow, but undefined works)
+        Aaron: isFuture ? undefined : sumAaron,
+        Electra: isFuture ? undefined : sumElectra,
+        Team: isFuture ? undefined : sumTeam,
         Goal: Math.min(goal, totalPerDay * elapsedDays),
       };
     });

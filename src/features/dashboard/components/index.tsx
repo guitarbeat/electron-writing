@@ -234,9 +234,26 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 interface OverallProgressChartProps {
   chartData: ChartDatum[];
   settings: Settings | null;
+  visibleWriters: ('personA' | 'personB')[];
 }
 
-export function OverallProgressChart({ chartData, settings }: OverallProgressChartProps) {
+export function OverallProgressChart({ chartData, settings, visibleWriters }: OverallProgressChartProps) {
+  let barDataKey = "Team";
+  let barName = "Total Progress";
+  let barColor = "#4B778D";
+
+  if (visibleWriters.length === 1) {
+    if (visibleWriters.includes('personA')) {
+      barDataKey = "Aaron";
+      barName = settings?.personAName || 'Aaron';
+      barColor = settings?.personAColor || '#ff4d8d';
+    } else {
+      barDataKey = "Electra";
+      barName = settings?.personBName || 'Electra';
+      barColor = settings?.personBColor || '#7c3aed';
+    }
+  }
+
   return (
     <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -245,7 +262,7 @@ export function OverallProgressChart({ chartData, settings }: OverallProgressCha
         </h3>
       </div>
       <div className="w-full h-[250px] sm:h-[300px] mt-2">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <ComposedChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
             <XAxis 
@@ -272,7 +289,7 @@ export function OverallProgressChart({ chartData, settings }: OverallProgressCha
               itemStyle={{ fontWeight: 800, padding: '2px 0' }}
             />
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-            <Bar name="Total Progress" dataKey="Team" fill="#4B778D" />
+            <Bar name={barName} dataKey={barDataKey} fill={barColor} />
             <Line
               name="Target Trajectory"
               type="monotone"
@@ -296,9 +313,14 @@ export function OverallProgressChart({ chartData, settings }: OverallProgressCha
 interface DailyWordCountChartProps {
   chartData: ChartDatum[];
   settings: Settings | null;
+  visibleWriters: ('personA' | 'personB')[];
 }
 
-export function DailyWordCountChart({ chartData, settings }: DailyWordCountChartProps) {
+export function DailyWordCountChart({ chartData, settings, visibleWriters }: DailyWordCountChartProps) {
+  const showPersonA = visibleWriters.includes('personA');
+  const showPersonB = visibleWriters.includes('personB');
+  const showTeam = visibleWriters.length === 2;
+
   return (
     <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -307,7 +329,7 @@ export function DailyWordCountChart({ chartData, settings }: DailyWordCountChart
         </h3>
       </div>
       <div className="w-full h-[250px] sm:h-[300px] mt-2">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
             <XAxis 
@@ -334,9 +356,15 @@ export function DailyWordCountChart({ chartData, settings }: DailyWordCountChart
               itemStyle={{ fontWeight: 800, padding: '2px 0' }}
             />
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-            <Line name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-            <Line name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-            <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            {showPersonA && (
+              <Line legendType="none" name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+            )}
+            {showPersonB && (
+              <Line legendType="none" name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+            )}
+            {showTeam && (
+              <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            )}
             <Line
               name="Required Daily Pace"
               type="monotone"

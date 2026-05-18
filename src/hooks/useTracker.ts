@@ -52,8 +52,13 @@ export function useTracker() {
   };
 
   const logout = async () => {
-    await fetch('/api/session', { method: 'DELETE', credentials: 'include' });
-    setIsAuthorized(false);
+    try {
+      await fetch('/api/session', { method: 'DELETE', credentials: 'include' });
+    } catch (e) {
+      console.warn("Logout fetch failed", e);
+    } finally {
+      setIsAuthorized(false);
+    }
   };
 
   const fetchEntries = useCallback(async () => {

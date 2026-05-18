@@ -7,9 +7,11 @@ import { UserSettingsInput, Knob, CalendarPicker } from '../../../components/ui'
 export function ProjectSettingsStep({
   formData,
   setFormData,
+  originalSettings,
 }: {
   formData: Settings;
   setFormData: React.Dispatch<React.SetStateAction<Settings>>;
+  originalSettings?: Settings | null;
 }) {
   return (
     <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
@@ -24,13 +26,19 @@ export function ProjectSettingsStep({
                 : "bg-white hover:bg-primary/5"
             }`}
           >
-            Track {metric}
+            We're tracking {metric}
           </button>
         ))}
       </div>
 
       <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
+        
+        {originalSettings?.isSetupComplete && (
+          <div className="text-[10px] font-bold text-ink/40 uppercase mb-[-12px]">
+            Previous: {originalSettings.projectGoal} {originalSettings.metric}
+          </div>
+        )}
 
         <Knob
           label={`Project Target (${formData.metric})`}
@@ -99,13 +107,20 @@ export function SecurityStep({
 export function DeadlineStep({
   formData,
   setFormData,
+  originalSettings,
 }: {
   formData: Settings;
   setFormData: React.Dispatch<React.SetStateAction<Settings>>;
+  originalSettings?: Settings | null;
 }) {
   return (
     <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
       <div className="flex flex-col gap-4">
+        {originalSettings?.isSetupComplete && (
+          <div className="text-[10px] font-bold text-ink/40 uppercase mb-[-12px] text-center">
+            Previous deadline: {originalSettings.deadline}
+          </div>
+        )}
         <CalendarPicker
           label="Project Deadline"
           value={formData.deadline}
@@ -153,7 +168,7 @@ export function SetupWizardActions({
         className="button-playful bg-primary text-ink flex-[2] relative"
         disabled={isSaving}
       >
-        {isSaving ? "Synching..." : isLastStep ? "Let's Write!" : "Next Step"}
+        {isSaving ? "Synching..." : isLastStep ? "Open Desk" : "Continue"}
 
         {!isSaving && (
           <ArrowRight className="w-4 h-4 absolute right-6 top-1/2 -translate-y-1/2" />
@@ -198,33 +213,40 @@ export function SetupWizard({
     lastModifiedBy: "System",
     passcode: ""
   });
+  const [activeTab, setActiveTab] = useState<'menu' | 'co-authors' | 'goal' | 'deadline' | 'security'>('menu');
   const [errorStep, setErrorStep] = useState<number | null>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
-  const steps = [
+  const baseSteps = [
     {
-      title: "The Writers",
-      description: "Configure your team.",
+      title: "Co-Authors",
+      description: "Who's teaming up for this project?",
       icon: <SettingsIcon className="w-8 h-8 text-accent" />
     },
     {
-      title: "Project Target",
-      description: "What are we aiming for?",
+      title: "The Goal",
+      description: "Set your sights on the finish line.",
       icon: <Trophy className="w-8 h-8 text-[#facc15]" />
     },
     {
-      title: "Timeline",
-      description: "When do we want this done?",
+      title: "The Deadline",
+      description: "When does the final draft happen?",
       icon: <Calendar className="w-8 h-8 text-[#5eead4]" />
-    },
-    {
-      title: "Security",
-      description: "Set your shared passcode.",
-      icon: <Lock className="w-8 h-8 text-[#ff4d8d]" />
     }
   ];
+
+  const steps = settings?.isSetupComplete 
+    ? baseSteps 
+    : [
+        ...baseSteps,
+        {
+          title: "Secret Knock",
+          description: "Set a passcode to unlock your desk.",
+          icon: <Lock className="w-8 h-8 text-[#ff4d8d]" />
+        }
+      ];
 
   const handleSave = async (isSkip = false) => {
     setIsSaving(true);
@@ -273,71 +295,158 @@ export function SetupWizard({
           </button>
         )}
 
-        <div className="p-6 sm:p-8 pb-0">
-          <div className="flex flex-col items-center text-center gap-4 relative">
-            <div className="w-16 h-16 bg-white border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
-              {steps[currentStep].icon}
+        {settings?.isSetupComplete ? (
+          <div className="px-6 sm:px-8 py-8 flex flex-col gap-6">
+            <div className="flex items-center gap-4 mb-4">
+              {activeTab !== 'menu' && (
+                <button 
+                  onClick={() => setActiveTab('menu')} 
+                  className="w-10 h-10 flex shrink-0 items-center justify-center rounded-xl border-[3px] border-ink active:translate-y-[2px] active:translate-x-[2px] bg-white transition-transform"
+                >
+                  <ArrowRight className="w-5 h-5 rotate-180" />
+                </button>
+              )}
+              <h1 className="text-display text-3xl font-black truncate">
+                {activeTab === 'menu' ? 'Settings' 
+                  : activeTab === 'co-authors' ? 'Co-Authors' 
+                  : activeTab === 'goal' ? 'The Goal'
+                  : activeTab === 'deadline' ? 'The Deadline'
+                  : 'Security'}
+              </h1>
             </div>
-            <div className="flex flex-col gap-1">
-              <h2 className="text-display text-2xl">{steps[currentStep].title}</h2>
-              <p className="text-sm font-bold italic text-ink/60">{steps[currentStep].description}</p>
-            </div>
+            
+            {activeTab === 'menu' && (
+              <div className="flex flex-col gap-4">
+                <button onClick={() => setActiveTab('co-authors')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                  <div className="flex items-center gap-3"><SettingsIcon className="w-5 h-5 text-accent"/> <span className="font-bold">Co-Authors</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
+                </button>
+                <button onClick={() => setActiveTab('goal')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                   <div className="flex items-center gap-3"><Trophy className="w-5 h-5 text-[#facc15]"/> <span className="font-bold">The Goal</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
+                </button>
+                <button onClick={() => setActiveTab('deadline')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                    <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-[#5eead4]"/> <span className="font-bold">The Deadline</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
+                </button>
+                <button onClick={() => setActiveTab('security')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                    <div className="flex items-center gap-3"><Lock className="w-5 h-5 text-[#ff4d8d]"/> <span className="font-bold">Security</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
+                </button>
+                <button
+                  onClick={() => handleSave(true)}
+                  className="button-playful bg-primary text-ink w-full mt-4 flex items-center justify-center gap-2"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : "Save All Changes"}
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'co-authors' && (
+              <div className="flex flex-col gap-4 animate-in slide-in-from-right-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <UserSettingsInput
+                      value={formData.personAName}
+                      onChangeName={(v) => setFormData({...formData, personAName: v})}
+                      color={formData.personAColor}
+                      onChangeColor={(c) => setFormData({...formData, personAColor: c})}
+                      placeholder="Aaron"
+                  />
+                  <UserSettingsInput
+                      value={formData.personBName}
+                      onChangeName={(v) => setFormData({...formData, personBName: v})}
+                      color={formData.personBColor}
+                      onChangeColor={(c) => setFormData({...formData, personBColor: c})}
+                      placeholder="Electra"
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'goal' && (
+              <div className="flex flex-col gap-4 animate-in slide-in-from-right-4">
+                <ProjectSettingsStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+              </div>
+            )}
+
+            {activeTab === 'deadline' && (
+              <div className="flex flex-col gap-4 animate-in slide-in-from-right-4">
+                <DeadlineStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="flex flex-col gap-4 animate-in slide-in-from-right-4">
+                <SecurityStep formData={formData} setFormData={setFormData} />
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="px-6 sm:px-8 flex-1">
-          {currentStep === 0 && (
-            <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <UserSettingsInput
-                     value={formData.personAName}
-                     onChangeName={(v) => setFormData({...formData, personAName: v})}
-                     color={formData.personAColor}
-                     onChangeColor={(c) => setFormData({...formData, personAColor: c})}
-                     placeholder="Aaron"
-                  />
-                  <UserSettingsInput
-                     value={formData.personBName}
-                     onChangeName={(v) => setFormData({...formData, personBName: v})}
-                     color={formData.personBColor}
-                     onChangeColor={(c) => setFormData({...formData, personBColor: c})}
-                     placeholder="Electra"
-                  />
-               </div>
+        ) : (
+          <>
+            <div className="p-6 sm:p-8 pb-0">
+              <div className="flex flex-col items-center text-center gap-4 relative">
+                <div className="w-16 h-16 bg-white border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
+                  {steps[currentStep].icon}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display text-2xl">{steps[currentStep].title}</h2>
+                  <p className="text-sm font-bold italic text-ink/60">{steps[currentStep].description}</p>
+                </div>
+              </div>
             </div>
-          )}
 
-          {currentStep === 1 && (
-             <ProjectSettingsStep formData={formData} setFormData={setFormData} />
-          )}
+            <div className="px-6 sm:px-8 flex-1">
+              {currentStep === 0 && (
+                <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <UserSettingsInput
+                        value={formData.personAName}
+                        onChangeName={(v) => setFormData({...formData, personAName: v})}
+                        color={formData.personAColor}
+                        onChangeColor={(c) => setFormData({...formData, personAColor: c})}
+                        placeholder="Aaron"
+                      />
+                      <UserSettingsInput
+                        value={formData.personBName}
+                        onChangeName={(v) => setFormData({...formData, personBName: v})}
+                        color={formData.personBColor}
+                        onChangeColor={(c) => setFormData({...formData, personBColor: c})}
+                        placeholder="Electra"
+                      />
+                  </div>
+                </div>
+              )}
 
-          {currentStep === 2 && (
-             <DeadlineStep formData={formData} setFormData={setFormData} />
-          )}
-          
-          {currentStep === 3 && (
-             <SecurityStep formData={formData} setFormData={setFormData} />
-          )}
-        </div>
+              {currentStep === 1 && (
+                <ProjectSettingsStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+              )}
 
-        <div className="p-6 sm:p-8 pt-0 flex flex-col gap-6">
-          <div className="flex justify-center gap-2">
-            {steps.map((_, i) => (
-              <div 
-                key={i} 
-                className={`h-2 rounded-full transition-all border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-white'}`} 
+              {currentStep === 2 && (
+                <DeadlineStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+              )}
+              
+              {currentStep === 3 && (
+                <SecurityStep formData={formData} setFormData={setFormData} />
+              )}
+            </div>
+
+            <div className="p-6 sm:p-8 pt-0 flex flex-col gap-6">
+              <div className="flex justify-center gap-2">
+                {steps.map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`h-2 rounded-full transition-all border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-white'}`} 
+                  />
+                ))}
+              </div>
+
+              <SetupWizardActions 
+                currentStep={currentStep}
+                totalSteps={steps.length}
+                isSaving={isSaving}
+                onBack={() => setCurrentStep(prev => prev - 1)}
+                onNext={() => handleSave(false)}
               />
-            ))}
-          </div>
-
-          <SetupWizardActions 
-             currentStep={currentStep}
-             totalSteps={steps.length}
-             isSaving={isSaving}
-             onBack={() => setCurrentStep(prev => prev - 1)}
-             onNext={() => handleSave(false)}
-          />
-        </div>
+            </div>
+          </>
+        )}
       </motion.div>
     </motion.div>
   );
