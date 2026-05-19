@@ -1,48 +1,37 @@
-# Aaron and Electra's private space... Project Overview
+# Aaron and Electra's private space...
 
-Aaron and Electra's private space... is a private writing tracker for Aaron and Electra. It uses a shared passcode gate, stores writing entries and settings in Neon PostgreSQL, and presents progress through a quick log form, goal summary, line chart, consistency grid, onboarding/setup wizard, and import/export tools.
+Aaron and Electra's private space... (Smeemo) is a private writing tracker designed as a **spiritual successor to Camp NaNoWriMo tracking**. It allows writing partners to log daily word counts, track time spent, and monitor progress toward ambitious goals through expressive visualizations.
 
-## Current Stack
+## Product Goals
 
-- Frontend: React 19, Vite 6, Tailwind CSS 4
-- Server: Express 5
-- Database: Neon PostgreSQL through `pg` and Drizzle ORM
-- Auth: shared passcode plus HTTP-only JWT session cookie
-- Charts: Recharts
-- Animation: Motion
-- PWA: `vite-plugin-pwa` with Smeemo PNG icons
-- Deployment: Vercel static Vite app plus `api/[...path].ts` Express function
+1. **Fast Logging**: Make entering activity and time friction-less.
+2. **NaNoWriMo Metrics**: High-precision tracking of deficits, per-day goals, and "Achieved/Missed" day status.
+3. **Team Momentum**: Visualize individual and collective progress on a shared timeline.
+4. **Zero-Account Privacy**: A simple shared passcode gate instead of complex login systems.
+5. **Data Ownership**: Built-in import/export tools for portability.
 
-## Core Flow
+## Design Philosophy: "The Shared Desk"
 
-1. Visitor enters the shared `PASSCODE`.
-2. Server validates the passcode and sets `clean_writer_session`.
-3. Authorized requests can read/write entries and settings.
-4. Dashboard polls entries/settings every 5 seconds while open.
-5. Setup wizard appears until setup is complete and onboarding has been seen.
-
-## Runtime Environment
-
-Required:
-
-```bash
-PASSCODE="0000"
-DATABASE_URL="postgresql://..."
-```
-
-Optional:
-
-```bash
-POSTGRES_URL="postgresql://..."
-DATABASE_POOL_MAX="5"
-```
-
-Use Neon pooled URLs for `DATABASE_URL` or `POSTGRES_URL` on Vercel.
+The interface is built to feel like a tactile, shared writing suite.
+- **Sticker Pop Aesthetic**: Bold contrast, thick borders (`border-4`), and hard shadows (`shadow-sticker`).
+- **Juicy Colors**: Using a palette of "Juicy Pink" and "Grape Purple" to distinguish between partners.
+- **Tactile Inputs**: Logging feels physical with bouncy, springy animations and high-density grid layouts.
+- **Paper Backdrop**: A blush paper background with a subtle grid pattern to reinforce the drafting vibe.
 
 ## Documentation
 
-- [DESIGN.md](./DESIGN.md) - visual system and interaction guidance
-- [PRODUCT.md](./PRODUCT.md) - product goals, scope, and risks
-- [DATA_MODEL.md](./DATA_MODEL.md) - Drizzle tables and app types
-- [API.md](./API.md) - Express route contract
-- [IMPLEMENTATION.md](./IMPLEMENTATION.md) - architecture, local development, deployment notes
+- **[Architecture & Technical Guide](./ARCHITECTURE.md)**: Details on the stack, data model, API, and local development.
+- **[Design Tokens](./ARCHITECTURE.md#design-recipes)**: Visual system details (colors, typography, motion).
+
+## Stack
+
+- **Frontend**: React 19, Vite 6, Tailwind CSS 4, Motion, Recharts.
+- **Backend**: Express 5 (Serverless via Vercel).
+- **Database**: Neon PostgreSQL via Drizzle ORM.
+- **Auth**: Passcode gate with HTTP-only JWT sessions.
+
+## Setup
+
+1. Set `PASSCODE` and `DATABASE_URL` in your environment.
+2. Run `npm install`.
+3. Run `npm run dev` to start the dashboard.
