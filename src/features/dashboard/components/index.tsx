@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, animate } from 'motion/react';
+import { motion } from 'motion/react';
+import { animate } from 'motion';
 import { 
   Settings as SettingsIcon, 
   LogOut, 
