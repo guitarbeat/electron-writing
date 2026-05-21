@@ -1,0 +1,30 @@
+{
+  "name": "Smeemo",
+  "short_name": "Smeemo",
+  "description": "A private duo Writing Tracker with shared passcode entry, PostgreSQL persistence, and writing momentum visualizations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf6f5",
+  "theme_color": "#facc15",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

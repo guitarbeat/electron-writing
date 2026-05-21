@@ -4,6 +4,8 @@ import { Toaster } from 'sonner';
 import { useTracker } from './hooks/useTracker';
 import { PasscodeScreen } from './components/PasscodeScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
+import '@khmyznikov/pwa-install';
+
 export default function App() {
   const tracker = useTracker();
   const { isAuthorized, isLoading, login, checkSession } = tracker;
@@ -20,6 +22,10 @@ export default function App() {
   return (
     <>
       <Toaster position="top-center" richColors theme="light" />
+      <pwa-install
+        manifest-url="/manifest.json"
+        styles={{ '--tint-color': '#ff4d8d' }}
+      ></pwa-install>
       {isLoading && !shouldBypassAuth ? (
         <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center flex-col gap-4">
           <img
