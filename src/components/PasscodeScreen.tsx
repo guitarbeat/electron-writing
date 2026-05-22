@@ -125,27 +125,54 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
     }
   };
 
+  const containerVariants = {
+    hidden: { scale: 0.9, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.05,
+        type: "spring",
+        duration: 0.5,
+        bounce: 0
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: { type: "spring", duration: 0.45, bounce: 0 }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center p-6">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         className="sticker-card p-6 sm:p-10 max-w-md w-full bg-bg-surface flex flex-col items-center gap-6 sm:gap-8"
       >
-        <div className="w-24 h-24 rounded-full border-4 border-ink shadow-sticker rotate-3 overflow-hidden bg-bg-paper">
+        <motion.div variants={itemVariants} className="w-24 h-24 rounded-full border-4 border-ink shadow-sticker rotate-3 overflow-hidden bg-bg-paper relative">
           <img
             src="/smeemo.png"
             alt="Smeemo"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+            referrerPolicy="no-referrer"
           />
-        </div>
+        </motion.div>
 
-        <div className="text-center">
+        <motion.div variants={itemVariants} className="text-center">
           <h1 className="text-display text-4xl mb-2">Smeemo</h1>
-          <p className="text-ink-muted font-bold italic">{"Aaron & Electra's private writing nook"}</p>
-        </div>
+          <p className="text-ink-muted font-bold italic text-pretty">{"Aaron & Electra's private writing nook"}</p>
+        </motion.div>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+        <motion.form variants={itemVariants} onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
           <div className="relative">
             <input
               type="text"
@@ -204,10 +231,10 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
               </>
             )}
           </button>
-        </form>
+        </motion.form>
 
         {recentVisit && (
-          <div className="w-full mt-2 text-center pt-6 border-t-2 border-ink/10">
+          <motion.div variants={itemVariants} className="w-full mt-2 text-center pt-6 border-t-2 border-ink/10">
             <div className="inline-flex items-center justify-center w-full gap-1.5 text-ink-muted text-xs font-black uppercase mb-3">
               <Info className="w-3 h-3" /> Last Successful Unlock
             </div>
@@ -216,7 +243,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
               {recentVisit.ip && <p className="text-xs font-mono opacity-80 mt-1">IP: {recentVisit.ip}</p>}
               {recentVisit.device && <p className="text-[10px] sm:text-xs opacity-60 mt-1 truncate max-w-full" title={recentVisit.device}>{recentVisit.device.split(' ').slice(0, 5).join(' ')}...</p>}
             </div>
-          </div>
+          </motion.div>
         )}
       </motion.div>
     </div>

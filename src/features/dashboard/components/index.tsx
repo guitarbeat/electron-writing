@@ -160,7 +160,7 @@ function AnimatedNumber({ value }: { value: number }) {
     return () => controls.stop();
   }, [value]);
 
-  return <span>{display}</span>;
+  return <span className="tabular-nums">{display}</span>;
 }
 
 // ==========================================
@@ -436,7 +436,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
           </h3>
           <button 
             onClick={() => setIsExpanded(true)}
-            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:translate-y-[2px] transition-transform"
+            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out"
           >
             <Maximize2 className="w-4 h-4 text-ink" />
           </button>
@@ -535,7 +535,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
           </h3>
           <button 
             onClick={() => setIsExpanded(true)}
-            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:translate-y-[2px] transition-transform"
+            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out"
           >
             <Maximize2 className="w-4 h-4 text-ink" />
           </button>

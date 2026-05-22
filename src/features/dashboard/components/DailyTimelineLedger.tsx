@@ -304,10 +304,10 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
         <button
           type="button"
           onClick={() => setShowPastEntries(value => !value)}
-          className="flex items-center justify-between gap-3 border-4 border-ink bg-bg-paper px-4 py-3 shadow-sticker text-left active:translate-x-1 active:translate-y-1 active:shadow-sticker-active"
+          className="flex items-center justify-between gap-3 border-4 border-ink bg-bg-paper px-4 py-3 shadow-sticker text-left active:translate-x-1 active:translate-y-1 active:shadow-sticker-active rounded-2xl"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 border-4 border-ink bg-white flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 border-4 border-ink bg-white flex items-center justify-center shrink-0 rounded-xl">
               <History className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -315,12 +315,12 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
               <div className="text-sm font-black text-ink">{pastDays.length} logged days before today</div>
             </div>
           </div>
-          {showPastEntries ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
+          <ChevronDown className={cn("w-5 h-5 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]", showPastEntries && "rotate-180")} />
         </button>
       )}
 
       {showPastEntries && pastDays.length > 0 && (
-        <div className="border-4 border-ink bg-white p-4 sm:p-5 shadow-sticker flex flex-col gap-4">
+        <div className="border-4 border-ink bg-white p-4 sm:p-5 shadow-sticker flex flex-col gap-4 rounded-3xl">
           <div className="flex flex-col gap-5 pl-3 sm:pl-4">
             {pastDays.map(day => (
               <LedgerDayRow

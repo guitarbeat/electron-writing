@@ -31,7 +31,7 @@ export function ProjectSettingsStep({
         ))}
       </div>
 
-      <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
+      <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-2xl flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
         
         {originalSettings?.isSetupComplete && (

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
 import { Entry, Settings } from '../../types';
 import {
@@ -72,27 +72,56 @@ export function Dashboard({ tracker }: DashboardProps) {
         <img
           src="/smeemo.png"
           alt="Smeemo"
-          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
+          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+          referrerPolicy="no-referrer"
         />
         <div className="text-display text-2xl animate-pulse">Smeemo is waking up...</div>
       </div>
     );
   }
 
+  const parentVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.05
+      }
+    }
+  };
+
+  const childVariants = {
+    hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: "blur(0px)",
+      transition: { type: "spring", duration: 0.45, bounce: 0 }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-ink font-sans p-4 md:p-8 selection:bg-primary/20">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+      <motion.div 
+        variants={parentVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-6xl mx-auto flex flex-col gap-8"
+      >
         
         {/* Header */}
-        <DashboardHeader
-          settings={settings}
-          setShowGuide={setShowGuide}
-          logout={logout}
-          visibleWriters={visibleWriters}
-          toggleWriter={toggleWriter}
-        />
+        <motion.div variants={childVariants}>
+          <DashboardHeader
+            settings={settings}
+            setShowGuide={setShowGuide}
+            logout={logout}
+            visibleWriters={visibleWriters}
+            toggleWriter={toggleWriter}
+          />
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <motion.div variants={childVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4">
             <DailyTimelineLedger
               entries={entries}
@@ -118,7 +147,7 @@ export function Dashboard({ tracker }: DashboardProps) {
               visibleWriters={visibleWriters}
             />
           </div>
-        </div>
+        </motion.div>
 
         <AnimatePresence>
           {showGuide && (
@@ -130,7 +159,7 @@ export function Dashboard({ tracker }: DashboardProps) {
             />
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 }

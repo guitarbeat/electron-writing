@@ -31,7 +31,8 @@ export default function App() {
           <img
             src="/smeemo.png"
             alt="Smeemo"
-            className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker"
+            className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+            referrerPolicy="no-referrer"
           />
           <div className="text-display text-2xl animate-pulse">Smeemo</div>
         </div>
@@ -40,18 +41,20 @@ export default function App() {
           {effectivelyAuthorized ? (
             <motion.div
               key="dashboard"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -12, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeIn" } }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
             >
               <Dashboard tracker={tracker} />
             </motion.div>
           ) : (
             <motion.div
               key="passcode"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -12, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeIn" } }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
             >
               <PasscodeScreen onLogin={login} onBypassSuccess={checkSession} />
             </motion.div>
