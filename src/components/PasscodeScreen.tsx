@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Lock, Info } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -17,6 +17,25 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   const [recentVisit, setRecentVisit] = useState<{ ip?: string, time?: string, device?: string } | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [hintPasscode, setHintPasscode] = useState('');
+  
+  const [easterEggState, setEasterEggState] = useState<'idle' | 'spinning' | 'settled'>('idle');
+  const easterEggTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterTitle = () => {
+    if (easterEggTimeoutRef.current) {
+      clearTimeout(easterEggTimeoutRef.current);
+    }
+    setEasterEggState('spinning');
+  };
+
+  const handleMouseLeaveTitle = () => {
+    if (easterEggState === 'spinning') {
+      setEasterEggState('settled');
+      easterEggTimeoutRef.current = setTimeout(() => {
+        setEasterEggState('idle');
+      }, 2500);
+    }
+  };
 
   const [isBypassing, setIsBypassing] = useState(false);
 
@@ -158,17 +177,23 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
         animate="visible"
         className="sticker-card p-6 sm:p-10 max-w-md w-full bg-bg-surface flex flex-col items-center gap-6 sm:gap-8"
       >
-        <motion.div variants={itemVariants} className="w-24 h-24 rounded-full border-4 border-ink shadow-sticker rotate-3 overflow-hidden bg-bg-paper relative">
+        <motion.div variants={itemVariants} className="rotate-3 relative flex items-center justify-center">
           <img
             src="/smeemo.png"
             alt="Smeemo"
-            className="h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+            className="object-cover spiky-effect shadow-sticker"
             referrerPolicy="no-referrer"
           />
         </motion.div>
 
         <motion.div variants={itemVariants} className="text-center">
-          <h1 className="text-display text-4xl mb-2">Smeemo</h1>
+          <h1 
+            className={`text-display text-4xl mb-2 transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning' : easterEggState === 'settled' ? 'smeemo-settled' : ''}`}
+            onMouseEnter={handleMouseEnterTitle}
+            onMouseLeave={handleMouseLeaveTitle}
+          >
+            Smeemo
+          </h1>
           <p className="text-ink-muted font-bold italic text-pretty">{"Aaron & Electra's private writing nook"}</p>
         </motion.div>
 

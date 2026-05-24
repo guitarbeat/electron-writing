@@ -63,7 +63,7 @@ export function Dashboard({ tracker }: DashboardProps) {
         <img
           src="/smeemo.png"
           alt="Smeemo"
-          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10 spiky-effect"
+          className="h-20 w-20 object-cover spiky-effect shadow-sticker"
           referrerPolicy="no-referrer"
         />
         <div className="text-display text-2xl animate-pulse">Smeemo is waking up...</div>

@@ -42,12 +42,34 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters, toggleWriter }: DashboardHeaderProps) {
+  const [easterEggState, setEasterEggState] = React.useState<'idle' | 'spinning' | 'settled'>('idle');
+  const easterEggTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterTitle = () => {
+    if (easterEggTimeoutRef.current) {
+      clearTimeout(easterEggTimeoutRef.current);
+    }
+    setEasterEggState('spinning');
+  };
+
+  const handleMouseLeaveTitle = () => {
+    if (easterEggState === 'spinning') {
+      setEasterEggState('settled');
+      easterEggTimeoutRef.current = setTimeout(() => {
+        setEasterEggState('idle');
+      }, 2500);
+    }
+  };
   return (
     <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-2 sm:mb-4">
       <div className="flex flex-col gap-3 sm:gap-4 w-full md:w-auto">
         <div className="flex items-start justify-between md:justify-start gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl text-ink font-black tracking-[-0.05em]">
+            <h1 
+              className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-accent' : easterEggState === 'settled' ? 'smeemo-settled text-accent' : 'text-ink'}`}
+              onMouseEnter={handleMouseEnterTitle}
+              onMouseLeave={handleMouseLeaveTitle}
+            >
               Smeemo
             </h1>
             <p className="text-sm sm:text-base font-bold italic text-ink/80 leading-snug">
