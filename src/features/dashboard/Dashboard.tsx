@@ -47,15 +47,6 @@ export function Dashboard({ tracker }: DashboardProps) {
   const cumulativeChartData = useMemo(() => getChartData(entries, 'cumulative', settings), [entries, settings]);
   const dailyChartData = useMemo(() => getChartData(entries, 'daily', settings), [entries, settings]);
 
-  useEffect(() => {
-    if (settings && !isLoading && isAuthorized) {
-      const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
-      if (!settings.isSetupComplete || !hasSeenOnboarding) {
-        setShowGuide(true);
-      }
-    }
-  }, [settings?.isSetupComplete, isLoading, isAuthorized]);
-
   const wrappedSaveEntry = async (entry: Partial<Entry>) => {
     await saveEntry(entry);
     return true;
@@ -72,7 +63,7 @@ export function Dashboard({ tracker }: DashboardProps) {
         <img
           src="/smeemo.png"
           alt="Smeemo"
-          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+          className="h-20 w-20 rounded-full border-4 border-ink object-cover shadow-sticker outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10 spiky-effect"
           referrerPolicy="no-referrer"
         />
         <div className="text-display text-2xl animate-pulse">Smeemo is waking up...</div>
