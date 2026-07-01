@@ -28,6 +28,7 @@ import {
 import { format, parseISO, addDays } from 'date-fns';
 import { Settings } from '../../../types';
 import { TrackerStats, ChartDatum } from '../../../lib/stats';
+import { HandWritingText } from '../../../components/ui/hand-writing-text';
 // import NotificationInbox from '../../../components/NotificationInbox';
 
 // ==========================================
@@ -97,6 +98,12 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
             <p className="text-sm sm:text-base font-bold italic text-ink/80 leading-snug">
               {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Writing Sanctuary
             </p>
+            <HandWritingText
+              text={settings?.personAName && settings?.personBName ? `words written with love, ${settings.personAName} & ${settings.personBName}` : 'words written with love'}
+              className="text-xl sm:text-2xl text-primary/80 mt-1"
+              delay={0.3}
+              duration={0.05}
+            />
           </div>
           
           <div className="flex md:hidden items-center gap-2 shrink-0">
