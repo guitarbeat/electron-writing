@@ -63,7 +63,8 @@ export function Dashboard({ tracker }: DashboardProps) {
         <img
           src="/smeemo.png"
           alt="Smeemo"
-          className="h-20 w-20 object-cover spiky-effect shadow-sticker"
+          className="object-cover spiky-effect"
+          style={{ '--s': '80px' } as React.CSSProperties}
           referrerPolicy="no-referrer"
         />
         <div className="text-display text-2xl animate-pulse">Smeemo is waking up...</div>
@@ -93,12 +94,12 @@ export function Dashboard({ tracker }: DashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-ink font-sans p-4 md:p-8 selection:bg-primary/20">
+    <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-ink font-sans p-3 sm:p-6 md:p-8 lg:p-10 selection:bg-primary/20">
       <motion.div 
         variants={parentVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-6xl mx-auto flex flex-col gap-8"
+        className="max-w-7xl xl:max-w-[1440px] w-full mx-auto flex flex-col gap-6 md:gap-8"
       >
         
         {/* Header */}

@@ -20,15 +20,26 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
   
   const [easterEggState, setEasterEggState] = useState<'idle' | 'spinning' | 'settled'>('idle');
   const easterEggTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverDelayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnterTitle = () => {
     if (easterEggTimeoutRef.current) {
       clearTimeout(easterEggTimeoutRef.current);
+      easterEggTimeoutRef.current = null;
     }
-    setEasterEggState('spinning');
+    if (hoverDelayTimeoutRef.current) {
+      clearTimeout(hoverDelayTimeoutRef.current);
+    }
+    hoverDelayTimeoutRef.current = setTimeout(() => {
+      setEasterEggState('spinning');
+    }, 500);
   };
 
   const handleMouseLeaveTitle = () => {
+    if (hoverDelayTimeoutRef.current) {
+      clearTimeout(hoverDelayTimeoutRef.current);
+      hoverDelayTimeoutRef.current = null;
+    }
     if (easterEggState === 'spinning') {
       setEasterEggState('settled');
       easterEggTimeoutRef.current = setTimeout(() => {
@@ -36,6 +47,17 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
       }, 2500);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (easterEggTimeoutRef.current) {
+        clearTimeout(easterEggTimeoutRef.current);
+      }
+      if (hoverDelayTimeoutRef.current) {
+        clearTimeout(hoverDelayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const [isBypassing, setIsBypassing] = useState(false);
 
@@ -181,14 +203,14 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
           <img
             src="/smeemo.png"
             alt="Smeemo"
-            className="object-cover spiky-effect shadow-sticker"
+            className="object-cover spiky-effect"
             referrerPolicy="no-referrer"
           />
         </motion.div>
 
         <motion.div variants={itemVariants} className="text-center">
           <h1 
-            className={`text-display text-4xl mb-2 transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning' : easterEggState === 'settled' ? 'smeemo-settled' : ''}`}
+            className={`text-display text-4xl mb-2 transition-colors text-ink ${easterEggState === 'spinning' ? 'smeemo-spinning' : easterEggState === 'settled' ? 'smeemo-settled' : ''}`}
             onMouseEnter={handleMouseEnterTitle}
             onMouseLeave={handleMouseLeaveTitle}
           >

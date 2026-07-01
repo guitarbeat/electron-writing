@@ -31,7 +31,8 @@ export default function App() {
           <img
             src="/smeemo.png"
             alt="Smeemo"
-            className="h-20 w-20 object-cover spiky-effect shadow-sticker"
+            className="object-cover spiky-effect"
+            style={{ '--s': '80px' } as React.CSSProperties}
             referrerPolicy="no-referrer"
           />
           <div className="text-display text-2xl animate-pulse">Smeemo</div>

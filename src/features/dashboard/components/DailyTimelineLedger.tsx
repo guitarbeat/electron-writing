@@ -353,9 +353,9 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
 
 
 
-      <div className="pl-10 sm:pl-14 lg:pl-16 pr-1 md:pr-3">
+      <div className="pl-6 min-[400px]:pl-10 sm:pl-14 lg:pl-16 pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
-          <div className="absolute left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
+          <div className="absolute left-[20px] min-[400px]:left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
 
           {displayedDays.map(day => (
             <LedgerDayRow
@@ -471,8 +471,8 @@ function WriterTile({
   if (isEditing) {
     return (
       <div className="relative w-full aspect-square z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] min-w-[7rem] bg-white border-4 border-ink shadow-sticker-hover p-3 flex flex-col gap-2 origin-center">
-          <label className="text-label text-[10px] text-ink-muted text-center leading-tight truncate">{name}</label>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] min-w-[6.5rem] sm:min-w-[8rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col gap-1 sm:gap-2 origin-center">
+          <label className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight truncate">{name}</label>
           <input
             autoFocus
             value={draft}
@@ -492,10 +492,10 @@ function WriterTile({
             inputMode="numeric"
             min="0"
             type="number"
-            className="w-full appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-2 py-2 text-center font-mono text-xl sm:text-2xl font-black text-ink outline-none focus:bg-white hide-spin-button"
+            className="w-full appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-1.5 py-1.5 sm:px-2 sm:py-2 text-center font-mono text-lg min-[400px]:text-xl sm:text-2xl font-black text-ink outline-none focus:bg-white hide-spin-button"
             aria-label={`${name} ${metric} for ${date}`}
           />
-          <span className="text-label text-[10px] text-ink-muted text-center leading-tight uppercase font-black">{metric}</span>
+          <span className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight uppercase font-black">{metric}</span>
         </div>
       </div>
     );
@@ -508,21 +508,21 @@ function WriterTile({
         onClick={onBeginEdit}
         title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
         className={cn(
-          'absolute inset-0 w-full h-full border-4 flex flex-col items-center justify-center gap-2 transition-all text-center group p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
-          'hover:-translate-y-1 hover:shadow-sticker-hover active:translate-y-0 active:shadow-sticker-active',
+          'absolute inset-0 w-full h-full border-4 flex flex-col items-center justify-center gap-1 sm:gap-2 transition-all text-center group p-1.5 min-[400px]:p-2 sm:p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
+          'hover:brightness-[0.97] active:scale-[0.97] duration-100',
           hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
         )}
         style={hasValue ? { backgroundColor: color, color: textColor } : { borderColor: color, color: color, opacity: 0.6 }}
       >
         {hasValue ? (
           <>
-            <NotebookPen className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-            <span className="font-mono text-sm sm:text-base font-black leading-tight px-1 break-words">
+            <NotebookPen className="w-4 h-4 min-[400px]:w-5 min-[400px]:h-5 sm:w-6 sm:h-6 shrink-0" />
+            <span className="font-mono text-xs min-[400px]:text-sm sm:text-base font-black leading-tight px-1 break-words">
               {formatCount(value, metric)}
             </span>
           </>
         ) : (
-          <Plus className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 opacity-50 relative top-[1px]" />
+          <Plus className="w-5 h-5 min-[400px]:w-6 min-[400px]:h-6 sm:w-8 sm:h-8 shrink-0 opacity-50 relative top-[1px]" />
         )}
       </button>
     </div>
@@ -574,17 +574,17 @@ function LedgerDayRow({
 }) {
   const visibleCount = visibleWriters.length;
   const gridColsClass = visibleCount === 2 
-    ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4rem]' 
+    ? 'grid-cols-[minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_auto] sm:grid-cols-[minmax(4.5rem,1fr)_minmax(4.5rem,1fr)_auto]' 
     : visibleCount === 1 
-      ? 'grid-cols-[minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_4rem]'
-      : 'grid-cols-[3.5rem] sm:grid-cols-[4rem]';
+      ? 'grid-cols-[minmax(3.5rem,1fr)_auto] sm:grid-cols-[minmax(4.5rem,1fr)_auto]'
+      : 'grid-cols-[auto]';
 
   return (
     <div className="relative flex flex-col gap-3">
       <div className={cn('flex items-start gap-3 sm:gap-4 md:gap-6', day.isDeadlineDay && 'mt-2')}>
         <div
           className={cn(
-            'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-lg sm:text-xl md:text-2xl font-black relative',
+            'w-10 h-10 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-sm min-[400px]:text-base sm:text-lg md:text-2xl font-black relative',
             day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)]' : day.hasAnyWriting || day.hasNote ? 'bg-white text-ink' : 'bg-bg-paper text-ink-muted'
           )}
         >

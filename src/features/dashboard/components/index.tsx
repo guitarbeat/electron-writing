@@ -44,15 +44,26 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters, toggleWriter }: DashboardHeaderProps) {
   const [easterEggState, setEasterEggState] = React.useState<'idle' | 'spinning' | 'settled'>('idle');
   const easterEggTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const hoverDelayTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnterTitle = () => {
     if (easterEggTimeoutRef.current) {
       clearTimeout(easterEggTimeoutRef.current);
+      easterEggTimeoutRef.current = null;
     }
-    setEasterEggState('spinning');
+    if (hoverDelayTimeoutRef.current) {
+      clearTimeout(hoverDelayTimeoutRef.current);
+    }
+    hoverDelayTimeoutRef.current = setTimeout(() => {
+      setEasterEggState('spinning');
+    }, 500);
   };
 
   const handleMouseLeaveTitle = () => {
+    if (hoverDelayTimeoutRef.current) {
+      clearTimeout(hoverDelayTimeoutRef.current);
+      hoverDelayTimeoutRef.current = null;
+    }
     if (easterEggState === 'spinning') {
       setEasterEggState('settled');
       easterEggTimeoutRef.current = setTimeout(() => {
@@ -60,13 +71,24 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
       }, 2500);
     }
   };
+
+  React.useEffect(() => {
+    return () => {
+      if (easterEggTimeoutRef.current) {
+        clearTimeout(easterEggTimeoutRef.current);
+      }
+      if (hoverDelayTimeoutRef.current) {
+        clearTimeout(hoverDelayTimeoutRef.current);
+      }
+    };
+  }, []);
   return (
     <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-2 sm:mb-4">
       <div className="flex flex-col gap-3 sm:gap-4 w-full md:w-auto">
         <div className="flex items-start justify-between md:justify-start gap-4">
           <div className="flex flex-col gap-1">
             <h1 
-              className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-accent' : easterEggState === 'settled' ? 'smeemo-settled text-accent' : 'text-ink'}`}
+              className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-ink' : easterEggState === 'settled' ? 'smeemo-settled text-ink' : 'text-ink'}`}
               onMouseEnter={handleMouseEnterTitle}
               onMouseLeave={handleMouseLeaveTitle}
             >
@@ -209,102 +231,209 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
   const todayGoal = pacePerDay; 
   const todayPercent = todayGoal > 0 ? Math.min(100, Math.round((stats.todayTeam / todayGoal) * 100)) : 100;
 
+  // Weekly Stats calculation
+  const pacePerWeek = Math.ceil(stats.requiredPerWeek);
+  const weeklyGoal = pacePerWeek;
+  const weeklyPercent = weeklyGoal > 0 ? Math.min(100, Math.round((stats.weekTeam / weeklyGoal) * 100)) : 100;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
       
-      {/* 1. Total Words/Pages to Goal */}
+      {/* 1. Words needed today */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.5 }}
-        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
-        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-            <motion.circle 
-              cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
-              strokeDasharray="251.2" 
-              initial={{ strokeDashoffset: 251.2 }}
-              animate={{ strokeDashoffset: 251.2 - (251.2 * progressPercent) / 100 }}
-              transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
-              strokeLinecap="round" 
-            />
-          </svg>
-        </div>
-        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
-          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
-              <AnimatedNumber value={stats.totalTeam} />
-            </span>
-            <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {goal.toLocaleString()}</span>
+        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
+          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+              <motion.circle 
+                cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
+                strokeDasharray="251.2" 
+                initial={{ strokeDashoffset: 251.2 }}
+                animate={{ strokeDashoffset: 251.2 - (251.2 * todayPercent) / 100 }}
+                transition={{ duration: 1.5, delay: 0.1, ease: "easeOut" }}
+                strokeLinecap="round" 
+              />
+            </svg>
           </div>
-          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
-            Total<br className="hidden xl:block" /> {metric}
+          <div className="flex flex-col items-end text-right min-w-0 flex-1">
+            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
+              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
+                <AnimatedNumber value={stats.todayTeam} />
+              </span>
+              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {todayGoal.toLocaleString()}</span>
+            </div>
+            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
+              Needed Today
+            </div>
+          </div>
+        </div>
+        <div className="w-full mt-1 sm:mt-2">
+          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
+            <motion.div 
+              className="h-full rounded-full"
+              style={{ backgroundColor: 'var(--color-accent)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${todayPercent}%` }}
+              transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
+            <span>Progress</span>
+            <span>{todayPercent}%</span>
           </div>
         </div>
       </motion.div>
 
-      {/* 2. Words needed today */}
+      {/* 2. Words needed this week */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
-        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-            <motion.circle 
-              cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
-              strokeDasharray="251.2" 
-              initial={{ strokeDashoffset: 251.2 }}
-              animate={{ strokeDashoffset: 251.2 - (251.2 * todayPercent) / 100 }}
-              transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
-              strokeLinecap="round" 
-            />
-          </svg>
-        </div>
-        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
-          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
-              <AnimatedNumber value={stats.todayTeam} />
-            </span>
-            <span className="text-sm lg:text-base font-bold font-sans text-ink/70 leading-none">/ {todayGoal.toLocaleString()}</span>
+        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
+          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+              <motion.circle 
+                cx="50" cy="50" r="40" stroke="var(--color-mint)" strokeWidth="10" fill="none" 
+                strokeDasharray="251.2" 
+                initial={{ strokeDashoffset: 251.2 }}
+                animate={{ strokeDashoffset: 251.2 - (251.2 * weeklyPercent) / 100 }}
+                transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
+                strokeLinecap="round" 
+              />
+            </svg>
           </div>
-          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
-            Needed<br className="hidden xl:block" /> Today
+          <div className="flex flex-col items-end text-right min-w-0 flex-1">
+            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
+              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
+                <AnimatedNumber value={stats.weekTeam} />
+              </span>
+              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {weeklyGoal.toLocaleString()}</span>
+            </div>
+            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
+              Needed This Week
+            </div>
+          </div>
+        </div>
+        <div className="w-full mt-1 sm:mt-2">
+          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
+            <motion.div 
+              className="h-full rounded-full"
+              style={{ backgroundColor: 'var(--color-mint)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${weeklyPercent}%` }}
+              transition={{ duration: 1.2, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
+            <span>Progress</span>
+            <span>{weeklyPercent}%</span>
           </div>
         </div>
       </motion.div>
 
-      {/* 3. Streak */}
+      {/* 3. Total Words/Pages to Goal */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="bg-bg-paper border-4 border-ink rounded-3xl p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center xl:justify-start gap-4 shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 transition-all group"
+        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
-        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full transform -rotate-90 group-hover:scale-110 transition-transform duration-500 origin-center" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-          </svg>
-          <motion.div 
-             initial={{ scale: 0 }}
-             animate={{ scale: 1 }}
-             transition={{ type: 'spring', delay: 0.5, bounce: 0.5 }}
-          >
-            <CalendarDays className="w-8 h-8 text-ink/80 relative z-10 group-hover:scale-110 transition-transform duration-500" />
-          </motion.div>
-        </div>
-        <div className="flex flex-col items-center xl:items-start text-center xl:text-left min-w-0 flex-1">
-          <div className="flex items-baseline justify-center xl:justify-start flex-wrap gap-x-1.5">
-            <span className="text-3xl lg:text-4xl font-display text-ink leading-none">
-              <AnimatedNumber value={stats.currentStreak} />
-            </span>
+        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
+          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+              <motion.circle 
+                cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
+                strokeDasharray="251.2" 
+                initial={{ strokeDashoffset: 251.2 }}
+                animate={{ strokeDashoffset: 251.2 - (251.2 * progressPercent) / 100 }}
+                transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
+                strokeLinecap="round" 
+              />
+            </svg>
           </div>
-          <div className="text-xs lg:text-sm font-black uppercase tracking-widest text-ink/70 mt-2">
-            Days In<br className="hidden xl:block" /> A Row
+          <div className="flex flex-col items-end text-right min-w-0 flex-1">
+            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
+              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
+                <AnimatedNumber value={stats.totalTeam} />
+              </span>
+              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {goal.toLocaleString()}</span>
+            </div>
+            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
+              Total {metric}
+            </div>
+          </div>
+        </div>
+        <div className="w-full mt-1 sm:mt-2">
+          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
+            <motion.div 
+              className="h-full rounded-full"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
+            <span>Progress</span>
+            <span>{progressPercent}%</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* 4. Streak */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
+      >
+        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full h-full">
+          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
+            <svg className="absolute inset-0 w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
+            </svg>
+            <motion.div 
+               initial={{ scale: 0 }}
+               animate={{ scale: 1 }}
+               transition={{ type: 'spring', delay: 0.5, bounce: 0.5 }}
+            >
+              <CalendarDays className="w-5 h-5 sm:w-6 lg:w-7 h-5 sm:h-6 lg:h-7 text-ink/80 relative z-10" />
+            </motion.div>
+          </div>
+          <div className="flex flex-col items-end text-right min-w-0 flex-1">
+            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
+              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
+                <AnimatedNumber value={stats.currentStreak} />
+              </span>
+              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">Days</span>
+            </div>
+            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
+              Streak In A Row
+            </div>
+          </div>
+        </div>
+        <div className="w-full mt-1 sm:mt-2">
+          {/* Decorative visual bar for styling symmetry */}
+          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
+            <motion.div 
+              className="bg-ink/50 h-full rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: stats.currentStreak > 0 ? `${Math.min(100, stats.currentStreak * 10)}%` : '0%' }}
+              transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
+            <span>Symmetry</span>
+            <span>{stats.currentStreak} Days</span>
           </div>
         </div>
       </motion.div>
@@ -404,7 +533,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
 
   let barDataKey = "Team";
   let barName = "Total Progress";
-  let barColor = "#4B778D";
+  let barColor = settings?.teamColor || "var(--color-primary)";
 
   if (visibleWriters.length === 1) {
     if (visibleWriters.includes('personA')) {
@@ -452,7 +581,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
 
   return (
     <>
-      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
+      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[280px] sm:h-[360px] md:h-[400px] lg:h-[440px] flex flex-col gap-4 sm:gap-6">
         <div className="flex justify-between items-center flex-wrap gap-2">
           <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" /> My Overall Progress
@@ -508,6 +637,8 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
   const showPersonA = visibleWriters.includes('personA');
   const showPersonB = visibleWriters.includes('personB');
   const showTeam = visibleWriters.length === 2;
+  
+  const metricLabel = settings?.metric === 'pages' ? 'Page' : 'Word';
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -551,10 +682,10 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
 
   return (
     <>
-      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[380px] sm:h-[450px] flex flex-col gap-4 sm:gap-6">
+      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[280px] sm:h-[360px] md:h-[400px] lg:h-[440px] flex flex-col gap-4 sm:gap-6">
         <div className="flex justify-between items-center flex-wrap gap-2">
           <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" /> My Daily Word Count
+            <BarChart3 className="w-5 h-5 text-primary" /> My Daily {metricLabel} Count
           </h3>
           <button 
             onClick={() => setIsExpanded(true)}
@@ -573,7 +704,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
           <div className="bg-white w-full max-w-7xl h-[80vh] rounded-[48px] border-[8px] border-ink flex flex-col pt-8 pb-8 px-6 sm:px-12 shadow-[16px_16px_0_#000] overflow-hidden">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-display text-4xl flex items-center gap-4">
-                <BarChart3 className="w-10 h-10 text-primary" /> My Daily Word Count
+                <BarChart3 className="w-10 h-10 text-primary" /> My Daily {metricLabel} Count
               </h3>
               <button 
                 onClick={() => setIsExpanded(false)}
