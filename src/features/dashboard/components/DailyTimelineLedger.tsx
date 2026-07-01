@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { differenceInCalendarDays, eachDayOfInterval, format, isValid, parseISO, addDays } from 'date-fns';
 import { Check, ChevronDown, ChevronUp, Flag, History, Minus, NotebookPen, StickyNote, Trash2, X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Entry, Settings } from '../../../types';
 import { cn } from '../../../lib/utils';
 
@@ -319,37 +320,47 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
         </button>
       )}
 
-      {showPastEntries && pastDays.length > 0 && (
-        <div className="border-4 border-ink bg-white p-4 sm:p-5 shadow-sticker flex flex-col gap-4 rounded-3xl">
-          <div className="flex flex-col gap-5 pl-3 sm:pl-4">
-            {pastDays.map(day => (
-              <LedgerDayRow
-                key={day.date}
-                day={day}
-                personAName={personAName}
-                personBName={personBName}
-                personAColor={personAColor}
-                personBColor={personBColor}
-                metric={metric}
-                editingTile={editingTile}
-                tileDraft={tileDraft}
-                editingNoteDate={editingNoteDate}
-                noteDraft={noteDraft}
-                onTileDraftChange={setTileDraft}
-                onNoteDraftChange={setNoteDraft}
-                onBeginTileEdit={beginTileEdit}
-                onCancelTileEdit={cancelTileEdit}
-                onTileBlur={handleTileBlur}
-                onBeginNoteEdit={beginNoteEdit}
-                onCancelNoteEdit={cancelNoteEdit}
-                onSaveNoteEdit={saveNoteEdit}
-                onDeleteDay={handleDeleteDay}
-                visibleWriters={visibleWriters}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {showPastEntries && pastDays.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 140, damping: 18 }}
+            className="border-4 border-ink bg-white shadow-sticker rounded-3xl overflow-hidden"
+          >
+            <div className="p-4 sm:p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-5 pl-3 sm:pl-4">
+                {pastDays.map(day => (
+                  <LedgerDayRow
+                    key={day.date}
+                    day={day}
+                    personAName={personAName}
+                    personBName={personBName}
+                    personAColor={personAColor}
+                    personBColor={personBColor}
+                    metric={metric}
+                    editingTile={editingTile}
+                    tileDraft={tileDraft}
+                    editingNoteDate={editingNoteDate}
+                    noteDraft={noteDraft}
+                    onTileDraftChange={setTileDraft}
+                    onNoteDraftChange={setNoteDraft}
+                    onBeginTileEdit={beginTileEdit}
+                    onCancelTileEdit={cancelTileEdit}
+                    onTileBlur={handleTileBlur}
+                    onBeginNoteEdit={beginNoteEdit}
+                    onCancelNoteEdit={cancelNoteEdit}
+                    onSaveNoteEdit={saveNoteEdit}
+                    onDeleteDay={handleDeleteDay}
+                    visibleWriters={visibleWriters}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
 
@@ -646,51 +657,59 @@ function LedgerDayRow({
             </div>
           </div>
 
-          {(day.entry?.note || editingNoteDate === day.date) && (
-            <div className="max-w-3xl">
-              {editingNoteDate === day.date ? (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    autoFocus
-                    value={noteDraft}
-                    onChange={event => onNoteDraftChange(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') onSaveNoteEdit(day);
-                      if (event.key === 'Escape') onCancelNoteEdit();
-                    }}
-                    placeholder="What did you work on?"
-                    className="input-playful min-w-0 flex-1 py-2 appearance-none shadow-none rounded-none"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onSaveNoteEdit(day)}
-                      className="w-12 h-12 border-4 border-ink bg-primary text-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
-                      title="Save note"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onCancelNoteEdit}
-                      className="w-12 h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
-                      title="Cancel note edit"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+          <AnimatePresence initial={false}>
+            {(day.entry?.note || editingNoteDate === day.date) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: "spring", stiffness: 150, damping: 18 }}
+                className="max-w-3xl"
+              >
+                {editingNoteDate === day.date ? (
+                  <div className="flex flex-col sm:flex-row gap-2 pb-1">
+                    <input
+                      autoFocus
+                      value={noteDraft}
+                      onChange={event => onNoteDraftChange(event.target.value)}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter') onSaveNoteEdit(day);
+                        if (event.key === 'Escape') onCancelNoteEdit();
+                      }}
+                      placeholder="What did you work on?"
+                      className="input-playful min-w-0 flex-1 py-2 appearance-none shadow-none rounded-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onSaveNoteEdit(day)}
+                        className="w-12 h-12 border-4 border-ink bg-primary text-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                        title="Save note"
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onCancelNoteEdit}
+                        className="w-12 h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                        title="Cancel note edit"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onBeginNoteEdit(day)}
-                  className="text-left bg-bg-paper border-2 border-ink px-4 py-3 text-body text-sm text-ink-muted w-full font-bold"
-                >
-                  {day.entry?.note}
-                </button>
-              )}
-            </div>
-          )}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onBeginNoteEdit(day)}
+                    className="text-left bg-bg-paper border-2 border-ink px-4 py-3 text-body text-sm text-ink-muted w-full font-bold"
+                  >
+                    {day.entry?.note}
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

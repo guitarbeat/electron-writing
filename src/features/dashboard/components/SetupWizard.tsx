@@ -20,10 +20,10 @@ export function ProjectSettingsStep({
           <button
             key={metric}
             onClick={() => setFormData({ ...formData, metric })}
-            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-transform hover:scale-[1.02] active:scale-95 ${
+            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-all active:scale-95 ${
               formData.metric === metric
-                ? "bg-ink text-white shadow-sticker"
-                : "bg-white hover:bg-primary/5"
+                ? "bg-ink text-white shadow-sticker border-ink"
+                : "bg-white hover:bg-primary/5 hover:border-primary text-ink"
             }`}
           >
             We're tracking {metric}
@@ -289,7 +289,7 @@ export function SetupWizard({
           <button 
             onClick={onClose}
             title="Close Settings"
-            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white border-[3px] border-ink shadow-sticker hover:shadow-sticker-hover hover:-translate-y-1 hover:-translate-x-1 active:translate-y-[2px] active:translate-x-[2px] active:shadow-sticker-active transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
+            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white border-[3px] border-ink shadow-sticker hover:bg-ink hover:text-white active:translate-y-[2px] active:translate-x-[2px] active:shadow-sticker-active transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
           >
             <X className="w-5 h-5 text-ink" />
           </button>

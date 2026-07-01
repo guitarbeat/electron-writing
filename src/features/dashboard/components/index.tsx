@@ -197,8 +197,9 @@ function AnimatedNumber({ value }: { value: number }) {
   useEffect(() => {
     setDisplay(value); // fallback initially if animate fails
     const controls = animate(prevValue.current, value, {
-      duration: 1.5,
-      ease: "easeOut",
+      type: "spring",
+      stiffness: 55,
+      damping: 12,
       onUpdate: (latest) => setDisplay(Math.round(latest))
     });
     prevValue.current = value;
@@ -241,9 +242,9 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
       
       {/* 1. Words needed today */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
+        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.05 }}
         className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
         <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
@@ -255,7 +256,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
                 strokeDasharray="251.2" 
                 initial={{ strokeDashoffset: 251.2 }}
                 animate={{ strokeDashoffset: 251.2 - (251.2 * todayPercent) / 100 }}
-                transition={{ duration: 1.5, delay: 0.1, ease: "easeOut" }}
+                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.15 }}
                 strokeLinecap="round" 
               />
             </svg>
@@ -279,7 +280,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
               style={{ backgroundColor: 'var(--color-accent)' }}
               initial={{ width: 0 }}
               animate={{ width: `${todayPercent}%` }}
-              transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.2 }}
             />
           </div>
           <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
@@ -291,9 +292,9 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 
       {/* 2. Words needed this week */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.12 }}
         className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
         <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
@@ -305,7 +306,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
                 strokeDasharray="251.2" 
                 initial={{ strokeDashoffset: 251.2 }}
                 animate={{ strokeDashoffset: 251.2 - (251.2 * weeklyPercent) / 100 }}
-                transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
+                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.22 }}
                 strokeLinecap="round" 
               />
             </svg>
@@ -329,7 +330,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
               style={{ backgroundColor: 'var(--color-mint)' }}
               initial={{ width: 0 }}
               animate={{ width: `${weeklyPercent}%` }}
-              transition={{ duration: 1.2, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.28 }}
             />
           </div>
           <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
@@ -341,9 +342,9 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 
       {/* 3. Total Words/Pages to Goal */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.19 }}
         className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
         <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
@@ -355,7 +356,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
                 strokeDasharray="251.2" 
                 initial={{ strokeDashoffset: 251.2 }}
                 animate={{ strokeDashoffset: 251.2 - (251.2 * progressPercent) / 100 }}
-                transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
+                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.29 }}
                 strokeLinecap="round" 
               />
             </svg>
@@ -379,7 +380,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
               style={{ backgroundColor: 'var(--color-primary)' }}
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.35 }}
             />
           </div>
           <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
@@ -391,9 +392,9 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
 
       {/* 4. Streak */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
+        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.26 }}
         className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
       >
         <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full h-full">
@@ -404,7 +405,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
             <motion.div 
                initial={{ scale: 0 }}
                animate={{ scale: 1 }}
-               transition={{ type: 'spring', delay: 0.5, bounce: 0.5 }}
+               transition={{ type: 'spring', delay: 0.35, bounce: 0.5 }}
             >
               <CalendarDays className="w-5 h-5 sm:w-6 lg:w-7 h-5 sm:h-6 lg:h-7 text-ink/80 relative z-10" />
             </motion.div>
@@ -428,7 +429,7 @@ export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
               className="bg-ink/50 h-full rounded-full"
               initial={{ width: 0 }}
               animate={{ width: stats.currentStreak > 0 ? `${Math.min(100, stats.currentStreak * 10)}%` : '0%' }}
-              transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.42 }}
             />
           </div>
           <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
@@ -607,7 +608,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
               </h3>
               <button 
                 onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all flex items-center justify-center"
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-colors flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active duration-150"
               >
                 <X className="w-8 h-8 text-ink" />
               </button>
@@ -708,7 +709,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
               </h3>
               <button 
                 onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all flex items-center justify-center"
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-colors flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active duration-150"
               >
                 <X className="w-8 h-8 text-ink" />
               </button>

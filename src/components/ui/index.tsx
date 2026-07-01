@@ -125,7 +125,7 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
         }}
       >
         {/* Outer ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-ink bg-white shadow-sticker group-hover:scale-105 transition-transform" />
+        <div className="absolute inset-0 rounded-full border-4 border-ink bg-white shadow-sticker group-hover:border-primary group-hover:bg-primary/5 transition-colors duration-150" />
         
         {/* Progress arc */}
         <svg className="absolute inset-0 w-full h-full -rotate-[240deg]" viewBox="0 0 100 100">
