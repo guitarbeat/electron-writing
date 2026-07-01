@@ -258,7 +258,7 @@ export function PasscodeScreen({ onLogin, onBypassSuccess }: PasscodeScreenProps
                 <button
                   type="button"
                   onClick={handleFillHint}
-                  className="text-xs font-bold text-primary underline underline-offset-2 hover:text-black transition-colors"
+                  className="text-xs font-bold text-primary underline underline-offset-2 hover:text-black transition-[transform,colors] duration-150 ease-out active:scale-[0.96] inline-block"
                 >
                   Need a hint? Smeemo can help.
                 </button>

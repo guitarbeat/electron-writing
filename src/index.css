@@ -166,11 +166,11 @@ body {
   }
 
   .input-playful {
-    @apply bg-bg-surface border-4 border-ink rounded-input px-5 py-3 outline-none transition-[box-shadow,border-color] duration-150 ease-out focus:ring-4 focus:ring-primary/20 text-ink font-bold;
+    @apply bg-bg-surface border-4 border-ink rounded-input px-5 py-3 outline-none transition-[box-shadow,border-color,transform] duration-150 ease-out focus:ring-4 focus:ring-primary/20 text-ink font-bold focus:scale-[1.01];
   }
 
   .button-playful {
-    @apply relative px-8 py-4 font-black rounded-button border-4 border-ink shadow-sticker transition-[transform,box-shadow,background-color] duration-150 ease-out active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active bg-primary text-white hover:bg-primary-hover uppercase tracking-widest text-sm;
+    @apply relative px-8 py-4 font-black rounded-button border-4 border-ink shadow-sticker transition-[transform,box-shadow,background-color] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active bg-primary text-white hover:bg-primary-hover uppercase tracking-widest text-sm;
   }
 
   .hide-scrollbar::-webkit-scrollbar {

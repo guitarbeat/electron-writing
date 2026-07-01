@@ -113,8 +113,8 @@ export function Dashboard({ tracker }: DashboardProps) {
           />
         </motion.div>
 
-        <motion.div variants={childVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <motion.div variants={childVariants} className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4">
             <DailyTimelineLedger
               entries={entries}
               settings={settings}
@@ -122,24 +122,30 @@ export function Dashboard({ tracker }: DashboardProps) {
               deleteEntry={deleteEntry}
               visibleWriters={visibleWriters}
             />
-          </div>
+          </motion.div>
 
           <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 flex flex-col gap-8">
-            <GoalSummaryCard settings={settings} stats={stats} />
+            <motion.div variants={childVariants}>
+              <GoalSummaryCard settings={settings} stats={stats} />
+            </motion.div>
 
-            <OverallProgressChart
-              chartData={cumulativeChartData}
-              settings={settings}
-              visibleWriters={visibleWriters}
-            />
+            <motion.div variants={childVariants}>
+              <OverallProgressChart
+                chartData={cumulativeChartData}
+                settings={settings}
+                visibleWriters={visibleWriters}
+              />
+            </motion.div>
 
-            <DailyWordCountChart
-              chartData={dailyChartData}
-              settings={settings}
-              visibleWriters={visibleWriters}
-            />
+            <motion.div variants={childVariants}>
+              <DailyWordCountChart
+                chartData={dailyChartData}
+                settings={settings}
+                visibleWriters={visibleWriters}
+              />
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
 
         <AnimatePresence>
           {showGuide && (

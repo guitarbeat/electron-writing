@@ -121,7 +121,7 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
           <button 
             type="button"
             onClick={() => toggleWriter('personA')}
-            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-all ${visibleWriters.includes('personA') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
+            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personA') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
           >
             <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
             <span className="text-label text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
@@ -129,7 +129,7 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
           <button 
             type="button"
             onClick={() => toggleWriter('personB')}
-            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-all ${visibleWriters.includes('personB') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
+            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personB') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
           >
             <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
             <span className="text-label text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
@@ -142,7 +142,7 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
           <button 
             type="button"
             onClick={() => toggleWriter('personA')}
-            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-opacity ${visibleWriters.includes('personA') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
+            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personA') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
           >
             <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
             <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
@@ -150,7 +150,7 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
           <button 
             type="button"
             onClick={() => toggleWriter('personB')}
-            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-opacity ${visibleWriters.includes('personB') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
+            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personB') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
           >
             <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
             <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
@@ -464,7 +464,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                   <span className="font-bold flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.teamColor || '#2b1720' }} /> Team Total
                   </span>
-                  <span className="font-display text-lg">{Math.round(data.Team).toLocaleString()}</span>
+                  <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Team).toLocaleString()}</span>
                 </div>
               )}
               {data.Aaron !== undefined && (
@@ -472,7 +472,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                   <span className="font-bold flex items-center gap-2 text-xs">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
                   </span>
-                  <span className="font-display">{Math.round(data.Aaron).toLocaleString()}</span>
+                  <span className="font-mono text-sm tabular-nums">{Math.round(data.Aaron).toLocaleString()}</span>
                 </div>
               )}
               {data.Electra !== undefined && (
@@ -480,7 +480,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                   <span className="font-bold flex items-center gap-2 text-xs">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
                   </span>
-                  <span className="font-display">{Math.round(data.Electra).toLocaleString()}</span>
+                  <span className="font-mono text-sm tabular-nums">{Math.round(data.Electra).toLocaleString()}</span>
                 </div>
               )}
             </>
@@ -491,7 +491,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                     <span className="font-bold flex items-center gap-2 text-sm">
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
                     </span>
-                    <span className="font-display text-lg">{Math.round(data.Aaron).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Aaron).toLocaleString()}</span>
                  </div>
                )}
                {visibleWriters.includes('personB') && data.Electra !== undefined && (
@@ -499,7 +499,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                     <span className="font-bold flex items-center gap-2 text-sm">
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
                     </span>
-                    <span className="font-display text-lg">{Math.round(data.Electra).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Electra).toLocaleString()}</span>
                  </div>
                )}
             </>
@@ -510,7 +510,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
               <span className="font-bold flex items-center gap-2 text-sm">
                 <span className="w-3 h-3 rounded-full bg-ink/30 border-2 border-ink border-dashed" /> {isCumulative ? 'Target Trajectory' : 'Daily Target'}
               </span>
-              <span className="font-display text-lg text-ink/70">{Math.round(data.Goal).toLocaleString()}</span>
+              <span className="font-mono font-bold text-sm text-ink/70 tabular-nums">{Math.round(data.Goal).toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -608,7 +608,7 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
               </h3>
               <button 
                 onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-colors flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active duration-150"
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-[transform,colors] duration-150 ease-out flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active"
               >
                 <X className="w-8 h-8 text-ink" />
               </button>
@@ -709,7 +709,7 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
               </h3>
               <button 
                 onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-colors flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active duration-150"
+                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-[transform,colors] duration-150 ease-out flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active"
               >
                 <X className="w-8 h-8 text-ink" />
               </button>

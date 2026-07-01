@@ -435,18 +435,18 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
 
 function HeaderPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 border-2 border-ink bg-white px-3 py-1">
+    <div className="flex items-center gap-2 border-2 border-ink bg-white px-3 py-1 rounded-full shadow-sm">
       <span className="text-label text-[9px] text-ink-muted">{label}</span>
-      <span className="text-label text-[10px] text-ink">{value}</span>
+      <span className="text-label text-[10px] text-ink font-mono">{value}</span>
     </div>
   );
 }
 
 function ColumnHeader({ color, label }: { color: string; label: string }) {
   return (
-    <div className="bg-bg-paper border-4 border-ink shadow-sticker px-3 py-2 flex items-center gap-2 min-w-0">
+    <div className="bg-bg-paper border-4 border-ink shadow-sticker px-3 py-2 flex items-center gap-2 min-w-0 rounded-xl sm:rounded-2xl">
       <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{label}</span>
+      <span className="text-label text-[9px] sm:text-[10px] text-ink truncate font-black">{label}</span>
     </div>
   );
 }
@@ -482,7 +482,7 @@ function WriterTile({
   if (isEditing) {
     return (
       <div className="relative w-full aspect-square z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] min-w-[6.5rem] sm:min-w-[8rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col gap-1 sm:gap-2 origin-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] min-w-[6.5rem] sm:min-w-[8rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col gap-1 sm:gap-2 rounded-2xl origin-center z-[100] animate-in zoom-in-95 duration-100 ease-out">
           <label className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight truncate">{name}</label>
           <input
             autoFocus
@@ -503,7 +503,7 @@ function WriterTile({
             inputMode="numeric"
             min="0"
             type="number"
-            className="w-full appearance-none rounded-none shadow-none bg-bg-paper border-2 border-ink px-1.5 py-1.5 sm:px-2 sm:py-2 text-center font-mono text-lg min-[400px]:text-xl sm:text-2xl font-black text-ink outline-none focus:bg-white hide-spin-button"
+            className="w-full appearance-none rounded-xl bg-bg-paper border-2 border-ink px-1.5 py-1.5 sm:px-2 sm:py-2 text-center font-mono text-lg min-[400px]:text-xl sm:text-2xl font-black text-ink outline-none transition-colors duration-100 focus:bg-white hide-spin-button"
             aria-label={`${name} ${metric} for ${date}`}
           />
           <span className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight uppercase font-black">{metric}</span>
@@ -519,8 +519,8 @@ function WriterTile({
         onClick={onBeginEdit}
         title={`Edit ${name} ${metric} for ${format(parseISO(date), 'MMM d')}`}
         className={cn(
-          'absolute inset-0 w-full h-full border-4 flex flex-col items-center justify-center gap-1 sm:gap-2 transition-all text-center group p-1.5 min-[400px]:p-2 sm:p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent',
-          'hover:brightness-[0.97] active:scale-[0.97] duration-100',
+          'absolute inset-0 w-full h-full border-4 flex flex-col items-center justify-center gap-1 sm:gap-2 transition-[transform,background-color,border-color,opacity,filter,box-shadow] duration-150 ease-out text-center group p-1.5 min-[400px]:p-2 sm:p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:border-transparent rounded-2xl',
+          'hover:brightness-[0.98] hover:scale-[1.03] active:scale-[0.96]',
           hasValue ? 'border-ink shadow-sticker' : 'bg-transparent border-dashed'
         )}
         style={hasValue ? { backgroundColor: color, color: textColor } : { borderColor: color, color: color, opacity: 0.6 }}
@@ -649,7 +649,7 @@ function LedgerDayRow({
                   type="button"
                   onClick={() => onDeleteDay(day)}
                   title={`Delete ${format(parseISO(day.date), 'MMM d')} entry`}
-                  className="w-11 h-11 sm:w-12 sm:h-12 border-4 border-red-500 bg-red-100 text-red-600 shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-all active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0_#ef4444]"
+                  className="w-11 h-11 sm:w-12 sm:h-12 border-4 border-red-500 bg-red-100 text-red-600 rounded-xl sm:rounded-2xl shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-[transform,colors,box-shadow] duration-150 ease-out hover:scale-[1.03] active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#ef4444] active:scale-[0.96]"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>

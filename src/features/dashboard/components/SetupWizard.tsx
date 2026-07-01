@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target, X } from 'lucide-react';
 import { Settings } from '../../../types';
 import { UserSettingsInput, Knob, CalendarPicker } from '../../../components/ui';
@@ -20,7 +20,7 @@ export function ProjectSettingsStep({
           <button
             key={metric}
             onClick={() => setFormData({ ...formData, metric })}
-            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-all active:scale-95 ${
+            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-[transform,background-color,border-color,color] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${
               formData.metric === metric
                 ? "bg-ink text-white shadow-sticker border-ink"
                 : "bg-white hover:bg-primary/5 hover:border-primary text-ink"
@@ -301,7 +301,7 @@ export function SetupWizard({
               {activeTab !== 'menu' && (
                 <button 
                   onClick={() => setActiveTab('menu')} 
-                  className="w-10 h-10 flex shrink-0 items-center justify-center rounded-xl border-[3px] border-ink active:translate-y-[2px] active:translate-x-[2px] bg-white transition-transform"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center rounded-xl border-[3px] border-ink active:translate-y-[2px] active:translate-x-[2px] bg-white hover:scale-105 active:scale-95 transition-[transform,background-color] duration-150 ease-out"
                 >
                   <ArrowRight className="w-5 h-5 rotate-180" />
                 </button>
@@ -392,39 +392,50 @@ export function SetupWizard({
               </div>
             </div>
 
-            <div className="px-6 sm:px-8 flex-1">
-              {currentStep === 0 && (
-                <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <UserSettingsInput
-                        value={formData.personAName}
-                        onChangeName={(v) => setFormData({...formData, personAName: v})}
-                        color={formData.personAColor}
-                        onChangeColor={(c) => setFormData({...formData, personAColor: c})}
-                        placeholder="Aaron"
-                      />
-                      <UserSettingsInput
-                        value={formData.personBName}
-                        onChangeName={(v) => setFormData({...formData, personBName: v})}
-                        color={formData.personBColor}
-                        onChangeColor={(c) => setFormData({...formData, personBColor: c})}
-                        placeholder="Electra"
-                      />
-                  </div>
-                </div>
-              )}
+            <div className="px-6 sm:px-8 flex-1 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: 20, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -20, filter: "blur(4px)" }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="w-full"
+                >
+                  {currentStep === 0 && (
+                    <div className="flex flex-col gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <UserSettingsInput
+                            value={formData.personAName}
+                            onChangeName={(v) => setFormData({...formData, personAName: v})}
+                            color={formData.personAColor}
+                            onChangeColor={(c) => setFormData({...formData, personAColor: c})}
+                            placeholder="Aaron"
+                          />
+                          <UserSettingsInput
+                            value={formData.personBName}
+                            onChangeName={(v) => setFormData({...formData, personBName: v})}
+                            color={formData.personBColor}
+                            onChangeColor={(c) => setFormData({...formData, personBColor: c})}
+                            placeholder="Electra"
+                          />
+                      </div>
+                    </div>
+                  )}
 
-              {currentStep === 1 && (
-                <ProjectSettingsStep formData={formData} setFormData={setFormData} originalSettings={settings} />
-              )}
+                  {currentStep === 1 && (
+                    <ProjectSettingsStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+                  )}
 
-              {currentStep === 2 && (
-                <DeadlineStep formData={formData} setFormData={setFormData} originalSettings={settings} />
-              )}
-              
-              {currentStep === 3 && (
-                <SecurityStep formData={formData} setFormData={setFormData} />
-              )}
+                  {currentStep === 2 && (
+                    <DeadlineStep formData={formData} setFormData={setFormData} originalSettings={settings} />
+                  )}
+                  
+                  {currentStep === 3 && (
+                    <SecurityStep formData={formData} setFormData={setFormData} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             <div className="p-6 sm:p-8 pt-0 flex flex-col gap-6">
@@ -432,7 +443,7 @@ export function SetupWizard({
                 {steps.map((_, i) => (
                   <div 
                     key={i} 
-                    className={`h-2 rounded-full transition-all border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-white'}`} 
+                    className={`h-2 rounded-full transition-[width,background-color] duration-300 ease-out border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-white'}`} 
                   />
                 ))}
               </div>

@@ -238,7 +238,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
                 key={i}
                 onClick={() => onChange(format(day, 'yyyy-MM-dd'))}
                 className={cn(
-                  "aspect-square rounded-lg flex items-center justify-center text-xs font-black transition-all border-2",
+                  "aspect-square rounded-lg flex items-center justify-center text-xs font-black transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.96] border-2",
                   !isCurrentMonth && "opacity-10",
                   isSelected 
                     ? "bg-ink text-white border-ink scale-110 shadow-sticker z-10" 
