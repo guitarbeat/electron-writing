@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { animate } from 'motion';
 import { 
   Settings as SettingsIcon, 
@@ -8,10 +9,14 @@ import {
   CalendarDays, 
   Gauge, 
   TrendingUp,
-  TrendingDown,
   BarChart3,
   Maximize2,
-  X
+  Minimize2,
+  X,
+  Sun,
+  Moon,
+  PenTool,
+  Eye
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -23,13 +28,12 @@ import {
   ResponsiveContainer,
   Legend,
   ComposedChart,
-  Bar
+  Bar,
+  ReferenceLine
 } from 'recharts';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Settings } from '../../../types';
 import { TrackerStats, ChartDatum } from '../../../lib/stats';
-import { HandWritingText } from '../../../components/ui/hand-writing-text';
-// import NotificationInbox from '../../../components/NotificationInbox';
 
 // ==========================================
 // 1. DashboardHeader Component
@@ -38,11 +42,15 @@ interface DashboardHeaderProps {
   settings: Settings | null;
   setShowGuide: (show: boolean) => void;
   logout: () => void;
-  visibleWriters: ('personA' | 'personB')[];
-  toggleWriter: (writer: 'personA' | 'personB') => void;
+  updateSettings?: (newSettings: Partial<Settings>) => Promise<boolean | void>;
 }
 
-export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters, toggleWriter }: DashboardHeaderProps) {
+export function DashboardHeader({ 
+  settings, 
+  setShowGuide, 
+  logout, 
+  updateSettings
+}: DashboardHeaderProps) {
   const [easterEggState, setEasterEggState] = React.useState<'idle' | 'spinning' | 'settled'>('idle');
   const easterEggTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const hoverDelayTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -83,113 +91,36 @@ export function DashboardHeader({ settings, setShowGuide, logout, visibleWriters
       }
     };
   }, []);
-  return (
-    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-2 sm:mb-4">
-      <div className="flex flex-col gap-3 sm:gap-4 w-full md:w-auto">
-        <div className="flex items-start justify-between md:justify-start gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 
-              className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-ink' : easterEggState === 'settled' ? 'smeemo-settled text-ink' : 'text-ink'}`}
-              onMouseEnter={handleMouseEnterTitle}
-              onMouseLeave={handleMouseLeaveTitle}
-            >
-              Smeemo
-            </h1>
-            <p className="text-sm sm:text-base font-bold italic text-ink/80 leading-snug">
-              {settings?.personAName || 'Aaron'} & {settings?.personBName || 'Electra'}'s Writing Sanctuary
-            </p>
-            <HandWritingText
-              text={settings?.personAName && settings?.personBName ? `words written with love, ${settings.personAName} & ${settings.personBName}` : 'words written with love'}
-              className="text-xl sm:text-2xl text-primary/80 mt-1"
-              delay={0.3}
-              duration={0.05}
-            />
-          </div>
-          
-          <div className="flex md:hidden items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowGuide(true)}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-button border-[3px] border-ink bg-primary text-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
-              title="Settings"
-            >
-              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-            <button
-              onClick={logout}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-button border-[3px] border-ink bg-primary text-white flex items-center justify-center shadow-sticker active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-          </div>
-        </div>
 
-        <div className="flex md:hidden items-center flex-wrap gap-2">
-          <button 
-            type="button"
-            onClick={() => toggleWriter('personA')}
-            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personA') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
-          >
-            <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
-            <span className="text-label text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
-          </button>
-          <button 
-            type="button"
-            onClick={() => toggleWriter('personB')}
-            className={`bg-bg-paper border-[3px] sm:border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personB') ? 'opacity-100' : 'opacity-40'} active:translate-x-1 active:translate-y-1`}
-          >
-            <div className="w-4 h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
-            <span className="text-label text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
-          </button>
-        </div>
+  return (
+    <header className="flex justify-between items-center gap-4 mb-2 sm:mb-4">
+      <div className="flex items-center gap-4">
+        <h1 
+          className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-ink' : easterEggState === 'settled' ? 'smeemo-settled text-ink' : 'text-ink'}`}
+          onMouseEnter={handleMouseEnterTitle}
+          onMouseLeave={handleMouseLeaveTitle}
+        >
+          Smeemo
+        </h1>
       </div>
 
-      <div className="hidden md:flex items-center gap-4">
-        <div className="flex items-center gap-2 mr-2">
-          <button 
-            type="button"
-            onClick={() => toggleWriter('personA')}
-            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personA') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
-          >
-            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
-            <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personAName || 'Aaron'}</span>
-          </button>
-          <button 
-            type="button"
-            onClick={() => toggleWriter('personB')}
-            className={`bg-bg-paper border-4 border-ink shadow-sticker active:shadow-sticker-active px-3 py-2 flex items-center gap-2 min-w-0 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${visibleWriters.includes('personB') ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-60'} active:translate-x-1 active:translate-y-1`}
-          >
-            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
-            <span className="text-label text-[9px] sm:text-[10px] text-ink truncate">{settings?.personBName || 'Electra'}</span>
-          </button>
-        </div>
-        
-        {/* {settings?.updatedAt && (
-          <div className="text-[10px] font-black uppercase text-ink/40 tracking-widest text-right">
-            LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}:<br/>
-            {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-        )} */}
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           onClick={() => setShowGuide(true)}
-          className="button-playful uppercase font-black tracking-widest bg-primary text-white border-4 border-ink shadow-sticker text-xs px-5 py-3 flex items-center gap-2 active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+          className="button-playful bg-primary text-white border-[3px] sm:border-4 border-ink shadow-sticker p-2.5 sm:p-3 cursor-pointer"
+          title="Writing Setup"
+          aria-label="Writing Setup"
         >
-          <SettingsIcon className="w-4 h-4" />
-          Writing Setup
+          <SettingsIcon className="w-5 h-5" />
         </button>
         <button
           onClick={logout}
-          className="button-playful bg-primary text-white border-4 border-ink shadow-sticker p-3 active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+          className="button-playful bg-primary text-white border-[3px] sm:border-4 border-ink shadow-sticker p-2.5 sm:p-3 cursor-pointer"
+          title="Logout"
         >
           <LogOut className="w-5 h-5" />
         </button>
       </div>
-      
-      {/* {settings?.updatedAt && (
-        <div className="md:hidden text-[8px] font-black uppercase text-ink/40 tracking-widest">
-          LAST MODIFIED {settings.lastModifiedBy && settings.lastModifiedBy !== 'System' ? `BY ${settings.lastModifiedBy.toUpperCase()}` : ''}: {new Date(settings.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      )} */}
     </header>
   );
 }
@@ -217,237 +148,10 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 // ==========================================
-// 2. GoalSummaryCard Component
+// 2. GoalSummaryCard Component (Deprecated)
 // ==========================================
-interface GoalSummaryCardProps {
-  settings: Settings | null;
-  stats: TrackerStats;
-}
-
-
-
-export function GoalSummaryCard({ settings, stats }: GoalSummaryCardProps) {
-  const goal = stats.goal;
-  const metric = settings?.metric === 'pages' ? 'Pages' : 'Words';
-  const defaultDeadline = addDays(new Date(), 10);
-  const deadline = settings?.deadline ? format(parseISO(settings.deadline), 'MMMM d, yyyy') : format(defaultDeadline, 'MMMM d, yyyy');
-  const progressPercent = Math.min(100, Math.round((stats.totalTeam / goal) * 100)) || 0;
-  const pacePerDay = Math.ceil(stats.requiredPerDay);
-  const metricUnit = metric.toLowerCase();
-  
-  // To avoid dividing by zero today if goal is met
-  const todayGoal = pacePerDay; 
-  const todayPercent = todayGoal > 0 ? Math.min(100, Math.round((stats.todayTeam / todayGoal) * 100)) : 100;
-
-  // Weekly Stats calculation
-  const pacePerWeek = Math.ceil(stats.requiredPerWeek);
-  const weeklyGoal = pacePerWeek;
-  const weeklyPercent = weeklyGoal > 0 ? Math.min(100, Math.round((stats.weekTeam / weeklyGoal) * 100)) : 100;
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-      
-      {/* 1. Words needed today */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.05 }}
-        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
-      >
-        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
-          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-              <motion.circle 
-                cx="50" cy="50" r="40" stroke="var(--color-accent)" strokeWidth="10" fill="none" 
-                strokeDasharray="251.2" 
-                initial={{ strokeDashoffset: 251.2 }}
-                animate={{ strokeDashoffset: 251.2 - (251.2 * todayPercent) / 100 }}
-                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.15 }}
-                strokeLinecap="round" 
-              />
-            </svg>
-          </div>
-          <div className="flex flex-col items-end text-right min-w-0 flex-1">
-            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
-              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
-                <AnimatedNumber value={stats.todayTeam} />
-              </span>
-              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {todayGoal.toLocaleString()}</span>
-            </div>
-            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
-              Needed Today
-            </div>
-          </div>
-        </div>
-        <div className="w-full mt-1 sm:mt-2">
-          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
-            <motion.div 
-              className="h-full rounded-full"
-              style={{ backgroundColor: 'var(--color-accent)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${todayPercent}%` }}
-              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.2 }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
-            <span>Progress</span>
-            <span>{todayPercent}%</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 2. Words needed this week */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.12 }}
-        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
-      >
-        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
-          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-              <motion.circle 
-                cx="50" cy="50" r="40" stroke="var(--color-mint)" strokeWidth="10" fill="none" 
-                strokeDasharray="251.2" 
-                initial={{ strokeDashoffset: 251.2 }}
-                animate={{ strokeDashoffset: 251.2 - (251.2 * weeklyPercent) / 100 }}
-                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.22 }}
-                strokeLinecap="round" 
-              />
-            </svg>
-          </div>
-          <div className="flex flex-col items-end text-right min-w-0 flex-1">
-            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
-              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
-                <AnimatedNumber value={stats.weekTeam} />
-              </span>
-              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {weeklyGoal.toLocaleString()}</span>
-            </div>
-            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
-              Needed This Week
-            </div>
-          </div>
-        </div>
-        <div className="w-full mt-1 sm:mt-2">
-          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
-            <motion.div 
-              className="h-full rounded-full"
-              style={{ backgroundColor: 'var(--color-mint)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${weeklyPercent}%` }}
-              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.28 }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
-            <span>Progress</span>
-            <span>{weeklyPercent}%</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 3. Total Words/Pages to Goal */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.19 }}
-        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
-      >
-        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full">
-          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-              <motion.circle 
-                cx="50" cy="50" r="40" stroke="var(--color-primary)" strokeWidth="10" fill="none" 
-                strokeDasharray="251.2" 
-                initial={{ strokeDashoffset: 251.2 }}
-                animate={{ strokeDashoffset: 251.2 - (251.2 * progressPercent) / 100 }}
-                transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.29 }}
-                strokeLinecap="round" 
-              />
-            </svg>
-          </div>
-          <div className="flex flex-col items-end text-right min-w-0 flex-1">
-            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
-              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
-                <AnimatedNumber value={stats.totalTeam} />
-              </span>
-              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">/ {goal.toLocaleString()}</span>
-            </div>
-            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
-              Total {metric}
-            </div>
-          </div>
-        </div>
-        <div className="w-full mt-1 sm:mt-2">
-          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
-            <motion.div 
-              className="h-full rounded-full"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.35 }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
-            <span>Progress</span>
-            <span>{progressPercent}%</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 4. Streak */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.26 }}
-        className="bg-bg-paper border-3 sm:border-4 border-ink rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 flex flex-col justify-between gap-2.5 sm:gap-4 shadow-sticker"
-      >
-        <div className="flex flex-row items-center xl:items-start justify-between gap-3 sm:gap-4 w-full h-full">
-          <div className="relative w-11 h-11 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 flex items-center justify-center">
-            <svg className="absolute inset-0 w-full h-full transform -rotate-90 origin-center" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" stroke="var(--color-ink)" strokeOpacity="0.1" strokeWidth="10" fill="none" />
-            </svg>
-            <motion.div 
-               initial={{ scale: 0 }}
-               animate={{ scale: 1 }}
-               transition={{ type: 'spring', delay: 0.35, bounce: 0.5 }}
-            >
-              <CalendarDays className="w-5 h-5 sm:w-6 lg:w-7 h-5 sm:h-6 lg:h-7 text-ink/80 relative z-10" />
-            </motion.div>
-          </div>
-          <div className="flex flex-col items-end text-right min-w-0 flex-1">
-            <div className="flex items-baseline justify-end flex-wrap gap-x-0.5 sm:gap-x-1">
-              <span className="text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-display text-ink leading-none">
-                <AnimatedNumber value={stats.currentStreak} />
-              </span>
-              <span className="text-[9px] min-[400px]:text-xs lg:text-sm font-bold font-sans text-ink/70 leading-none">Days</span>
-            </div>
-            <div className="text-[8px] min-[400px]:text-[10px] lg:text-xs font-black uppercase tracking-widest text-ink/70 mt-1 sm:mt-2">
-              Streak In A Row
-            </div>
-          </div>
-        </div>
-        <div className="w-full mt-1 sm:mt-2">
-          {/* Decorative visual bar for styling symmetry */}
-          <div className="w-full bg-ink/10 border-[1.5px] sm:border-2 border-ink h-2.5 sm:h-3.5 rounded-full overflow-hidden relative shadow-[inset_0_1.5px_0_rgba(0,0,0,0.08)]">
-            <motion.div 
-              className="bg-ink/50 h-full rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: stats.currentStreak > 0 ? `${Math.min(100, stats.currentStreak * 10)}%` : '0%' }}
-              transition={{ type: "spring", stiffness: 55, damping: 12, delay: 0.42 }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-[8px] sm:text-[9px] font-black uppercase text-ink/40 mt-1 sm:mt-1.5 px-0.5">
-            <span>Symmetry</span>
-            <span>{stats.currentStreak} Days</span>
-          </div>
-        </div>
-      </motion.div>
-      
-    </div>
-  );
+export function GoalSummaryCard({ stats }: { stats?: TrackerStats; settings?: Settings | null }) {
+  return null;
 }
 
 // ==========================================
@@ -457,11 +161,29 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const showTeam = visibleWriters.length === 2;
-    const metric = settings?.metric === 'pages' ? 'Pages' : 'Words';
+
+    const personAName = settings?.personAName || 'Aaron';
+    const personBName = settings?.personBName || 'Electra';
+    const personAColor = settings?.personAColor || '#ff4d8d';
+    const personBColor = settings?.personBColor || '#7c3aed';
+    const teamColor = settings?.teamColor || 'var(--color-ink)';
+
+    let totalVal = 0;
+    if (showTeam) {
+      totalVal = data.Team !== undefined ? data.Team : ((data.Aaron ?? 0) + (data.Electra ?? 0));
+    } else if (visibleWriters.includes('personA')) {
+      totalVal = data.Aaron ?? 0;
+    } else if (visibleWriters.includes('personB')) {
+      totalVal = data.Electra ?? 0;
+    }
+
+    const goalVal = data.Goal ?? 0;
+    const diff = totalVal - goalVal;
+    const metTarget = goalVal > 0 && diff >= 0;
 
     return (
-      <div className="bg-[#fffafc] border-[4px] border-ink rounded-2xl p-4 shadow-[4px_4px_0_#2b1720] text-ink z-50">
-        <p className="font-bold border-b-2 border-ink/10 pb-2 mb-2 text-xs uppercase tracking-widest">{format(parseISO(label), 'MMM d, yyyy')}</p>
+      <div className="bg-bg-surface border-4 border-ink rounded-2xl p-4 shadow-sticker text-ink z-50 min-w-[200px]">
+        <p className="font-bold border-b-2 border-ink/10 pb-2 mb-2 text-xs uppercase tracking-widest">{format(parseISO(label), 'EEEE, MMMM d, yyyy')}</p>
         
         <div className="flex flex-col gap-2">
           {showTeam ? (
@@ -469,7 +191,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
               {data.Team !== undefined && (
                 <div className="flex justify-between items-center gap-6">
                   <span className="font-bold flex items-center gap-2 text-sm">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.teamColor || '#2b1720' }} /> Team Total
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: teamColor }} /> Team Total
                   </span>
                   <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Team).toLocaleString()}</span>
                 </div>
@@ -477,7 +199,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
               {data.Aaron !== undefined && (
                 <div className="flex justify-between items-center gap-6 opacity-80 pl-2">
                   <span className="font-bold flex items-center gap-2 text-xs">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: personAColor }} /> {personAName}
                   </span>
                   <span className="font-mono text-sm tabular-nums">{Math.round(data.Aaron).toLocaleString()}</span>
                 </div>
@@ -485,7 +207,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
               {data.Electra !== undefined && (
                 <div className="flex justify-between items-center gap-6 opacity-80 pl-2">
                   <span className="font-bold flex items-center gap-2 text-xs">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: personBColor }} /> {personBName}
                   </span>
                   <span className="font-mono text-sm tabular-nums">{Math.round(data.Electra).toLocaleString()}</span>
                 </div>
@@ -496,7 +218,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                {visibleWriters.includes('personA') && data.Aaron !== undefined && (
                  <div className="flex justify-between items-center gap-6">
                     <span className="font-bold flex items-center gap-2 text-sm">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} /> {settings?.personAName || 'Aaron'}
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: personAColor }} /> {personAName}
                     </span>
                     <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Aaron).toLocaleString()}</span>
                  </div>
@@ -504,7 +226,7 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
                {visibleWriters.includes('personB') && data.Electra !== undefined && (
                  <div className="flex justify-between items-center gap-6">
                     <span className="font-bold flex items-center gap-2 text-sm">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} /> {settings?.personBName || 'Electra'}
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: personBColor }} /> {personBName}
                     </span>
                     <span className="font-mono font-bold text-base tabular-nums">{Math.round(data.Electra).toLocaleString()}</span>
                  </div>
@@ -512,12 +234,25 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
             </>
           )}
 
-          {data.Goal !== undefined && (
+          {goalVal > 0 && (
             <div className="flex justify-between items-center gap-6 mt-1 pt-2 border-t-2 border-ink/10">
               <span className="font-bold flex items-center gap-2 text-sm">
                 <span className="w-3 h-3 rounded-full bg-ink/30 border-2 border-ink border-dashed" /> {isCumulative ? 'Target Trajectory' : 'Daily Target'}
               </span>
-              <span className="font-mono font-bold text-sm text-ink/70 tabular-nums">{Math.round(data.Goal).toLocaleString()}</span>
+              <span className="font-mono font-bold text-sm text-ink/70 tabular-nums">{Math.round(goalVal).toLocaleString()}</span>
+            </div>
+          )}
+
+          {!isCumulative && goalVal > 0 && (
+            <div className={`mt-1 pt-2 border-t-2 border-ink/10 text-xs font-extrabold flex items-center justify-between px-2.5 py-1.5 rounded-lg ${
+              metTarget 
+                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/30' 
+                : 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/30'
+            }`}>
+              <span>{metTarget ? '🎯 Met Pace Goal!' : '⚠️ Below Daily Pace'}</span>
+              <span className="font-mono">
+                {diff >= 0 ? `+${Math.round(diff).toLocaleString()}` : `${Math.round(diff).toLocaleString()}`}
+              </span>
             </div>
           )}
         </div>
@@ -528,16 +263,115 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
 };
 
 // ==========================================
+// 3.5. CustomHierarchicalXAxisTick Component
+// ==========================================
+interface CustomXAxisTickProps {
+  x?: number | string;
+  y?: number | string;
+  payload?: any;
+  index?: number;
+  chartData?: ChartDatum[];
+}
+
+const CustomHierarchicalXAxisTick: React.FC<CustomXAxisTickProps> = ({
+  x = 0,
+  y = 0,
+  payload,
+  index = 0,
+  chartData = []
+}) => {
+  if (!payload || !payload.value) return null;
+
+  let dateObj: Date;
+  try {
+    dateObj = parseISO(payload.value);
+  } catch {
+    return null;
+  }
+
+  const dayStr = format(dateObj, 'd');
+  const monthAbbrUpper = format(dateObj, 'MMM').toUpperCase();
+
+  let isMonthStart = index === 0;
+  if (!isMonthStart && chartData && chartData[index - 1]) {
+    try {
+      const prevDate = parseISO(chartData[index - 1].date);
+      if (prevDate.getMonth() !== dateObj.getMonth() || prevDate.getFullYear() !== dateObj.getFullYear()) {
+        isMonthStart = true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <line x1={0} y1={0} x2={0} y2={4} stroke="var(--color-ink)" strokeWidth={1.5} />
+      <text
+        x={0}
+        y={15}
+        textAnchor="middle"
+        fill="var(--color-ink)"
+        fontSize={11}
+        fontWeight={800}
+        fontFamily="sans-serif"
+      >
+        {dayStr}
+      </text>
+
+      {isMonthStart && (
+        <g transform="translate(0, 32)">
+          <rect
+            x={-24}
+            y={-10}
+            width={48}
+            height={18}
+            rx={5}
+            fill="var(--color-ink)"
+          />
+          <text
+            x={0}
+            y={2}
+            textAnchor="middle"
+            fill="var(--color-bg-surface)"
+            fontSize={9}
+            fontWeight={900}
+            letterSpacing={0.8}
+            fontFamily="sans-serif"
+          >
+            {monthAbbrUpper}
+          </text>
+        </g>
+      )}
+    </g>
+  );
+};
+
+// ==========================================
 // 4. OverallProgressChart Component
 // ==========================================
 interface OverallProgressChartProps {
   chartData: ChartDatum[];
   settings: Settings | null;
+  stats?: TrackerStats;
   visibleWriters: ('personA' | 'personB')[];
 }
 
-export function OverallProgressChart({ chartData, settings, visibleWriters }: OverallProgressChartProps) {
+export function OverallProgressChart({ chartData, settings, stats, visibleWriters }: OverallProgressChartProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsExpanded(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isExpanded]);
 
   let barDataKey = "Team";
   let barName = "Total Progress";
@@ -555,29 +389,37 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
     }
   }
 
+  const totalVal = stats?.totalTeam ?? 0;
+  const goalVal = stats?.goal ?? 1;
+  const goalPct = Math.min(100, Math.round((totalVal / (goalVal || 1)) * 100));
+  const streakDays = stats?.currentStreak ?? 0;
+  const dailyReq = Math.ceil(stats?.requiredPerDay ?? 0);
+
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-      <ComposedChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
+      <ComposedChart data={chartData} margin={{ bottom: 10, left: 5, top: 10, right: 15 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink)" strokeOpacity={0.12} />
         <XAxis 
           dataKey="date" 
-          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-          tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
+          height={50}
+          interval={0}
+          axisLine={{ stroke: 'var(--color-ink)', strokeWidth: 2 }}
+          tick={(props) => <CustomHierarchicalXAxisTick {...props} chartData={chartData} />}
         />
         <YAxis 
-          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tick={{ fill: 'var(--color-ink)', fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: 'var(--color-ink)', strokeWidth: 2 }}
           tickFormatter={(v) => v.toLocaleString()}
+          dx={-2}
         />
         <Tooltip content={<CustomChartTooltip settings={settings} visibleWriters={visibleWriters} isCumulative={true} />} />
-        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-        <Bar name={barName} dataKey={barDataKey} fill={barColor} />
+        <Legend verticalAlign="top" height={32} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--color-ink)' }}/>
+        <Bar name={barName} dataKey={barDataKey} fill={barColor} radius={[4, 4, 0, 0]} />
         <Line
           name="Target Trajectory"
           type="monotone"
           dataKey="Goal"
-          stroke="#2b1720"
+          stroke="var(--color-ink)"
           strokeWidth={2}
           strokeDasharray="8 6"
           dot={false}
@@ -589,58 +431,127 @@ export function OverallProgressChart({ chartData, settings, visibleWriters }: Ov
 
   return (
     <>
-      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[280px] sm:h-[360px] md:h-[400px] lg:h-[440px] flex flex-col gap-4 sm:gap-6">
-        <div className="flex justify-between items-center flex-wrap gap-2">
-          <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" /> My Overall Progress
-          </h3>
-          <button 
-            onClick={() => setIsExpanded(true)}
-            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out"
-          >
-            <Maximize2 className="w-4 h-4 text-ink" />
-          </button>
+      <div className="sticker-card p-5 sm:p-7 bg-bg-surface flex flex-col gap-4">
+        <div className="flex justify-between items-start sm:items-center flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h3 className="text-heading text-lg sm:text-2xl flex items-center gap-2 font-black">
+              <TrendingUp className="w-5 h-5 text-primary" /> Overall Progress
+            </h3>
+            
+            {stats && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-bg-paper border-2 border-ink/20 text-ink font-mono">
+                  {totalVal.toLocaleString()} / {goalVal.toLocaleString()} {settings?.metric} ({goalPct}%)
+                </span>
+                <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-accent/10 border-2 border-accent/30 text-accent font-mono flex items-center gap-1">
+                  🔥 {streakDays}d streak
+                </span>
+                {dailyReq > 0 && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-ink/5 text-ink/70 hidden md:inline-block">
+                    Pace: ~{dailyReq.toLocaleString()}/day
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsExpanded(true)}
+              title="Maximize chart"
+              className="w-9 h-9 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-ink/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4 text-ink" />
+            </button>
+          </div>
         </div>
-        <div className="w-full flex-grow min-h-0 min-w-0 mt-2">
+
+        <div className="w-full h-[400px] sm:h-[480px] md:h-[560px] lg:h-[620px] relative min-h-[300px] mt-1">
           {renderChart()}
         </div>
       </div>
 
-      {isExpanded && (
-        <div className="fixed inset-0 z-[100] bg-ink/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-7xl h-[80vh] rounded-[48px] border-[8px] border-ink flex flex-col pt-8 pb-8 px-6 sm:px-12 shadow-[16px_16px_0_#000] overflow-hidden">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-display text-4xl flex items-center gap-4">
-                <TrendingUp className="w-10 h-10 text-primary" /> My Overall Progress
-              </h3>
-              <button 
-                onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-[transform,colors] duration-150 ease-out flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active"
-              >
-                <X className="w-8 h-8 text-ink" />
-              </button>
-            </div>
-            <div className="w-full flex-grow min-h-0 min-w-0">
-              {renderChart()}
-            </div>
-          </div>
-        </div>
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 w-screen h-screen z-[99999] bg-bg-surface text-ink p-4 sm:p-6 md:p-8 flex flex-col gap-4 overflow-hidden"
+            >
+              <div className="flex justify-between items-center gap-3 border-b-3 border-ink/15 pb-4 shrink-0">
+                <div className="flex items-center gap-3 flex-wrap min-w-0">
+                  <h3 className="text-heading text-xl sm:text-2xl flex items-center gap-2 shrink-0">
+                    <TrendingUp className="w-6 h-6 text-primary" /> Overall Progress
+                  </h3>
+                  {stats && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-bg-paper border-2 border-ink/20 text-ink font-mono">
+                        {totalVal.toLocaleString()} / {goalVal.toLocaleString()} {settings?.metric} ({goalPct}%)
+                      </span>
+                      <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-accent/10 border-2 border-accent/30 text-accent font-mono flex items-center gap-1">
+                        🔥 {streakDays}d streak
+                      </span>
+                      {dailyReq > 0 && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-ink/5 text-ink/80">
+                          Target Pace: ~{dailyReq.toLocaleString()}/day
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  title="Exit fullscreen (Esc)"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-ink text-bg-paper rounded-xl font-black text-xs uppercase tracking-wider border-2 border-ink hover:bg-ink/85 active:scale-95 transition-all cursor-pointer shrink-0 shadow-sm"
+                >
+                  <Minimize2 className="w-4 h-4" /> Minimize
+                </button>
+              </div>
+
+              <div className="w-full flex-1 min-h-0 relative">
+                <div className="absolute inset-0">
+                  {renderChart()}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </>
   );
 }
 
 // ==========================================
-// 4. DailyWordCountChart Component
+// 5. DailyWordCountChart Component
 // ==========================================
 interface DailyWordCountChartProps {
   chartData: ChartDatum[];
   settings: Settings | null;
+  stats?: TrackerStats;
   visibleWriters: ('personA' | 'personB')[];
 }
 
-export function DailyWordCountChart({ chartData, settings, visibleWriters }: DailyWordCountChartProps) {
+export function DailyWordCountChart({ chartData, settings, stats, visibleWriters }: DailyWordCountChartProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [chartType, setChartType] = useState<'bars' | 'lines'>('bars');
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsExpanded(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isExpanded]);
 
   const showPersonA = visibleWriters.includes('personA');
   const showPersonB = visibleWriters.includes('personB');
@@ -648,84 +559,267 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
   
   const metricLabel = settings?.metric === 'pages' ? 'Page' : 'Word';
 
+  const todayVal = stats?.todayTeam ?? 0;
+  const todayReq = Math.ceil(stats?.requiredPerDay ?? 0);
+  const todayPct = todayReq > 0 ? Math.min(100, Math.round((todayVal / todayReq) * 100)) : 100;
+  const weekVal = stats?.weekTeam ?? 0;
+  const weekReq = Math.ceil(stats?.requiredPerWeek ?? 0);
+
+  // Smart Analytics derived from chartData
+  const daysWithGoal = chartData.filter(d => (d.Goal ?? 0) > 0);
+  const metTargetCount = daysWithGoal.filter(d => {
+    const val = showTeam ? (d.Team ?? 0) : (showPersonA ? (d.Aaron ?? 0) : (d.Electra ?? 0));
+    return val >= (d.Goal ?? 0);
+  }).length;
+  const targetHitRate = daysWithGoal.length > 0 ? Math.round((metTargetCount / daysWithGoal.length) * 100) : 0;
+
+  let maxSingleDay = 0;
+  chartData.forEach(d => {
+    const val = showTeam ? (d.Team ?? 0) : (showPersonA ? (d.Aaron ?? 0) : (d.Electra ?? 0));
+    if (val > maxSingleDay) maxSingleDay = val;
+  });
+
+  const personAColor = settings?.personAColor || '#ff4d8d';
+  const personBColor = settings?.personBColor || '#7c3aed';
+  const teamColor = settings?.teamColor || 'var(--color-ink)';
+
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-      <LineChart data={chartData} margin={{ bottom: 5, left: 10, top: 10, right: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(43, 23, 32, 0.1)" />
+      <ComposedChart data={chartData} margin={{ bottom: 10, left: 5, top: 10, right: 15 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink)" strokeOpacity={0.12} />
         <XAxis 
           dataKey="date" 
-          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
-          tickFormatter={(v) => format(parseISO(v), 'MM/dd')}
+          height={50}
+          interval={0}
+          axisLine={{ stroke: 'var(--color-ink)', strokeWidth: 2 }}
+          tick={(props) => <CustomHierarchicalXAxisTick {...props} chartData={chartData} />}
         />
         <YAxis 
-          tick={{ fill: '#2b1720', fontSize: 9, fontWeight: 700 }}
-          axisLine={{ stroke: '#2b1720', strokeWidth: 2 }}
+          tick={{ fill: 'var(--color-ink)', fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: 'var(--color-ink)', strokeWidth: 2 }}
           tickFormatter={(v) => v.toLocaleString()}
+          dx={-2}
         />
         <Tooltip content={<CustomChartTooltip settings={settings} visibleWriters={visibleWriters} isCumulative={false} />} />
-        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}/>
-        {showPersonA && (
-          <Line legendType="none" name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={settings?.personAColor || '#ff4d8d'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+        <Legend verticalAlign="top" height={32} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--color-ink)' }}/>
+        
+        {chartType === 'bars' ? (
+          <>
+            {showTeam ? (
+              <>
+                <Bar 
+                  dataKey="Aaron" 
+                  name={settings?.personAName || 'Aaron'} 
+                  stackId="daily" 
+                  fill={personAColor} 
+                  radius={[0, 0, 4, 4]} 
+                />
+                <Bar 
+                  dataKey="Electra" 
+                  name={settings?.personBName || 'Electra'} 
+                  stackId="daily" 
+                  fill={personBColor} 
+                  radius={[4, 4, 0, 0]} 
+                />
+              </>
+            ) : (
+              <>
+                {showPersonA && (
+                  <Bar 
+                    dataKey="Aaron" 
+                    name={settings?.personAName || 'Aaron'} 
+                    fill={personAColor} 
+                    radius={[6, 6, 0, 0]} 
+                  />
+                )}
+                {showPersonB && (
+                  <Bar 
+                    dataKey="Electra" 
+                    name={settings?.personBName || 'Electra'} 
+                    fill={personBColor} 
+                    radius={[6, 6, 0, 0]} 
+                  />
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {showPersonA && (
+              <Line legendType="none" name={settings?.personAName || 'Aaron'} type="monotone" dataKey="Aaron" stroke={personAColor} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+            )}
+            {showPersonB && (
+              <Line legendType="none" name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={personBColor} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+            )}
+            {showTeam && (
+              <Line name="Together" type="monotone" dataKey="Team" stroke={teamColor} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            )}
+          </>
         )}
-        {showPersonB && (
-          <Line legendType="none" name={settings?.personBName || 'Electra'} type="monotone" dataKey="Electra" stroke={settings?.personBColor || '#7c3aed'} strokeWidth={3} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-        )}
-        {showTeam && (
-          <Line name="Together" type="monotone" dataKey="Team" stroke={settings?.teamColor || '#2b1720'} strokeWidth={4} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-        )}
+
         <Line
           name="Required Daily Pace"
           type="monotone"
           dataKey="Goal"
-          stroke="#2b1720"
-          strokeWidth={2}
+          stroke="var(--color-ink)"
+          strokeWidth={2.5}
           strokeDasharray="8 6"
           dot={false}
           activeDot={{ r: 4 }}
         />
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   );
 
   return (
     <>
-      <div className="sticker-card p-4 sm:p-6 md:p-8 bg-white h-[280px] sm:h-[360px] md:h-[400px] lg:h-[440px] flex flex-col gap-4 sm:gap-6">
-        <div className="flex justify-between items-center flex-wrap gap-2">
-          <h3 className="text-heading text-lg sm:text-xl flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" /> My Daily {metricLabel} Count
-          </h3>
-          <button 
-            onClick={() => setIsExpanded(true)}
-            className="w-10 h-10 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-black/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out"
-          >
-            <Maximize2 className="w-4 h-4 text-ink" />
-          </button>
+      <div className="sticker-card p-5 sm:p-7 bg-bg-surface flex flex-col gap-4">
+        <div className="flex justify-between items-start sm:items-center flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h3 className="text-heading text-lg sm:text-2xl flex items-center gap-2 font-black">
+              <BarChart3 className="w-5 h-5 text-primary" /> Daily Output & Target Pace
+            </h3>
+
+            {stats && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-bg-paper border-2 border-ink/20 text-ink font-mono">
+                  Today: {todayVal.toLocaleString()} {todayReq > 0 ? `/ ${todayReq.toLocaleString()}` : ''} ({todayPct}%)
+                </span>
+                {daysWithGoal.length > 0 && (
+                  <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-500/30 font-mono">
+                    🎯 Target Hit: {metTargetCount}/{daysWithGoal.length}d ({targetHitRate}%)
+                  </span>
+                )}
+                {maxSingleDay > 0 && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-ink/5 text-ink/80 font-mono hidden md:inline-block">
+                    🚀 Best Day: {maxSingleDay.toLocaleString()}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Chart Type Toggle */}
+            <div className="flex items-center p-0.5 bg-bg-paper border-2 border-ink rounded-xl shadow-xs">
+              <button
+                type="button"
+                onClick={() => setChartType('bars')}
+                className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                  chartType === 'bars'
+                    ? 'bg-ink text-bg-paper'
+                    : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Bars
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartType('lines')}
+                className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                  chartType === 'lines'
+                    ? 'bg-ink text-bg-paper'
+                    : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Lines
+              </button>
+            </div>
+
+            <button 
+              onClick={() => setIsExpanded(true)}
+              title="Maximize chart"
+              className="w-9 h-9 flex border-[3px] border-ink rounded-xl items-center justify-center hover:bg-ink/5 active:scale-[0.96] transition-[transform,background-color] duration-100 ease-out cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4 text-ink" />
+            </button>
+          </div>
         </div>
-        <div className="w-full flex-grow min-h-0 min-w-0 mt-2">
+
+        <div className="w-full h-[400px] sm:h-[480px] md:h-[560px] lg:h-[620px] relative min-h-[300px] mt-1">
           {renderChart()}
         </div>
       </div>
 
-      {isExpanded && (
-        <div className="fixed inset-0 z-[100] bg-ink/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-7xl h-[80vh] rounded-[48px] border-[8px] border-ink flex flex-col pt-8 pb-8 px-6 sm:px-12 shadow-[16px_16px_0_#000] overflow-hidden">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-display text-4xl flex items-center gap-4">
-                <BarChart3 className="w-10 h-10 text-primary" /> My Daily {metricLabel} Count
-              </h3>
-              <button 
-                onClick={() => setIsExpanded(false)}
-                className="w-16 h-16 rounded-[20px] bg-white border-4 border-ink shadow-sticker hover:bg-ink hover:text-white transition-[transform,colors] duration-150 ease-out flex items-center justify-center active:translate-x-[4px] active:translate-y-[4px] active:shadow-sticker-active"
-              >
-                <X className="w-8 h-8 text-ink" />
-              </button>
-            </div>
-            <div className="w-full flex-grow min-h-0 min-w-0">
-              {renderChart()}
-            </div>
-          </div>
-        </div>
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 w-screen h-screen z-[99999] bg-bg-surface text-ink p-4 sm:p-6 md:p-8 flex flex-col gap-4 overflow-hidden"
+            >
+              <div className="flex justify-between items-center gap-3 border-b-3 border-ink/15 pb-4 shrink-0">
+                <div className="flex items-center gap-3 flex-wrap min-w-0">
+                  <h3 className="text-heading text-xl sm:text-2xl flex items-center gap-2 shrink-0">
+                    <BarChart3 className="w-6 h-6 text-primary" /> Daily Output & Target Pace
+                  </h3>
+                  {stats && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-bg-paper border-2 border-ink/20 text-ink font-mono">
+                        Today: {todayVal.toLocaleString()} {todayReq > 0 ? `/ ${todayReq.toLocaleString()}` : ''} ({todayPct}%)
+                      </span>
+                      {daysWithGoal.length > 0 && (
+                        <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-500/30 font-mono">
+                          🎯 Target Hit: {metTargetCount}/{daysWithGoal.length}d ({targetHitRate}%)
+                        </span>
+                      )}
+                      {maxSingleDay > 0 && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-ink/5 text-ink/80 font-mono">
+                          🚀 Best Day: {maxSingleDay.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center p-1 bg-bg-paper border-2 border-ink rounded-xl shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => setChartType('bars')}
+                      className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                        chartType === 'bars'
+                          ? 'bg-ink text-bg-paper'
+                          : 'text-ink/70 hover:text-ink'
+                      }`}
+                    >
+                      Bars
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChartType('lines')}
+                      className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                        chartType === 'lines'
+                          ? 'bg-ink text-bg-paper'
+                          : 'text-ink/70 hover:text-ink'
+                      }`}
+                    >
+                      Lines
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    title="Exit fullscreen (Esc)"
+                    className="flex items-center gap-2 px-3.5 py-2 bg-ink text-bg-paper rounded-xl font-black text-xs uppercase tracking-wider border-2 border-ink hover:bg-ink/85 active:scale-95 transition-all cursor-pointer shrink-0 shadow-sm"
+                  >
+                    <Minimize2 className="w-4 h-4" /> Minimize
+                  </button>
+                </div>
+              </div>
+
+              <div className="w-full flex-1 min-h-0 relative">
+                <div className="absolute inset-0">
+                  {renderChart()}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </>
   );
@@ -736,3 +830,4 @@ export function DailyWordCountChart({ chartData, settings, visibleWriters }: Dai
 // ==========================================
 export { SetupWizard } from './SetupWizard';
 export { DailyTimelineLedger } from './DailyTimelineLedger';
+export { NativeAnalyticsSuite } from './NativeAnalyticsSuite';

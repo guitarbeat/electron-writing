@@ -20,6 +20,10 @@ export function useTracker() {
       setIsAuthorized(data.authorized);
       return data.authorized;
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('fetch')) {
+        setIsAuthorized(false);
+        return false;
+      }
       console.error('[useTracker] Session check error', err);
       setIsAuthorized(false);
       return false;
@@ -46,6 +50,7 @@ export function useTracker() {
         console.warn('[useTracker] Login failed', res.status);
       }
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('fetch')) return false;
       console.error('[useTracker] Login error', err);
     }
     return false;
@@ -76,18 +81,21 @@ export function useTracker() {
   }, [isAuthorized]);
 
   const fetchSettings = useCallback(async () => {
-    if (!isAuthorized) return;
     try {
       const res = await fetch('/api/settings', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
+        if (data?.theme) {
+          localStorage.setItem('smeemo_theme', data.theme);
+          document.documentElement.classList.toggle('dark', data.theme === 'dark');
+        }
       }
     } catch (err) {
       if (err instanceof Error && err.message.toLowerCase().includes('fetch')) return;
       console.error('Failed to fetch settings', err);
     }
-  }, [isAuthorized]);
+  }, []);
 
   const saveEntry = async (entry: Partial<Entry>) => {
     try {
@@ -126,6 +134,10 @@ export function useTracker() {
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     try {
+      if (newSettings.theme) {
+        localStorage.setItem('smeemo_theme', newSettings.theme);
+        document.documentElement.classList.toggle('dark', newSettings.theme === 'dark');
+      }
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +147,10 @@ export function useTracker() {
       if (res.ok) {
         const data = await res.json();
         setSettings(prev => prev ? { ...prev, ...data } : data);
-        toast.success('Settings updated');
+        const isThemeOnly = Object.keys(newSettings).every(k => k === 'theme');
+        if (!isThemeOnly) {
+          toast.success('Settings updated');
+        }
         return true;
       }
     } catch (err) {
@@ -167,8 +182,9 @@ export function useTracker() {
   };
 
   useEffect(() => {
+    fetchSettings();
     checkSession().finally(() => setIsLoading(false));
-  }, [checkSession]);
+  }, [checkSession, fetchSettings]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;

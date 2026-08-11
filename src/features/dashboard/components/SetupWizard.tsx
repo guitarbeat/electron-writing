@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target, X } from 'lucide-react';
+import { Settings as SettingsIcon, Trophy, Calendar, ArrowRight, Lock, Target, X, Zap, Sun, Moon } from 'lucide-react';
+import { format, addMonths, endOfYear, differenceInDays, parseISO, isValid } from 'date-fns';
 import { Settings } from '../../../types';
 import { UserSettingsInput, Knob, CalendarPicker } from '../../../components/ui';
+import { cn } from '../../../lib/utils';
 
 export function ProjectSettingsStep({
   formData,
@@ -13,30 +15,56 @@ export function ProjectSettingsStep({
   setFormData: React.Dispatch<React.SetStateAction<Settings>>;
   originalSettings?: Settings | null;
 }) {
+  const wordPresets = [
+    { label: '10K', value: 10000, desc: 'Novelette' },
+    { label: '50K', value: 50000, desc: 'NaNoWriMo' },
+    { label: '80K', value: 80000, desc: 'Full Novel' },
+    { label: '100K', value: 100000, desc: 'Epic' },
+  ];
+
+  const pagePresets = [
+    { label: '50 pgs', value: 50, desc: 'Screenplay' },
+    { label: '150 pgs', value: 150, desc: 'Novella' },
+    { label: '300 pgs', value: 300, desc: 'Standard' },
+    { label: '500 pgs', value: 500, desc: 'Tome' },
+  ];
+
+  const currentPresets = formData.metric === 'pages' ? pagePresets : wordPresets;
+
+  const today = new Date();
+  const parsedDeadline = parseISO(formData.deadline);
+  const isValidDate = isValid(parsedDeadline);
+  const daysLeft = isValidDate ? Math.max(1, differenceInDays(parsedDeadline, today)) : 1;
+  const dailyPace = Math.ceil((formData.projectGoal || 0) / daysLeft);
+
   return (
-    <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="flex flex-col gap-5 animate-in slide-in-from-bottom-4">
+      <div className="grid grid-cols-2 gap-3">
         {(["words", "pages"] as const).map((metric) => (
           <button
             key={metric}
-            onClick={() => setFormData({ ...formData, metric })}
-            className={`py-4 text-xs font-black uppercase rounded-xl border-4 border-ink transition-[transform,background-color,border-color,color] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${
+            type="button"
+            onClick={() => {
+              const defaultGoal = metric === 'pages' ? 300 : 50000;
+              setFormData({ ...formData, metric, projectGoal: defaultGoal });
+            }}
+            className={`py-3 text-xs font-black uppercase rounded-xl border-3 border-ink transition-[transform,background-color,border-color,color] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] ${
               formData.metric === metric
-                ? "bg-ink text-white shadow-sticker border-ink"
-                : "bg-white hover:bg-primary/5 hover:border-primary text-ink"
+                ? "bg-ink text-bg-paper shadow-sticker border-ink"
+                : "bg-bg-surface hover:bg-primary/5 text-ink"
             }`}
           >
-            We're tracking {metric}
+            Track in {metric}
           </button>
         ))}
       </div>
 
-      <div className="bg-white p-6 md:p-8 border-4 border-ink rounded-2xl flex flex-col items-center gap-6 shadow-sticker relative overflow-hidden">
+      <div className="bg-bg-surface p-5 md:p-6 border-3 sm:border-4 border-ink rounded-2xl flex flex-col items-center gap-5 shadow-sticker relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-accent/20" />
         
         {originalSettings?.isSetupComplete && (
-          <div className="text-[10px] font-bold text-ink/40 uppercase mb-[-12px]">
-            Previous: {originalSettings.projectGoal} {originalSettings.metric}
+          <div className="text-[10px] font-bold text-ink/40 uppercase mb-[-10px]">
+            Previous: {originalSettings.projectGoal.toLocaleString()} {originalSettings.metric}
           </div>
         )}
 
@@ -53,7 +81,7 @@ export function ProjectSettingsStep({
           color="#facc15"
         />
 
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-3 w-full">
           <input
             type="number"
             value={Number.isNaN(formData.projectGoal) ? '' : (formData.projectGoal ?? '')}
@@ -64,12 +92,33 @@ export function ProjectSettingsStep({
                 projectGoal: Number.isNaN(val) ? 0 : val,
               });
             }}
-            className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-32 focus:bg-white transition-colors"
+            className="bg-bg-paper px-4 py-2 rounded-xl border-2 border-ink text-center font-mono font-bold text-lg w-36 focus:bg-bg-surface transition-colors tabular-nums"
           />
 
-          <p className="text-[9px] font-bold italic text-ink/30 uppercase mt-1">
-            Spin to set absolute target
-          </p>
+          <div className="flex items-center justify-center gap-1.5 flex-wrap w-full pt-1">
+            {currentPresets.map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                onClick={() => setFormData({ ...formData, projectGoal: preset.value })}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-lg border-2 text-[10px] font-black uppercase transition-[transform,background-color] duration-150 active:scale-[0.95]",
+                  formData.projectGoal === preset.value
+                    ? "bg-ink text-bg-paper border-ink shadow-sm"
+                    : "bg-bg-surface text-ink border-ink/30 hover:border-ink hover:bg-bg-paper"
+                )}
+              >
+                {preset.label} <span className="opacity-60 font-medium">({preset.desc})</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-1 px-3 py-1.5 rounded-lg bg-bg-paper border border-ink/20 flex items-center gap-2 text-xs font-bold text-ink/80">
+            <Zap className="w-3.5 h-3.5 text-accent shrink-0" />
+            <span>
+              Target pace: <strong className="text-ink font-mono font-black">~{dailyPace.toLocaleString()}</strong> {formData.metric}/day ({daysLeft} days remaining)
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -85,7 +134,7 @@ export function SecurityStep({
 }) {
   return (
     <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
-      <div className="bg-white p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker">
+      <div className="bg-bg-surface p-8 border-4 border-ink rounded-[32px] flex flex-col items-center gap-6 shadow-sticker">
         <div className="w-full">
            <label className="text-[10px] font-black uppercase text-ink/40 mb-2 block px-2">Shared Passcode</label>
            <input
@@ -113,8 +162,23 @@ export function DeadlineStep({
   setFormData: React.Dispatch<React.SetStateAction<Settings>>;
   originalSettings?: Settings | null;
 }) {
+  const today = new Date();
+  
+  const presets = [
+    { label: '+1 Month', date: format(addMonths(today, 1), 'yyyy-MM-dd') },
+    { label: '+3 Months', date: format(addMonths(today, 3), 'yyyy-MM-dd') },
+    { label: '+6 Months', date: format(addMonths(today, 6), 'yyyy-MM-dd') },
+    { label: 'End of Year', date: format(endOfYear(today), 'yyyy-MM-dd') },
+  ];
+
+  const parsedDeadline = parseISO(formData.deadline);
+  const isValidDate = isValid(parsedDeadline);
+  const daysLeft = isValidDate ? Math.max(1, differenceInDays(parsedDeadline, today)) : 1;
+  const targetGoal = formData.projectGoal || 50000;
+  const dailyPace = Math.ceil(targetGoal / daysLeft);
+
   return (
-    <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+    <div className="flex flex-col gap-5 animate-in slide-in-from-bottom-4">
       <div className="flex flex-col gap-4">
         {originalSettings?.isSetupComplete && (
           <div className="text-[10px] font-bold text-ink/40 uppercase mb-[-12px] text-center">
@@ -128,8 +192,50 @@ export function DeadlineStep({
           color="#5eead4"
         />
 
+        {/* Quick presets */}
+        <div className="flex items-center justify-center gap-2 flex-wrap w-full">
+          {presets.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => setFormData({ ...formData, deadline: preset.date })}
+              className={cn(
+                "px-3 py-1.5 rounded-lg border-2 text-[10px] font-black uppercase transition-[transform,background-color] duration-150 active:scale-[0.95]",
+                formData.deadline === preset.date
+                  ? "bg-ink text-bg-paper border-ink shadow-sm"
+                  : "bg-bg-surface text-ink border-ink/30 hover:border-ink hover:bg-bg-paper"
+              )}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Live pace preview card */}
+        <div className="bg-bg-paper border-2 border-ink rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#5eead4] border-2 border-ink flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 text-ink" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-ink/50">Required Pace</span>
+              <span className="text-xs font-bold text-ink">
+                {daysLeft} day{daysLeft === 1 ? '' : 's'} remaining
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="font-mono text-base font-black text-ink block tabular-nums">
+              ~{dailyPace.toLocaleString()}
+            </span>
+            <span className="text-[9px] font-bold uppercase text-ink/50 block">
+              {formData.metric}/day
+            </span>
+          </div>
+        </div>
+
         <p className="text-[9px] font-bold italic text-ink/40 px-4 text-center">
-          The ledger and pace chart will aim at this date.
+          The ledger and pace chart will track your team's velocity against this target.
         </p>
       </div>
     </div>
@@ -156,7 +262,7 @@ export function SetupWizardActions({
       {currentStep > 0 && (
         <button
           onClick={onBack}
-          className="button-playful bg-white text-ink flex-1"
+          className="button-playful bg-bg-surface text-ink flex-1"
           disabled={isSaving}
         >
           Back
@@ -289,7 +395,7 @@ export function SetupWizard({
           <button 
             onClick={onClose}
             title="Close Settings"
-            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white border-[3px] border-ink shadow-sticker hover:bg-ink hover:text-white active:translate-y-[2px] active:translate-x-[2px] active:shadow-sticker-active transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
+            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-bg-surface border-[3px] border-ink shadow-sticker hover:bg-ink hover:text-bg-paper active:translate-y-[2px] active:translate-x-[2px] active:shadow-sticker-active transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
           >
             <X className="w-5 h-5 text-ink" />
           </button>
@@ -301,7 +407,7 @@ export function SetupWizard({
               {activeTab !== 'menu' && (
                 <button 
                   onClick={() => setActiveTab('menu')} 
-                  className="w-10 h-10 flex shrink-0 items-center justify-center rounded-xl border-[3px] border-ink active:translate-y-[2px] active:translate-x-[2px] bg-white hover:scale-105 active:scale-95 transition-[transform,background-color] duration-150 ease-out"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center rounded-xl border-[3px] border-ink active:translate-y-[2px] active:translate-x-[2px] bg-bg-surface hover:scale-105 active:scale-95 transition-[transform,background-color] duration-150 ease-out"
                 >
                   <ArrowRight className="w-5 h-5 rotate-180" />
                 </button>
@@ -317,18 +423,43 @@ export function SetupWizard({
             
             {activeTab === 'menu' && (
               <div className="flex flex-col gap-4">
-                <button onClick={() => setActiveTab('co-authors')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                <button onClick={() => setActiveTab('co-authors')} className="button-playful bg-bg-surface text-ink w-full justify-between items-center flex">
                   <div className="flex items-center gap-3"><SettingsIcon className="w-5 h-5 text-accent"/> <span className="font-bold">Co-Authors</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
                 </button>
-                <button onClick={() => setActiveTab('goal')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                <button onClick={() => setActiveTab('goal')} className="button-playful bg-bg-surface text-ink w-full justify-between items-center flex">
                    <div className="flex items-center gap-3"><Trophy className="w-5 h-5 text-[#facc15]"/> <span className="font-bold">The Goal</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
                 </button>
-                <button onClick={() => setActiveTab('deadline')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                <button onClick={() => setActiveTab('deadline')} className="button-playful bg-bg-surface text-ink w-full justify-between items-center flex">
                     <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-[#5eead4]"/> <span className="font-bold">The Deadline</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
                 </button>
-                <button onClick={() => setActiveTab('security')} className="button-playful bg-white text-ink w-full justify-between items-center flex">
+                <button onClick={() => setActiveTab('security')} className="button-playful bg-bg-surface text-ink w-full justify-between items-center flex">
                     <div className="flex items-center gap-3"><Lock className="w-5 h-5 text-[#ff4d8d]"/> <span className="font-bold">Security</span></div> <ArrowRight className="w-4 h-4 text-ink/40"/>
                 </button>
+                <div className="flex items-center justify-between p-4 bg-bg-surface border-4 border-ink rounded-2xl shadow-sticker">
+                  <div className="flex items-center gap-3">
+                    {formData.theme === 'dark' ? <Moon className="w-5 h-5 text-indigo-600"/> : <Sun className="w-5 h-5 text-amber-500"/>}
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm text-ink">Appearance</span>
+                      <span className="text-xs text-ink/60">{formData.theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 bg-bg-paper p-1 rounded-xl border-2 border-ink">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, theme: 'light' })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${formData.theme !== 'dark' ? 'bg-primary text-white border-2 border-ink' : 'text-ink'}`}
+                    >
+                      Light
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, theme: 'dark' })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${formData.theme === 'dark' ? 'bg-primary text-white border-2 border-ink' : 'text-ink'}`}
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
                 <button
                   onClick={() => handleSave(true)}
                   className="button-playful bg-primary text-ink w-full mt-4 flex items-center justify-center gap-2"
@@ -382,7 +513,7 @@ export function SetupWizard({
           <>
             <div className="p-6 sm:p-8 pb-0">
               <div className="flex flex-col items-center text-center gap-4 relative">
-                <div className="w-16 h-16 bg-white border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
+                <div className="w-16 h-16 bg-bg-surface border-4 border-ink rounded-2xl flex items-center justify-center shadow-sticker">
                   {steps[currentStep].icon}
                 </div>
                 <div className="flex flex-col gap-1">
@@ -443,7 +574,7 @@ export function SetupWizard({
                 {steps.map((_, i) => (
                   <div 
                     key={i} 
-                    className={`h-2 rounded-full transition-[width,background-color] duration-300 ease-out border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-white'}`} 
+                    className={`h-2 rounded-full transition-[width,background-color] duration-300 ease-out border-2 border-ink ${i === currentStep ? 'w-10 bg-primary' : 'w-2 bg-bg-surface'}`} 
                   />
                 ))}
               </div>

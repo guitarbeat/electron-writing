@@ -308,7 +308,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
           className="flex items-center justify-between gap-3 border-4 border-ink bg-bg-paper px-4 py-3 shadow-sticker text-left active:translate-x-1 active:translate-y-1 active:shadow-sticker-active rounded-2xl"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 border-4 border-ink bg-white flex items-center justify-center shrink-0 rounded-xl">
+            <div className="w-10 h-10 border-4 border-ink bg-bg-surface flex items-center justify-center shrink-0 rounded-xl">
               <History className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -327,7 +327,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 140, damping: 18 }}
-            className="border-4 border-ink bg-white shadow-sticker rounded-3xl overflow-hidden"
+            className="border-4 border-ink bg-bg-surface shadow-sticker rounded-3xl overflow-hidden"
           >
             <div className="p-4 sm:p-5 flex flex-col gap-4">
               <div className="flex flex-col gap-5 pl-3 sm:pl-4">
@@ -407,7 +407,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
                   setShowAllFutureDays(true);
                   setExtraDays(prev => prev + 14);
                 }}
-                className="button-playful bg-white text-ink border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm w-full sm:w-auto uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                className="button-playful bg-bg-surface text-ink border-4 border-ink shadow-sticker px-6 py-3 font-black tracking-widest text-sm w-full sm:w-auto uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
               >
                 Go Past Deadline
               </button>
@@ -419,7 +419,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
                   setShowAllFutureDays(true);
                   setExtraDays(prev => prev + 14);
                 }}
-                className="button-playful bg-white text-ink border-4 border-ink shadow-sticker px-6 py-3 gap-2 flex items-center font-black tracking-widest text-sm uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                className="button-playful bg-bg-surface text-ink border-4 border-ink shadow-sticker px-6 py-3 gap-2 flex items-center font-black tracking-widest text-sm uppercase active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
               >
                 <Plus className="w-5 h-5 shrink-0" />
                 Load 14 More Days
@@ -435,7 +435,7 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
 
 function HeaderPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 border-2 border-ink bg-white px-3 py-1 rounded-full shadow-sm">
+    <div className="flex items-center gap-2 border-2 border-ink bg-bg-surface px-3 py-1 rounded-full shadow-sm">
       <span className="text-label text-[9px] text-ink-muted">{label}</span>
       <span className="text-label text-[10px] text-ink font-mono">{value}</span>
     </div>
@@ -482,7 +482,7 @@ function WriterTile({
   if (isEditing) {
     return (
       <div className="relative w-full aspect-square z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] min-w-[6.5rem] sm:min-w-[8rem] bg-white border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col gap-1 sm:gap-2 rounded-2xl origin-center z-[100] animate-in zoom-in-95 duration-100 ease-out">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] min-w-[6.5rem] sm:min-w-[8rem] bg-bg-surface border-4 border-ink shadow-sticker-hover p-2 sm:p-3 flex flex-col gap-1 sm:gap-2 rounded-2xl origin-center z-[100] animate-in zoom-in-95 duration-100 ease-out">
           <label className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight truncate">{name}</label>
           <input
             autoFocus
@@ -503,7 +503,7 @@ function WriterTile({
             inputMode="numeric"
             min="0"
             type="number"
-            className="w-full appearance-none rounded-xl bg-bg-paper border-2 border-ink px-1.5 py-1.5 sm:px-2 sm:py-2 text-center font-mono text-lg min-[400px]:text-xl sm:text-2xl font-black text-ink outline-none transition-colors duration-100 focus:bg-white hide-spin-button"
+            className="w-full appearance-none rounded-xl bg-bg-paper border-2 border-ink px-1.5 py-1.5 sm:px-2 sm:py-2 text-center font-mono text-lg min-[400px]:text-xl sm:text-2xl font-black text-ink outline-none transition-colors duration-100 focus:bg-bg-surface hide-spin-button"
             aria-label={`${name} ${metric} for ${date}`}
           />
           <span className="text-label text-[9px] sm:text-[10px] text-ink-muted text-center leading-tight uppercase font-black">{metric}</span>
@@ -596,7 +596,7 @@ function LedgerDayRow({
         <div
           className={cn(
             'w-10 h-10 min-[400px]:w-12 min-[400px]:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 border-4 border-ink rounded-full flex items-center justify-center shadow-sticker z-10 font-display text-sm min-[400px]:text-base sm:text-lg md:text-2xl font-black relative',
-            day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)]' : day.hasAnyWriting || day.hasNote ? 'bg-white text-ink' : 'bg-bg-paper text-ink-muted'
+            day.isDeadlineDay ? 'bg-primary text-white shadow-[6px_6px_0_var(--color-ink)] sm:shadow-[8px_8px_0_var(--color-ink)]' : day.hasAnyWriting || day.hasNote ? 'bg-bg-surface text-ink' : 'bg-bg-paper text-ink-muted'
           )}
         >
           {day.dayNumber}
@@ -649,7 +649,7 @@ function LedgerDayRow({
                   type="button"
                   onClick={() => onDeleteDay(day)}
                   title={`Delete ${format(parseISO(day.date), 'MMM d')} entry`}
-                  className="w-11 h-11 sm:w-12 sm:h-12 border-4 border-red-500 bg-red-100 text-red-600 rounded-xl sm:rounded-2xl shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-[transform,colors,box-shadow] duration-150 ease-out hover:scale-[1.03] active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#ef4444] active:scale-[0.96]"
+                  className="w-11 h-11 sm:w-12 sm:h-12 border-4 border-red-500 bg-red-500/10 text-red-500 rounded-xl sm:rounded-2xl shadow-[4px_4px_0_#ef4444] flex items-center justify-center transition-[transform,colors,box-shadow] duration-150 ease-out hover:scale-[1.03] active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#ef4444] active:scale-[0.96]"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -691,7 +691,7 @@ function LedgerDayRow({
                       <button
                         type="button"
                         onClick={onCancelNoteEdit}
-                        className="w-12 h-12 border-4 border-ink bg-white shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
+                        className="w-12 h-12 border-4 border-ink bg-bg-surface shadow-sticker flex items-center justify-center active:shadow-sticker-active active:translate-x-1 active:translate-y-1"
                         title="Cancel note edit"
                       >
                         <X className="w-5 h-5" />

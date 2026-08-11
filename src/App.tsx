@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner';
 import { useTracker } from './hooks/useTracker';
@@ -8,8 +8,14 @@ import '@khmyznikov/pwa-install';
 
 export default function App() {
   const tracker = useTracker();
-  const { isAuthorized, isLoading, login, checkSession } = tracker;
+  const { isAuthorized, isLoading, login, checkSession, settings } = tracker;
   
+  useEffect(() => {
+    if (settings?.theme) {
+      document.documentElement.classList.toggle('dark', settings.theme === 'dark');
+    }
+  }, [settings?.theme]);
+
   // Allow bypassing via environment variable or URL parameter
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const shouldBypassAuth = 
@@ -21,7 +27,7 @@ export default function App() {
 
   return (
     <>
-      <Toaster position="top-center" richColors theme="light" />
+      <Toaster position="top-center" richColors theme={settings?.theme === 'dark' ? 'dark' : 'light'} />
       <pwa-install
         manifest-url="/manifest.json"
         styles={{ '--tint-color': '#ff4d8d' }}
@@ -32,7 +38,7 @@ export default function App() {
             src="/smeemo.png"
             alt="Smeemo"
             className="object-cover spiky-effect"
-            style={{ '--s': '80px' } as React.CSSProperties}
+            style={{ '--s': '150px' } as React.CSSProperties}
             referrerPolicy="no-referrer"
           />
           <div className="text-display text-2xl animate-pulse">Smeemo</div>
@@ -57,7 +63,12 @@ export default function App() {
               exit={{ opacity: 0, y: -12, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeIn" } }}
               transition={{ type: "spring", duration: 0.4, bounce: 0 }}
             >
-              <PasscodeScreen onLogin={login} onBypassSuccess={checkSession} />
+              <PasscodeScreen
+                onLogin={login}
+                onBypassSuccess={checkSession}
+                theme={settings?.theme}
+                updateSettings={tracker.updateSettings}
+              />
             </motion.div>
           )}
         </AnimatePresence>

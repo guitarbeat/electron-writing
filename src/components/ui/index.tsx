@@ -125,7 +125,7 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
         }}
       >
         {/* Outer ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-ink bg-white shadow-sticker group-hover:border-primary group-hover:bg-primary/5 transition-colors duration-150" />
+        <div className="absolute inset-0 rounded-full border-4 border-ink bg-bg-surface shadow-sticker group-hover:border-primary group-hover:bg-primary/5 transition-colors duration-150" />
         
         {/* Progress arc */}
         <svg className="absolute inset-0 w-full h-full -rotate-[240deg]" viewBox="0 0 100 100">
@@ -153,7 +153,7 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
 
         {/* The Knob */}
         <motion.div 
-          className="absolute inset-4 rounded-full border-4 border-ink bg-white shadow-[inset_0_4px_0_rgba(0,0,0,0.05)] flex items-center justify-center"
+          className="absolute inset-4 rounded-full border-4 border-ink bg-bg-surface shadow-[inset_0_4px_0_rgba(0,0,0,0.05)] flex items-center justify-center"
           animate={{ rotate: angle }}
           transition={isDragging ? { type: 'tween', duration: 0 } : { type: 'spring', stiffness: 300, damping: 25 }}
         >
@@ -197,7 +197,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
     <div className="flex flex-col gap-4">
       {label && <label className="text-[10px] font-black uppercase tracking-widest text-ink/40 pl-1">{label}</label>}
       
-      <div className="sticker-card bg-white p-3 sm:p-4 border-4 border-ink flex flex-col gap-4 w-full max-w-[320px] mx-auto">
+      <div className="sticker-card bg-bg-surface p-3 sm:p-4 border-4 border-ink flex flex-col gap-4 w-full max-w-[320px] mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-2">
           <button 
@@ -246,7 +246,7 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
                        ? "border-primary text-primary" 
                        : "border-transparent hover:border-ink/20"
                 )}
-                style={isSelected ? { backgroundColor: color, borderColor: '#2b1720' } : {}}
+                style={isSelected ? { backgroundColor: color, borderColor: 'var(--color-ink)' } : {}}
               >
                 {format(day, 'd')}
               </button>
@@ -284,7 +284,7 @@ export function UserSettingsInput({
   placeholder 
 }: UserSettingsInputProps) {
   return (
-    <div className="flex flex-row items-center justify-between w-full sticker-card border-4 bg-white p-3 sm:p-4" style={{ borderColor: color }}>
+    <div className="flex flex-row items-center justify-between w-full sticker-card border-4 bg-bg-surface p-3 sm:p-4" style={{ borderColor: color }}>
       <input
         type="text"
         value={value}

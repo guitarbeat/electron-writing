@@ -29,5 +29,6 @@ export interface Settings {
   updatedAt: any;
   lastModifiedBy?: string;
   passcode?: string;
+  theme?: 'light' | 'dark';
 }
 
