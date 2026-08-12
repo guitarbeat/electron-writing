@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenTool, Eye, Columns, PlusCircle, BarChart3, Sparkles } from 'lucide-react';
+import { PenTool, Eye } from 'lucide-react';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
 import { Entry, Settings } from '../../types';
 import {
@@ -133,8 +133,8 @@ export function Dashboard({ tracker }: DashboardProps) {
           />
         </motion.div>
 
-        {/* Home Page Controls Toolbar */}
-        <motion.div variants={childVariants} className="flex flex-wrap items-center justify-between gap-3 bg-bg-surface border-[3px] sm:border-4 border-ink p-3 sm:p-4 rounded-2xl shadow-sticker">
+        {/* Toggles Bar (No outer container card) */}
+        <motion.div variants={childVariants} className="flex flex-wrap items-center justify-between gap-3">
           {/* Writer Filters */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-black uppercase tracking-wider text-ink/60 mr-1">Writers:</span>
