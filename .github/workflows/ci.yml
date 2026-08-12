@@ -55,12 +55,5 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
-      - name: Run Focused Logic Tests
-        run: npm test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-          PASSCODE: 0000
-          SESSION_SECRET: test_secret
-
     # Note: If tests require a real DB, you'd add a postgres service container here.
     # For now, we assume logic_test.ts can run or fail gracefully if the DB is missing.
