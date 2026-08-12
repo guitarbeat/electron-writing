@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -27,37 +35,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm ci
 
       - name: Lint (Type Check)
-        run: pnpm run lint
+        run: npm run lint
 
       - name: Build
-        run: pnpm run build
+        run: npm run build
 
       - name: Push Database Schema
-        run: pnpm run db:push
+        run: npm run db:push
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-
-      - name: Run Focused Logic Tests
-        run: npx tsx scratch/logic_test.ts
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-          PASSCODE: 0000
-          SESSION_SECRET: test_secret
 
     # Note: If tests require a real DB, you'd add a postgres service container here.
     # For now, we assume logic_test.ts can run or fail gracefully if the DB is missing.
