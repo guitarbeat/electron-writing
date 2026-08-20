@@ -16,7 +16,11 @@ import {
   Sun,
   Moon,
   PenTool,
-  Eye
+  Eye,
+  Trophy,
+  Calendar,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -40,7 +44,9 @@ import { TrackerStats, ChartDatum } from '../../../lib/stats';
 // ==========================================
 interface DashboardHeaderProps {
   settings: Settings | null;
-  setShowGuide: (show: boolean) => void;
+  setShowGuide?: (show: boolean) => void;
+  onOpenSettingsTab?: (tab: 'goal' | 'deadline' | 'security') => void;
+  activeSettingsTab?: 'goal' | 'deadline' | 'security' | null;
   logout: () => void;
   updateSettings?: (newSettings: Partial<Settings>) => Promise<boolean | void>;
 }
@@ -48,12 +54,22 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ 
   settings, 
   setShowGuide, 
+  onOpenSettingsTab,
+  activeSettingsTab,
   logout, 
   updateSettings
 }: DashboardHeaderProps) {
   const [easterEggState, setEasterEggState] = React.useState<'idle' | 'spinning' | 'settled'>('idle');
   const easterEggTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const hoverDelayTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleOpenTab = (tab: 'goal' | 'deadline' | 'security') => {
+    if (onOpenSettingsTab) {
+      onOpenSettingsTab(tab);
+    } else if (setShowGuide) {
+      setShowGuide(true);
+    }
+  };
 
   const handleMouseEnterTitle = () => {
     if (easterEggTimeoutRef.current) {
@@ -93,10 +109,10 @@ export function DashboardHeader({
   }, []);
 
   return (
-    <header className="flex justify-between items-center gap-4 mb-2 sm:mb-4">
-      <div className="flex items-center gap-4">
+    <header className="w-full flex flex-row justify-between items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
+      <div className="flex items-center shrink-0">
         <h1 
-          className={`text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.05em] transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-ink' : easterEggState === 'settled' ? 'smeemo-settled text-ink' : 'text-ink'}`}
+          className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.05em] select-none transition-colors ${easterEggState === 'spinning' ? 'smeemo-spinning text-ink' : easterEggState === 'settled' ? 'smeemo-settled text-ink' : 'text-ink'}`}
           onMouseEnter={handleMouseEnterTitle}
           onMouseLeave={handleMouseLeaveTitle}
         >
@@ -104,21 +120,60 @@ export function DashboardHeader({
         </h1>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* Unified Toolbar Capsule - Far Right */}
+      <div className="flex items-center gap-1 sm:gap-1.5 p-1 bg-bg-paper/80 backdrop-blur-xs border-2 border-ink shadow-[2px_2px_0_var(--color-ink)] rounded-2xl shrink-0">
         <button
-          onClick={() => setShowGuide(true)}
-          className="button-playful bg-primary text-white border-[3px] sm:border-4 border-ink shadow-sticker p-2.5 sm:p-3 cursor-pointer"
-          title="Writing Setup"
-          aria-label="Writing Setup"
+          type="button"
+          onClick={() => handleOpenTab('goal')}
+          className={`w-8 h-8 sm:w-9 sm:h-9 border border-ink/80 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
+            activeSettingsTab === 'goal'
+              ? 'bg-[#b82e4a] text-white ring-2 ring-ink ring-offset-1 scale-105 shadow-sticker'
+              : 'bg-[#ce3d5a]/90 hover:bg-[#ce3d5a] text-white'
+          }`}
+          title="The Goal Settings"
+          aria-label="The Goal Settings"
         >
-          <SettingsIcon className="w-5 h-5" />
+          <Trophy className="w-4 h-4 text-[#facc15]" />
         </button>
+
         <button
-          onClick={logout}
-          className="button-playful bg-primary text-white border-[3px] sm:border-4 border-ink shadow-sticker p-2.5 sm:p-3 cursor-pointer"
-          title="Logout"
+          type="button"
+          onClick={() => handleOpenTab('deadline')}
+          className={`w-8 h-8 sm:w-9 sm:h-9 border border-ink/80 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
+            activeSettingsTab === 'deadline'
+              ? 'bg-[#b82e4a] text-white ring-2 ring-ink ring-offset-1 scale-105 shadow-sticker'
+              : 'bg-[#ce3d5a]/90 hover:bg-[#ce3d5a] text-white'
+          }`}
+          title="The Deadline Settings"
+          aria-label="The Deadline Settings"
         >
-          <LogOut className="w-5 h-5" />
+          <Calendar className="w-4 h-4 text-[#5eead4]" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleOpenTab('security')}
+          className={`w-8 h-8 sm:w-9 sm:h-9 border border-ink/80 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
+            activeSettingsTab === 'security'
+              ? 'bg-[#b82e4a] text-white ring-2 ring-ink ring-offset-1 scale-105 shadow-sticker'
+              : 'bg-[#ce3d5a]/90 hover:bg-[#ce3d5a] text-white'
+          }`}
+          title="Security & Passcode Settings"
+          aria-label="Security & Passcode Settings"
+        >
+          <Lock className="w-4 h-4 text-[#ff80bf]" />
+        </button>
+
+        <div className="w-[1.5px] h-5 bg-ink/20 mx-0.5" />
+
+        <button
+          type="button"
+          onClick={logout}
+          className="w-8 h-8 sm:w-9 sm:h-9 bg-bg-surface hover:bg-red-500 hover:text-white text-ink/70 border border-ink/40 hover:border-ink rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs"
+          title="Lock / Logout"
+          aria-label="Lock / Logout"
+        >
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
     </header>
@@ -181,9 +236,19 @@ const CustomChartTooltip = ({ active, payload, label, settings, visibleWriters, 
     const diff = totalVal - goalVal;
     const metTarget = goalVal > 0 && diff >= 0;
 
+    const getFormattedLabel = () => {
+      if (!label || typeof label !== 'string') return '';
+      try {
+        const d = parseISO(label);
+        return !isNaN(d.getTime()) ? format(d, 'EEEE, MMMM d, yyyy') : label;
+      } catch {
+        return label;
+      }
+    };
+
     return (
       <div className="bg-bg-surface border-4 border-ink rounded-2xl p-4 shadow-sticker text-ink z-50 min-w-[200px]">
-        <p className="font-bold border-b-2 border-ink/10 pb-2 mb-2 text-xs uppercase tracking-widest">{format(parseISO(label), 'EEEE, MMMM d, yyyy')}</p>
+        <p className="font-bold border-b-2 border-ink/10 pb-2 mb-2 text-xs uppercase tracking-widest">{getFormattedLabel()}</p>
         
         <div className="flex flex-col gap-2">
           {showTeam ? (
@@ -414,7 +479,9 @@ export function OverallProgressChart({ chartData, settings, stats, visibleWriter
         />
         <Tooltip content={<CustomChartTooltip settings={settings} visibleWriters={visibleWriters} isCumulative={true} />} />
         <Legend verticalAlign="top" height={32} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--color-ink)' }}/>
-        <Bar name={barName} dataKey={barDataKey} fill={barColor} radius={[4, 4, 0, 0]} />
+        {visibleWriters.length > 0 && (
+          <Bar name={barName} dataKey={barDataKey} fill={barColor} radius={[4, 4, 0, 0]} />
+        )}
         <Line
           name="Target Trajectory"
           type="monotone"

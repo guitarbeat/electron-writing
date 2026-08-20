@@ -18,12 +18,25 @@ export function verifySessionToken(token: string): { authorized: boolean; bypass
 }
 
 export function getSessionCookie(req: VercelRequest): string | undefined {
-  const cookieHeader = req.headers.cookie;
+  // Check Authorization header first (Bearer <token>)
+  const authHeader = req.headers?.authorization;
+  if (authHeader && typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    const bearerToken = authHeader.substring(7).trim();
+    if (bearerToken) return bearerToken;
+  }
+
+  const cookieHeader = req.headers?.cookie;
   if (!cookieHeader) return undefined;
   
-  const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+  const cookieString = Array.isArray(cookieHeader) ? cookieHeader.join('; ') : cookieHeader;
+  if (typeof cookieString !== 'string') return undefined;
+
+  const cookies = cookieString.split(';').reduce((acc, cookie) => {
+    if (!cookie) return acc;
     const [key, value] = cookie.trim().split('=');
-    acc[key] = value;
+    if (key && value) {
+      acc[key] = value;
+    }
     return acc;
   }, {} as Record<string, string>);
   

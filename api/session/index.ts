@@ -30,7 +30,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (isMatch) {
         // Save the last visit metadata for the next visit to display
-        const lastVisitIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0];
+        const forwardedHeader = req.headers?.['x-forwarded-for'];
+        const forwardedIp = Array.isArray(forwardedHeader) ? forwardedHeader[0] : forwardedHeader;
+        const socketIp = req.socket?.remoteAddress;
+        const rawIp = (forwardedIp || socketIp || '').toString();
+        const lastVisitIp = rawIp ? rawIp.split(',')[0].trim() : '';
         const lastVisitDevice = req.headers['user-agent'] || '';
         const lastVisitTime = new Date().toISOString();
         
@@ -50,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cookie = setCookieHeader(token);
         console.log(`[AUTH] Setting cookie: ${cookie}`);
         res.setHeader("Set-Cookie", cookie);
-        return res.status(200).json({ status: "ok" });
+        return res.status(200).json({ status: "ok", token });
       }
       return res.status(401).json({ error: "Invalid passcode" });
     } catch (err: any) {

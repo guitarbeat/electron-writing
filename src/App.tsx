@@ -27,52 +27,52 @@ export default function App() {
 
   return (
     <>
-      <Toaster position="top-center" richColors theme={settings?.theme === 'dark' ? 'dark' : 'light'} />
+      <Toaster 
+        position="bottom-right" 
+        theme={settings?.theme === 'dark' ? 'dark' : 'light'}
+        toastOptions={{
+          className: 'smeemo-toast',
+          style: {
+            fontFamily: 'var(--font-sans)',
+            border: '3px solid var(--color-ink)',
+            borderRadius: '20px',
+            boxShadow: '4px 4px 0 var(--color-ink)',
+            background: 'var(--color-bg-surface)',
+            color: 'var(--color-ink)',
+            fontWeight: 800,
+            padding: '14px 18px',
+            fontSize: '14px',
+            letterSpacing: '0.02em',
+          }
+        }}
+      />
       <pwa-install
         manifest-url="/manifest.json"
         styles={{ '--tint-color': '#ff4d8d' }}
       ></pwa-install>
-      {isLoading && !shouldBypassAuth ? (
-        <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center flex-col gap-4">
-          <img
-            src="/smeemo.png"
-            alt="Smeemo"
-            className="object-cover spiky-effect"
-            style={{ '--s': '150px' } as React.CSSProperties}
-            referrerPolicy="no-referrer"
-          />
-          <div className="text-display text-2xl animate-pulse">Smeemo</div>
-        </div>
-      ) : (
-        <AnimatePresence mode="wait">
-          {effectivelyAuthorized ? (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -12, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeIn" } }}
-              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-            >
-              <Dashboard tracker={tracker} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="passcode"
-              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -12, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeIn" } }}
-              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-            >
-              <PasscodeScreen
-                onLogin={login}
-                onBypassSuccess={checkSession}
-                theme={settings?.theme}
-                updateSettings={tracker.updateSettings}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+
+      {/* Main Dashboard is rendered underneath */}
+      <Dashboard tracker={tracker} />
+
+      {/* Passcode Lock Overlay with backdrop blur when not authorized */}
+      <AnimatePresence>
+        {!effectivelyAuthorized && !isLoading && (
+          <motion.div
+            key="passcode-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.25, ease: "easeOut" } }}
+            className="fixed inset-0 z-50 pointer-events-auto"
+          >
+            <PasscodeScreen
+              onLogin={login}
+              onBypassSuccess={checkSession}
+              theme={settings?.theme}
+              updateSettings={tracker.updateSettings}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

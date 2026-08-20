@@ -364,6 +364,17 @@ export function DailyTimelineLedger({ entries, settings, saveEntry, deleteEntry,
 
 
 
+      {visibleWriters.length === 0 && (
+        <div className="p-5 border-3 border-dashed border-ink/30 rounded-2xl bg-bg-surface/70 text-center flex flex-col items-center justify-center gap-2">
+          <p className="text-xs sm:text-sm font-black text-ink uppercase tracking-wider">
+            All Writer Columns Filtered Out
+          </p>
+          <p className="text-xs text-ink/70 max-w-sm">
+            Click the writer chips at the top ({personAName} or {personBName}) to enable tiles for logging.
+          </p>
+        </div>
+      )}
+
       <div className="pl-6 min-[400px]:pl-10 sm:pl-14 lg:pl-16 pr-1 md:pr-3">
         <div className="relative flex flex-col gap-5 pb-6">
           <div className="absolute left-[20px] min-[400px]:left-6 sm:left-7 md:left-8 top-12 bottom-0 w-1 bg-ink" />
@@ -600,9 +611,9 @@ function LedgerDayRow({
           )}
         >
           {day.dayNumber}
-          {day.showMonthLabel && (
+          {day.showMonthLabel && day.date && (
             <div className="absolute right-[100%] mr-2 sm:mr-3 top-0 md:top-2 flex flex-col items-center opacity-40 text-ink">
-              {format(parseISO(day.date), 'MMM').toUpperCase().split('').map((char, i) => (
+              {(day.date ? format(parseISO(day.date), 'MMM') : '').toUpperCase().split('').map((char, i) => (
                 <span key={i} className="text-[9px] sm:text-[10px] md:text-xs font-black leading-[1.1]">{char}</span>
               ))}
             </div>

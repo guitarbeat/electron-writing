@@ -232,26 +232,24 @@ body {
   75% { transform: translateX(4px); }
 }
 
-@keyframes font-spin-blur {
-  0% { font-family: var(--font-sans); filter: blur(2px); transform: translateX(-2px) skewX(-10deg); }
-  14% { font-family: "Impact", sans-serif; letter-spacing: 2px; filter: blur(1px); transform: translateX(2px) skewX(5deg); }
-  28% { font-family: "Courier New", monospace; letter-spacing: -1px; filter: blur(4px); transform: translateX(-1px) skewX(10deg); }
-  42% { font-family: "Comic Sans MS", cursive; letter-spacing: 0px; filter: blur(1px); transform: translateX(3px) skewX(-5deg); }
-  57% { font-family: "Georgia", serif; letter-spacing: 3px; filter: blur(3px); transform: translateX(-3px) skewX(15deg); }
-  71% { font-family: "Verdana", sans-serif; filter: blur(2px); transform: translateX(1px) skewX(-15deg); }
-  85% { font-family: "Brush Script MT", cursive; filter: blur(4px); transform: translateX(-2px) skewX(5deg); }
-  100% { font-family: "Arial Black", sans-serif; filter: blur(1px); transform: translateX(2px) skewX(-5deg); }
+@keyframes font-spin-clean {
+  0% { font-family: var(--font-sans); transform: translateX(-2px) skewX(-6deg); }
+  14% { font-family: "Impact", sans-serif; letter-spacing: 2px; transform: translateX(2px) skewX(4deg); }
+  28% { font-family: "Courier New", monospace; letter-spacing: -1px; transform: translateX(-1px) skewX(6deg); }
+  42% { font-family: "Comic Sans MS", cursive; letter-spacing: 0px; transform: translateX(3px) skewX(-4deg); }
+  57% { font-family: "Georgia", serif; letter-spacing: 2px; transform: translateX(-3px) skewX(8deg); }
+  71% { font-family: "Verdana", sans-serif; transform: translateX(1px) skewX(-8deg); }
+  85% { font-family: "Brush Script MT", cursive; transform: translateX(-2px) skewX(4deg); }
+  100% { font-family: "Arial Black", sans-serif; transform: translateX(2px) skewX(-4deg); }
 }
 
 @keyframes papyrus-settle {
   0% { 
     font-family: "Papyrus", fantasy; 
-    filter: blur(8px) brightness(1.5); 
-    transform: scale(1.1) skewX(10deg); 
+    transform: scale(1.06) skewX(6deg); 
   }
   15% { 
     font-family: "Papyrus", fantasy;
-    filter: blur(0px) brightness(1); 
     transform: scale(1) skewX(0deg); 
   }
   100% { 
@@ -261,7 +259,7 @@ body {
 
 .smeemo-spinning {
   display: inline-block;
-  animation: font-spin-blur 0.25s infinite;
+  animation: font-spin-clean 0.25s infinite;
   color: var(--color-ink);
 }
 
@@ -270,3 +268,42 @@ body {
   animation: papyrus-settle 2.5s ease-out forwards;
   color: var(--color-ink);
 }
+
+/* Smeemo Custom Toast Styling */
+[data-sonner-toaster] [data-sonner-toast] {
+  font-family: var(--font-sans) !important;
+  border: 3px solid var(--color-ink) !important;
+  border-radius: 20px !important;
+  box-shadow: 4px 4px 0 var(--color-ink) !important;
+  background: var(--color-bg-surface) !important;
+  color: var(--color-ink) !important;
+  font-weight: 800 !important;
+  padding: 14px 18px !important;
+  font-size: 13px !important;
+  letter-spacing: 0.02em !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+  color: #10b981 !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  font-weight: 800 !important;
+  color: var(--color-ink) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  font-weight: 600 !important;
+  color: var(--color-ink-muted) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  border: 2px solid var(--color-ink) !important;
+  background: var(--color-bg-surface) !important;
+  color: var(--color-ink) !important;
+}
+

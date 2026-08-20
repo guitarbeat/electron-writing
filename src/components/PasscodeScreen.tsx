@@ -122,7 +122,8 @@ export function PasscodeScreen({ onLogin, onBypassSuccess, theme: propTheme, upd
       setError(false);
       setPasscode('');
 
-      const characters = hintPasscode ? hintPasscode.split('') : ['5', '9', '4', '7'];
+      const rawHint = typeof hintPasscode === 'string' && hintPasscode.length > 0 ? hintPasscode : String(hintPasscode || '5947');
+      const characters = rawHint.split('');
       let currentPasscode = '';
 
       for (let i = 0; i < characters.length; i++) {
@@ -252,17 +253,16 @@ export function PasscodeScreen({ onLogin, onBypassSuccess, theme: propTheme, upd
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+    hidden: { opacity: 0, y: 15 },
     visible: {
       opacity: 1,
       y: 0,
-      filter: "blur(0px)",
       transition: { type: "spring", duration: 0.45, bounce: 0 }
     }
   };
 
   return (
-    <div className="min-h-screen bg-bg-paper bg-[url('https://www.transparenttextures.com/patterns/felt.png')] flex items-center justify-center p-6 relative">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 bg-ink/40 backdrop-blur-md overflow-y-auto animate-in fade-in">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -320,14 +320,14 @@ export function PasscodeScreen({ onLogin, onBypassSuccess, theme: propTheme, upd
           </button>
         </motion.div>
 
-        {/* Interactive Keypad Overlay */}
+        {/* Interactive Keypad Overlay with backdrop blur */}
         {showKeypad && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", duration: 0.25, bounce: 0 }}
-            className="absolute inset-0 bg-bg-surface z-30 p-4 sm:p-5 flex flex-col justify-between items-center"
+            className="absolute inset-0 bg-bg-surface/95 backdrop-blur-md z-30 p-4 sm:p-5 flex flex-col justify-between items-center animate-in fade-in zoom-in-95"
           >
             <div className="w-full flex items-center justify-between pb-1.5 border-b-2 border-ink/10">
               <div className="flex items-center gap-2 text-ink font-extrabold text-xs uppercase tracking-wider">

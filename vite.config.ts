@@ -39,8 +39,15 @@ function devApiPlugin(): any {
         });
       };
 
-      // Get session from cookie
+      // Get session from cookie or Authorization header
       const getSession = (req: IncomingMessage) => {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7).trim();
+          if (token && devSessions.has(token)) {
+            return devSessions.get(token);
+          }
+        }
         const cookies = req.headers.cookie?.split(';').reduce((acc, c) => {
           const [k, v] = c.trim().split('=');
           acc[k] = v;
@@ -66,7 +73,7 @@ function devApiPlugin(): any {
             const passcode = String(body.passcode || '').trim();
             const envPasscode = process.env.PASSCODE || DEV_PASSCODE;
             if (passcode === envPasscode || passcode === DEV_PASSCODE) {
-              setSession(res, true);
+              const tokenId = setSession(res, true);
               
               const lastVisitIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
               const lastVisitDevice = req.headers['user-agent'] || 'Mock Browser';
@@ -77,7 +84,7 @@ function devApiPlugin(): any {
               devSettings.lastVisitDevice = lastVisitDevice;
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ status: 'ok' }));
+              res.end(JSON.stringify({ status: 'ok', token: tokenId }));
             } else {
               res.writeHead(401, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Invalid passcode' }));

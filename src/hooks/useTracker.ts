@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Entry, Settings } from '../types';
 
+const AUTH_TOKEN_KEY = 'smeemo_auth_token';
+
+// Helper to get authorization headers including Bearer token if present
+function getAuthHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
+  const headers: Record<string, string> = { ...customHeaders };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export function useTracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -10,15 +22,25 @@ export function useTracker() {
 
   const checkSession = useCallback(async () => {
     try {
-      const res = await fetch('/api/session/check', { credentials: 'include' });
+      const res = await fetch('/api/session/check', { 
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
       if (!res.ok) {
         console.warn('[useTracker] Session check failed', res.status);
         setIsAuthorized(false);
         return false;
       }
       const data = await res.json();
-      setIsAuthorized(data.authorized);
-      return data.authorized;
+      if (data.authorized) {
+        setIsAuthorized(true);
+        return true;
+      } else {
+        // If server says not authorized, remove invalid local token
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        setIsAuthorized(false);
+        return false;
+      }
     } catch (err) {
       if (err instanceof Error && err.message.toLowerCase().includes('fetch')) {
         setIsAuthorized(false);
@@ -40,9 +62,13 @@ export function useTracker() {
       });
       
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data?.token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        }
         const authorized = await checkSession();
         if (!authorized) {
-          console.warn('[useTracker] Passcode accepted but session cookie failed.');
+          console.warn('[useTracker] Passcode accepted but session validation failed.');
           return false;
         }
         return true;
@@ -58,10 +84,16 @@ export function useTracker() {
 
   const logout = async () => {
     try {
-      await fetch('/api/session', { method: 'DELETE', credentials: 'include' });
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      await fetch('/api/session', { 
+        method: 'DELETE', 
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
     } catch (e) {
       console.warn("Logout fetch failed", e);
     } finally {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
       setIsAuthorized(false);
     }
   };
@@ -69,7 +101,10 @@ export function useTracker() {
   const fetchEntries = useCallback(async () => {
     if (!isAuthorized) return;
     try {
-      const res = await fetch('/api/entries', { credentials: 'include' });
+      const res = await fetch('/api/entries', { 
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         setEntries(data);
@@ -82,7 +117,10 @@ export function useTracker() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/settings', { credentials: 'include' });
+      const res = await fetch('/api/settings', { 
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
@@ -101,7 +139,7 @@ export function useTracker() {
     try {
       const res = await fetch('/api/entries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(entry),
         credentials: 'include',
       });
@@ -119,7 +157,11 @@ export function useTracker() {
 
   const deleteEntry = async (id: string) => {
     try {
-      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE', credentials: 'include' });
+      const res = await fetch(`/api/entries/${id}`, { 
+        method: 'DELETE', 
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         await fetchEntries();
         toast.success('Entry deleted');
@@ -140,7 +182,7 @@ export function useTracker() {
       }
       const res = await fetch('/api/settings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newSettings),
         credentials: 'include',
       });
@@ -164,7 +206,7 @@ export function useTracker() {
     try {
       const res = await fetch('/api/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...data, mode }),
         credentials: 'include',
       });

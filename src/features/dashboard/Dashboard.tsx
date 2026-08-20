@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenTool, Eye } from 'lucide-react';
+import { PenTool, Eye, Pencil, Check } from 'lucide-react';
 import { calculateTrackerStats, getChartData } from '../../lib/stats';
 import { Entry, Settings } from '../../types';
 import {
@@ -11,6 +11,163 @@ import {
   DashboardHeader,
   DailyTimelineLedger
 } from './components';
+
+interface WriterChipProps {
+  name: string;
+  color: string;
+  isVisible: boolean;
+  onToggle: () => void;
+  onUpdateName: (name: string) => void;
+  onUpdateColor: (color: string) => void;
+}
+
+function WriterChip({
+  name,
+  color,
+  isVisible,
+  onToggle,
+  onUpdateName,
+  onUpdateColor
+}: WriterChipProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftName, setDraftName] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraftName(name);
+  }, [name]);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== name) {
+      onUpdateName(trimmed);
+    } else {
+      setDraftName(name);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setDraftName(name);
+      setIsEditing(false);
+    }
+  };
+
+  const handleChipKeyDown = (e: React.KeyboardEvent) => {
+    if (isEditing) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={isEditing ? -1 : 0}
+      onKeyDown={handleChipKeyDown}
+      onClick={!isEditing ? onToggle : undefined}
+      title={!isEditing ? (isVisible ? `Click to filter out ${name}` : `Click to show ${name}`) : undefined}
+      style={{
+        backgroundColor: isVisible ? `${color}20` : undefined,
+        borderColor: isVisible ? 'var(--color-ink)' : 'rgba(0,0,0,0.2)',
+      }}
+      className={`group relative border-2 px-3 py-1.5 rounded-full flex items-center gap-2 min-w-0 transition-all duration-200 ease-out select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1 ${
+        !isEditing ? 'cursor-pointer active:translate-x-0.5 active:translate-y-0.5' : ''
+      } ${
+        isVisible 
+          ? 'opacity-100 shadow-[2px_2px_0_var(--color-ink)] hover:scale-[1.02]' 
+          : 'bg-bg-paper/40 opacity-40 hover:opacity-75 border-dashed shadow-none'
+      }`}
+    >
+      {/* Color Swatch & Active Checkmark / Color Picker */}
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className={`relative w-4 h-4 rounded-full border-2 border-ink shrink-0 cursor-pointer overflow-hidden transition-transform hover:scale-110 active:scale-95 flex items-center justify-center ${
+          isVisible ? 'shadow-xs' : 'grayscale opacity-60'
+        }`} 
+        style={{ backgroundColor: color }}
+        title="Click to change writer color"
+      >
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => onUpdateColor(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+        />
+        {isVisible && (
+          <Check className="w-2.5 h-2.5 text-white stroke-[3.5] relative z-10 pointer-events-none drop-shadow-xs" />
+        )}
+      </div>
+
+      {isEditing ? (
+        <div 
+          onClick={(e) => e.stopPropagation()} 
+          className="flex items-center gap-1 cursor-default"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleSave}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs sm:text-sm font-black uppercase text-ink bg-bg-surface border-2 border-ink px-2 py-0.5 rounded-full outline-none w-20 sm:w-28 font-mono shadow-inner"
+            placeholder="Name..."
+            maxLength={18}
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSave();
+            }}
+            title="Save name"
+            className="p-0.5 text-ink hover:text-green-600 active:scale-90 transition-transform cursor-pointer"
+          >
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 pointer-events-none">
+          <span 
+            className={`text-xs sm:text-sm font-black tracking-wider uppercase transition-colors ${
+              isVisible ? 'text-ink' : 'text-ink/60'
+            }`}
+          >
+            {name}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            title={`Edit name "${name}"`}
+            className="pointer-events-auto opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 text-ink/50 hover:text-ink transition-opacity p-0.5 cursor-pointer"
+          >
+            <Pencil className="w-3 h-3 stroke-[2.5]" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 export interface DashboardProps {
@@ -28,35 +185,13 @@ export function Dashboard({ tracker }: DashboardProps) {
     importData
   } = tracker;
 
-  const [showGuide, setShowGuide] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'goal' | 'deadline' | 'security' | null>(null);
   const [visibleWriters, setVisibleWriters] = useState<('personA' | 'personB')[]>(['personA', 'personB']);
-  const [showLog, setShowLog] = useState(true);
-  const [showLook, setShowLook] = useState(true);
-
-  const toggleLog = () => {
-    setShowLog(prev => {
-      const next = !prev;
-      if (!next && !showLook) {
-        setShowLook(true);
-      }
-      return next;
-    });
-  };
-
-  const toggleLook = () => {
-    setShowLook(prev => {
-      const next = !prev;
-      if (!next && !showLog) {
-        setShowLog(true);
-      }
-      return next;
-    });
-  };
+  const [activeView, setActiveView] = useState<'log' | 'look'>('log');
 
   const toggleWriter = (writer: 'personA' | 'personB') => {
     setVisibleWriters(prev => {
       if (prev.includes(writer)) {
-        if (prev.length === 1) return ['personA', 'personB'];
         return prev.filter(w => w !== writer);
       } else {
         return [...prev, writer];
@@ -105,11 +240,10 @@ export function Dashboard({ tracker }: DashboardProps) {
   };
 
   const childVariants = {
-    hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+    hidden: { opacity: 0, y: 15 },
     visible: { 
       opacity: 1, 
       y: 0, 
-      filter: "blur(0px)",
       transition: { type: "spring", duration: 0.45, bounce: 0 }
     }
   };
@@ -127,7 +261,8 @@ export function Dashboard({ tracker }: DashboardProps) {
         <motion.div variants={childVariants}>
           <DashboardHeader
             settings={settings}
-            setShowGuide={setShowGuide}
+            onOpenSettingsTab={(tab) => setSettingsTab(tab)}
+            activeSettingsTab={settingsTab}
             logout={logout}
             updateSettings={wrappedUpdateSettings}
           />
@@ -137,103 +272,186 @@ export function Dashboard({ tracker }: DashboardProps) {
         <motion.div variants={childVariants} className="flex flex-wrap items-center justify-between gap-3">
           {/* Writer Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-black uppercase tracking-wider text-ink/60 mr-1">Writers:</span>
-            <button 
-              type="button"
-              onClick={() => toggleWriter('personA')}
-              className={`bg-bg-paper border-2 sm:border-[3px] border-ink shadow-sticker px-3 py-1.5 flex items-center gap-2 min-w-0 transition-all duration-150 ease-out cursor-pointer active:translate-x-0.5 active:translate-y-0.5 ${
-                visibleWriters.includes('personA') ? 'opacity-100 hover:scale-[1.02]' : 'opacity-40 hover:opacity-70'
-              }`}
-            >
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personAColor || '#ff4d8d' }} />
-              <span className="text-label text-xs sm:text-sm font-black text-ink">{settings?.personAName || 'Aaron'}</span>
-            </button>
+            <WriterChip
+              name={settings?.personAName || 'Aaron'}
+              color={settings?.personAColor || '#ff4d8d'}
+              isVisible={visibleWriters.includes('personA')}
+              onToggle={() => toggleWriter('personA')}
+              onUpdateName={(name) => wrappedUpdateSettings({ personAName: name })}
+              onUpdateColor={(color) => wrappedUpdateSettings({ personAColor: color })}
+            />
 
-            <button 
-              type="button"
-              onClick={() => toggleWriter('personB')}
-              className={`bg-bg-paper border-2 sm:border-[3px] border-ink shadow-sticker px-3 py-1.5 flex items-center gap-2 min-w-0 transition-all duration-150 ease-out cursor-pointer active:translate-x-0.5 active:translate-y-0.5 ${
-                visibleWriters.includes('personB') ? 'opacity-100 hover:scale-[1.02]' : 'opacity-40 hover:opacity-70'
-              }`}
-            >
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-ink shrink-0" style={{ backgroundColor: settings?.personBColor || '#7c3aed' }} />
-              <span className="text-label text-xs sm:text-sm font-black text-ink">{settings?.personBName || 'Electra'}</span>
-            </button>
+            <WriterChip
+              name={settings?.personBName || 'Electra'}
+              color={settings?.personBColor || '#7c3aed'}
+              isVisible={visibleWriters.includes('personB')}
+              onToggle={() => toggleWriter('personB')}
+              onUpdateName={(name) => wrappedUpdateSettings({ personBName: name })}
+              onUpdateColor={(color) => wrappedUpdateSettings({ personBColor: color })}
+            />
           </div>
 
-          {/* View Toggles (LOG & LOOK) */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* View Segmented Pill Slider (iOS/macOS style exclusive tabs) */}
+          <div 
+            role="tablist"
+            aria-label="Dashboard Views"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setActiveView(prev => prev === 'log' ? 'look' : 'log');
+              }
+            }}
+            className="relative bg-bg-paper/90 backdrop-blur-xs p-1 rounded-2xl border-2 border-ink shadow-[2px_2px_0_var(--color-ink)] flex items-center select-none"
+          >
             <button
               type="button"
-              onClick={toggleLog}
-              title={showLog ? "Click to hide Log timeline" : "Click to show Log timeline"}
-              className={`bg-bg-paper border-2 sm:border-[3px] border-ink px-3 py-1.5 flex items-center gap-2 transition-all duration-150 ease-out cursor-pointer active:translate-x-0.5 active:translate-y-0.5 ${
-                showLog ? 'opacity-100 shadow-sticker hover:scale-[1.02]' : 'opacity-40 hover:opacity-70 shadow-none'
+              role="tab"
+              id="tab-log"
+              aria-selected={activeView === 'log'}
+              aria-controls="panel-log"
+              onClick={() => setActiveView('log')}
+              title="Switch to Log timeline view (← / →)"
+              className={`relative z-10 px-3.5 py-1.5 rounded-xl text-xs font-black tracking-wider uppercase transition-colors duration-200 cursor-pointer flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                activeView === 'log' ? 'text-white' : 'text-ink/60 hover:text-ink'
               }`}
             >
-              <div className="w-4 h-4 border-2 border-ink shrink-0 bg-primary flex items-center justify-center text-ink">
-                <PenTool className="w-2.5 h-2.5 stroke-[3]" />
-              </div>
-              <span className="text-label text-xs font-black tracking-wider text-ink uppercase">LOG</span>
-              <span className="text-[10px] font-mono font-bold bg-ink/10 px-1.5 py-0.5 rounded text-ink/70">
-                {entries.length}
+              {activeView === 'log' && (
+                <motion.div
+                  layoutId="segmentedActivePill"
+                  className="absolute inset-0 rounded-xl bg-primary border-2 border-ink shadow-xs"
+                  transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <PenTool className={`w-3.5 h-3.5 stroke-[2.5] ${activeView === 'log' ? 'text-white' : 'text-primary'}`} />
+                <span>LOG</span>
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
+                  activeView === 'log' ? 'bg-white/20 text-white' : 'bg-ink/10 text-ink/70'
+                }`}>
+                  {entries.length}
+                </span>
               </span>
             </button>
 
             <button
               type="button"
-              onClick={toggleLook}
-              title={showLook ? "Click to hide Look analytics" : "Click to show Look analytics"}
-              className={`bg-bg-paper border-2 sm:border-[3px] border-ink px-3 py-1.5 flex items-center gap-2 transition-all duration-150 ease-out cursor-pointer active:translate-x-0.5 active:translate-y-0.5 ${
-                showLook ? 'opacity-100 shadow-sticker hover:scale-[1.02]' : 'opacity-40 hover:opacity-70 shadow-none'
+              role="tab"
+              id="tab-look"
+              aria-selected={activeView === 'look'}
+              aria-controls="panel-look"
+              onClick={() => setActiveView('look')}
+              title="Switch to Look analytics view (← / →)"
+              className={`relative z-10 px-3.5 py-1.5 rounded-xl text-xs font-black tracking-wider uppercase transition-colors duration-200 cursor-pointer flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                activeView === 'look' ? 'text-ink' : 'text-ink/60 hover:text-ink'
               }`}
             >
-              <div className="w-4 h-4 border-2 border-ink shrink-0 bg-secondary flex items-center justify-center text-ink">
-                <Eye className="w-2.5 h-2.5 stroke-[3]" />
-              </div>
-              <span className="text-label text-xs font-black tracking-wider text-ink uppercase">LOOK</span>
-              <span className="text-[10px] font-mono font-bold bg-ink/10 px-1.5 py-0.5 rounded text-ink/70">
-                {stats.totalTeam ? `${stats.totalTeam.toLocaleString()}w` : '0w'}
+              {activeView === 'look' && (
+                <motion.div
+                  layoutId="segmentedActivePill"
+                  className="absolute inset-0 rounded-xl bg-secondary border-2 border-ink shadow-xs"
+                  transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Eye className={`w-3.5 h-3.5 stroke-[2.5] ${activeView === 'look' ? 'text-ink' : 'text-secondary-foreground'}`} />
+                <span>LOOK</span>
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
+                  activeView === 'look' ? 'bg-ink/15 text-ink' : 'bg-ink/10 text-ink/70'
+                }`}>
+                  {stats.totalTeam ? `${stats.totalTeam.toLocaleString()}w` : '0w'}
+                </span>
               </span>
             </button>
           </div>
         </motion.div>
 
-        {/* Dynamic Grid Layout based on Active Toggles */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LOG Component (DailyTimelineLedger) */}
-          {showLog && (
-            <motion.div 
-              variants={childVariants} 
-              className={`order-2 lg:order-1 ${
-                showLook ? 'lg:col-span-4 xl:col-span-3' : 'lg:col-span-12 max-w-4xl mx-auto w-full'
-              }`}
-            >
-              <DailyTimelineLedger
-                entries={entries}
-                settings={settings}
-                saveEntry={wrappedSaveEntry}
-                deleteEntry={deleteEntry}
-                visibleWriters={visibleWriters}
-              />
-            </motion.div>
-          )}
+        {/* Exclusive Tab View Content */}
+        <div className="w-full">
+          <AnimatePresence mode="wait">
+            {activeView === 'log' ? (
+              <motion.div 
+                key="log-view"
+                id="panel-log"
+                role="tabpanel"
+                aria-labelledby="tab-log"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-4xl mx-auto"
+              >
+                <DailyTimelineLedger
+                  entries={entries}
+                  settings={settings}
+                  saveEntry={wrappedSaveEntry}
+                  deleteEntry={deleteEntry}
+                  visibleWriters={visibleWriters}
+                />
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="look-view"
+                id="panel-look"
+                role="tabpanel"
+                aria-labelledby="tab-look"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex flex-col gap-6 md:gap-8"
+              >
+                {/* Dynamic Quick Stat Banner based on filtered writers */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="sticker-card p-3.5 sm:p-4 bg-bg-surface flex flex-col justify-between">
+                    <span className="text-[10px] sm:text-xs font-black uppercase text-ink/60 tracking-wider">
+                      {visibleWriters.length === 2 ? 'Total Team Words' : visibleWriters.includes('personA') ? `${settings.personAName || 'Aaron'} Total` : visibleWriters.includes('personB') ? `${settings.personBName || 'Electra'} Total` : 'Total Words'}
+                    </span>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black font-mono mt-1 text-ink tabular-nums">
+                      {(visibleWriters.length === 2 
+                        ? stats.totalTeam 
+                        : visibleWriters.includes('personA') 
+                          ? stats.totalAaron 
+                          : visibleWriters.includes('personB') 
+                            ? stats.totalElectra 
+                            : 0
+                      ).toLocaleString()}
+                    </div>
+                  </div>
 
-          {/* LOOK Component (Charts) */}
-          {showLook && (
-            <div className={`order-1 lg:order-2 flex flex-col gap-8 ${
-              showLog ? 'lg:col-span-8 xl:col-span-9' : 'lg:col-span-12'
-            }`}>
-              <motion.div variants={childVariants}>
+                  <div className="sticker-card p-3.5 sm:p-4 bg-bg-surface flex flex-col justify-between">
+                    <span className="text-[10px] sm:text-xs font-black uppercase text-ink/60 tracking-wider">
+                      Goal Progress
+                    </span>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black font-mono mt-1 text-primary tabular-nums">
+                      {Math.min(100, Math.round(((visibleWriters.length === 2 ? stats.totalTeam : visibleWriters.includes('personA') ? stats.totalAaron : stats.totalElectra) / (stats.goal || 1)) * 100))}%
+                    </div>
+                  </div>
+
+                  <div className="sticker-card p-3.5 sm:p-4 bg-bg-surface flex flex-col justify-between">
+                    <span className="text-[10px] sm:text-xs font-black uppercase text-ink/60 tracking-wider">
+                      Active Streak
+                    </span>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black font-mono mt-1 text-accent flex items-center gap-1">
+                      🔥 {stats.currentStreak}d
+                    </div>
+                  </div>
+
+                  <div className="sticker-card p-3.5 sm:p-4 bg-bg-surface flex flex-col justify-between">
+                    <span className="text-[10px] sm:text-xs font-black uppercase text-ink/60 tracking-wider">
+                      Required Pace
+                    </span>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black font-mono mt-1 text-ink tabular-nums">
+                      ~{Math.ceil(stats.requiredPerDay).toLocaleString()}<span className="text-xs font-bold text-ink/60">/d</span>
+                    </div>
+                  </div>
+                </div>
+
                 <OverallProgressChart
                   chartData={cumulativeChartData}
                   settings={settings}
                   stats={stats}
                   visibleWriters={visibleWriters}
                 />
-              </motion.div>
-
-              <motion.div variants={childVariants}>
                 <DailyWordCountChart
                   chartData={dailyChartData}
                   settings={settings}
@@ -241,18 +459,19 @@ export function Dashboard({ tracker }: DashboardProps) {
                   visibleWriters={visibleWriters}
                 />
               </motion.div>
-            </div>
-          )}
+            )}
+          </AnimatePresence>
         </div>
 
 
         <AnimatePresence>
-          {showGuide && (
+          {settingsTab && (
             <SetupWizard 
               settings={settings} 
-              onClose={() => setShowGuide(false)} 
+              onClose={() => setSettingsTab(null)} 
               onSave={wrappedUpdateSettings} 
               onImport={importData}
+              initialTab={settingsTab}
             />
           )}
         </AnimatePresence>

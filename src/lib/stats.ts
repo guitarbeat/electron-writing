@@ -1,5 +1,15 @@
 import { Entry, Settings } from '../types';
-import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek, addDays, eachDayOfInterval } from 'date-fns';
+import { differenceInCalendarDays, format, isSameWeek, parseISO, startOfWeek, addDays, eachDayOfInterval, isValid } from 'date-fns';
+
+function safeParse(str?: string | null, fallback = new Date()): Date {
+  if (!str || typeof str !== 'string' || !str.trim()) return fallback;
+  try {
+    const d = parseISO(str);
+    return isValid(d) ? d : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export interface TrackerStats {
   todayAaron: number;
@@ -7,6 +17,8 @@ export interface TrackerStats {
   todayTeam: number;
   weekTeam: number;
   activeDays: number;
+  totalAaron: number;
+  totalElectra: number;
   totalTeam: number;
   goal: number;
   remainingGoal: number;
@@ -37,6 +49,8 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
   let todayTeam = 0;
   let weekTeam = 0;
   let activeDays = 0;
+  let totalAaron = 0;
+  let totalElectra = 0;
   let totalTeam = 0;
 
   entries.forEach(entry => {
@@ -44,6 +58,8 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     const electra = entry.electraWords || 0;
     const team = aaron + electra;
 
+    totalAaron += aaron;
+    totalElectra += electra;
     totalTeam += team;
 
     if (team > 0) {
@@ -57,7 +73,7 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     }
 
     // Weekly stats (Monday start)
-    const entryDate = parseISO(entry.date);
+    const entryDate = safeParse(entry.date);
     if (isSameWeek(entryDate, now, { weekStartsOn: 1 })) {
       weekTeam += team;
     }
@@ -85,7 +101,7 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     if (sortedEntries[i].date === checkingDateStr) {
       if (((sortedEntries[i].aaronWords || 0) + (sortedEntries[i].electraWords || 0)) > 0) {
         currentStreak++;
-        checkingDateStr = format(addDays(parseISO(checkingDateStr), -1), 'yyyy-MM-dd');
+        checkingDateStr = format(addDays(safeParse(checkingDateStr), -1), 'yyyy-MM-dd');
       } else {
         break; // Streak broken
       }
@@ -95,8 +111,8 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
   }
 
   const ascendingEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const startDate = ascendingEntries.length > 0 ? parseISO(ascendingEntries[0].date) : now;
-  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : addDays(now, 10);
+  const startDate = ascendingEntries.length > 0 ? safeParse(ascendingEntries[0].date) : now;
+  const deadlineDate = safeParse(settings?.deadline, addDays(now, 10));
   const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
   const elapsedDays = Math.min(totalDays, Math.max(1, differenceInCalendarDays(now, startDate) + 1));
   const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
@@ -112,6 +128,8 @@ export function calculateTrackerStats(rawEntries: Entry[], settings: Settings | 
     todayTeam,
     weekTeam,
     activeDays,
+    totalAaron,
+    totalElectra,
     totalTeam,
     goal,
     remainingGoal,
@@ -130,8 +148,8 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
   const goal = settings?.projectGoal || 50000;
   const totalTeam = sorted.reduce((sum, entry) => sum + (entry.aaronWords || 0) + (entry.electraWords || 0), 0);
   const now = new Date();
-  const startDate = sorted.length > 0 ? parseISO(sorted[0].date) : new Date();
-  const deadlineDate = settings?.deadline ? parseISO(settings.deadline) : addDays(now, 10);
+  const startDate = sorted.length > 0 ? safeParse(sorted[0].date, now) : now;
+  const deadlineDate = safeParse(settings?.deadline, addDays(now, 10));
   const totalDays = Math.max(1, differenceInCalendarDays(deadlineDate, startDate) + 1);
   const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
   const daysLeft = Math.max(1, differenceInCalendarDays(deadlineDate, now) + 1);
@@ -149,7 +167,8 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
     const entriesByDate = new Map(sorted.map(e => [e.date, e]));
     
     // Generate every day from start to deadline
-    const allDays = eachDayOfInterval({ start: startDate, end: deadlineDate });
+    const validStartDate = startDate <= deadlineDate ? startDate : deadlineDate;
+    const allDays = eachDayOfInterval({ start: validStartDate, end: deadlineDate });
     
     return allDays.map((dateObj, index) => {
       const dateStr = format(dateObj, 'yyyy-MM-dd');
@@ -180,7 +199,7 @@ export function getChartData(rawEntries: Entry[], view: 'daily' | 'weekly' | 'cu
   if (view === 'weekly') {
     const weeks: Record<string, { aaron: number, electra: number, team: number }> = {};
     sorted.forEach(e => {
-      const weekDate = startOfWeek(parseISO(e.date), { weekStartsOn: 1 });
+      const weekDate = startOfWeek(safeParse(e.date, now), { weekStartsOn: 1 });
       const weekStr = format(weekDate, 'yyyy-MM-dd');
       if (!weeks[weekStr]) weeks[weekStr] = { aaron: 0, electra: 0, team: 0 };
       weeks[weekStr].aaron += e.aaronWords || 0;

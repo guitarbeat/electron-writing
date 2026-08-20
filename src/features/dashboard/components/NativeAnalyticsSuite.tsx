@@ -189,7 +189,7 @@ export function NativeAnalyticsSuite({
       <div className="w-full h-[420px] sm:h-[500px] relative">
         {/* 1. Dual-Axes Velocity Chart */}
         {activeTab === 'dualAxes' && (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <ComposedChart data={dualAxesData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink)" strokeOpacity={0.12} />
               <XAxis dataKey="date" tick={{ fill: 'var(--color-ink)', fontSize: 11, fontWeight: 700 }} />
@@ -209,7 +209,7 @@ export function NativeAnalyticsSuite({
 
         {/* 2. Cumulative Progress Trajectory */}
         {activeTab === 'trajectory' && (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <ComposedChart data={cumulativeChartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink)" strokeOpacity={0.12} />
               <XAxis dataKey="date" tickFormatter={(d) => d.substring(5)} tick={{ fill: 'var(--color-ink)', fontSize: 11, fontWeight: 700 }} />
@@ -224,7 +224,7 @@ export function NativeAnalyticsSuite({
 
         {/* 3. Daily Output vs Target */}
         {activeTab === 'daily' && (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <ComposedChart data={dailyChartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink)" strokeOpacity={0.12} />
               <XAxis dataKey="date" tickFormatter={(d) => d.substring(5)} tick={{ fill: 'var(--color-ink)', fontSize: 11, fontWeight: 700 }} />
@@ -242,7 +242,7 @@ export function NativeAnalyticsSuite({
         {activeTab === 'donut' && (
           <div className="w-full h-full flex flex-col md:flex-row items-center justify-center gap-8">
             <div className="w-full md:w-1/2 h-[300px] sm:h-[380px] relative">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie
                     data={donutData}
@@ -299,7 +299,7 @@ export function NativeAnalyticsSuite({
 
         {/* 5. Writing Sprint Radar */}
         {activeTab === 'radar' && (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="var(--color-ink)" strokeOpacity={0.2} />
               <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--color-ink)', fontSize: 12, fontWeight: 800 }} />

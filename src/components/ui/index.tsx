@@ -178,49 +178,78 @@ export function Knob({ value, min, max, step = 1, onChange, label, unit, color =
 // ==========================================
 
 interface CalendarPickerProps {
-  value: string; // ISO date string YYYY-MM-DD
+  value?: string; // ISO date string YYYY-MM-DD
   onChange: (date: string) => void;
   label?: string;
   color?: string;
 }
 
-export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: CalendarPickerProps) {
-  const selectedDate = value ? parseISO(value) : new Date();
-  const [viewDate, setViewDate] = useState(selectedDate || new Date());
+export function CalendarPicker({ value, onChange, label, color = '#5eead4' }: CalendarPickerProps) {
+  const getParsedDate = (val?: string) => {
+    if (!val || typeof val !== 'string' || !val.trim()) return new Date();
+    try {
+      const d = parseISO(val);
+      return !isNaN(d.getTime()) ? d : new Date();
+    } catch {
+      return new Date();
+    }
+  };
+
+  const selectedDate = getParsedDate(value);
+  const [viewDate, setViewDate] = useState<Date>(selectedDate);
+
+  useEffect(() => {
+    if (value && typeof value === 'string' && value.trim()) {
+      try {
+        const d = parseISO(value);
+        if (!isNaN(d.getTime())) {
+          setViewDate(d);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [value]);
   
+  const safeViewDate = !isNaN(viewDate.getTime()) ? viewDate : new Date();
+
   const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(viewDate)),
-    end: endOfWeek(endOfMonth(viewDate))
+    start: startOfWeek(startOfMonth(safeViewDate)),
+    end: endOfWeek(endOfMonth(safeViewDate))
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2 w-full max-w-[300px] mx-auto">
       {label && <label className="text-[10px] font-black uppercase tracking-widest text-ink/40 pl-1">{label}</label>}
       
-      <div className="sticker-card bg-bg-surface p-3 sm:p-4 border-4 border-ink flex flex-col gap-4 w-full max-w-[320px] mx-auto">
+      <div className="bg-bg-surface p-3 border-3 border-ink rounded-2xl shadow-sticker flex flex-col gap-2.5 w-full">
         {/* Header */}
-        <div className="flex justify-between items-center px-2">
+        <div className="flex justify-between items-center px-1">
           <button 
+            type="button"
             onClick={() => setViewDate(subMonths(viewDate, 1))}
-            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10"
+            className="w-7 h-7 flex items-center justify-center hover:bg-ink/10 rounded-lg transition-colors border-2 border-ink/20 active:scale-95"
+            title="Previous Month"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <h4 className="text-sm font-black uppercase tracking-widest">
+          <h4 className="text-xs font-black uppercase tracking-wider text-ink">
             {format(viewDate, 'MMMM yyyy')}
           </h4>
           <button 
+            type="button"
             onClick={() => setViewDate(addMonths(viewDate, 1))}
-            className="p-1 hover:bg-ink/5 rounded-lg transition-colors border-2 border-ink/10"
+            className="w-7 h-7 flex items-center justify-center hover:bg-ink/10 rounded-lg transition-colors border-2 border-ink/20 active:scale-95"
+            title="Next Month"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
         {/* Grid Header */}
         <div className="grid grid-cols-7 gap-1">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-            <div key={i} className="text-center text-[10px] font-black opacity-30 py-1">
+            <div key={i} className="text-center text-[10px] font-black opacity-40">
               {day}
             </div>
           ))}
@@ -236,15 +265,16 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
             return (
               <button
                 key={i}
+                type="button"
                 onClick={() => onChange(format(day, 'yyyy-MM-dd'))}
                 className={cn(
-                  "aspect-square rounded-lg flex items-center justify-center text-xs font-black transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.96] border-2",
-                  !isCurrentMonth && "opacity-10",
+                  "aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition-all active:scale-90 border",
+                  !isCurrentMonth && "opacity-20",
                   isSelected 
-                    ? "bg-ink text-white border-ink scale-110 shadow-sticker z-10" 
+                    ? "text-ink font-black border-2 border-ink shadow-sm z-10 scale-105" 
                     : isToday 
-                       ? "border-primary text-primary" 
-                       : "border-transparent hover:border-ink/20"
+                       ? "border-ink font-black bg-primary/10 text-ink" 
+                       : "border-transparent hover:border-ink/20 hover:bg-ink/5 text-ink"
                 )}
                 style={isSelected ? { backgroundColor: color, borderColor: 'var(--color-ink)' } : {}}
               >
@@ -254,10 +284,10 @@ export function CalendarPicker({ value, onChange, label, color = '#ff4d8d' }: Ca
           })}
         </div>
 
-        <div className="mt-2 text-center">
-           <p className="text-[10px] font-black uppercase text-ink/30 italic">
-             Selection: {format(selectedDate, 'MMM d, yyyy')}
-           </p>
+        <div className="text-center pt-1 border-t border-ink/10">
+          <p className="text-[10px] font-bold uppercase text-ink/50 tracking-wider">
+            Selected: <span className="font-black text-ink">{format(selectedDate, 'MMM d, yyyy')}</span>
+          </p>
         </div>
       </div>
     </div>
@@ -284,18 +314,25 @@ export function UserSettingsInput({
   placeholder 
 }: UserSettingsInputProps) {
   return (
-    <div className="flex flex-row items-center justify-between w-full sticker-card border-4 bg-bg-surface p-3 sm:p-4" style={{ borderColor: color }}>
+    <div 
+      className="flex flex-row items-center justify-between gap-3 w-full sticker-card border-4 bg-bg-surface p-3.5 sm:p-4 transition-colors" 
+      style={{ borderColor: color }}
+    >
       <input
         type="text"
         value={value}
         onChange={e => onChangeName(e.target.value)}
-        className="flex-1 border-none outline-none bg-transparent font-black uppercase text-xl sm:text-2xl tracking-wider w-0"
+        className="flex-1 min-w-0 border-none outline-none bg-transparent font-black uppercase text-lg sm:text-xl md:text-2xl tracking-wider text-ink focus:text-primary transition-colors"
         style={{ color: color }}
         placeholder={placeholder}
       />
-      <div className="relative shrink-0 ml-4 flex items-center justify-center">
-        <label className="text-xs font-black uppercase tracking-widest text-ink/50 mr-2">Color</label>
-        <div className="w-10 h-10 rounded-full border-4 border-ink overflow-hidden cursor-pointer" style={{ backgroundColor: color }}>
+      <div className="relative shrink-0 flex items-center gap-2">
+        <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-ink/50 select-none">Color</span>
+        <div 
+          className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border-3 border-ink overflow-hidden cursor-pointer shadow-sm hover:scale-105 active:scale-95 transition-transform" 
+          style={{ backgroundColor: color }}
+          title="Click to change color"
+        >
           <input 
             type="color" 
             value={color}
